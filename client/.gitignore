@@ -32,3 +32,6 @@ dist-ssr
 
 # Build tool cache
 .cache/
+
+#Node
+node_modules/

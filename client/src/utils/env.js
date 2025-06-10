@@ -11,7 +11,9 @@ export const ENV = {
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
 
   // App Settings
-  APP_NAME: import.meta.env.VITE_APP_NAME || "HIV Clinic",
+  APP_NAME:
+    import.meta.env.VITE_APP_NAME ||
+    "HIV-Treatment-and-Medical-Services-System",
   APP_VERSION: import.meta.env.VITE_APP_VERSION || "1.0.0",
   ENVIRONMENT: import.meta.env.VITE_ENVIRONMENT || "development",
 
