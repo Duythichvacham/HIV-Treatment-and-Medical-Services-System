@@ -30,10 +30,6 @@ HIV-Treatment-and-Medical-Services-System/
 │   │   │   ├── authService.js
 │   │   │   ├── patientService.js
 │   │   │   └── appointmentService.js
-│   │   ├── store/             # Zustand stores
-│   │   │   ├── authStore.js
-│   │   │   ├── patientStore.js
-│   │   │   └── appointmentStore.js
 │   │   ├── utils/             # Utility functions
 │   │   │   ├── constants.js
 │   │   │   ├── helpers.js
@@ -86,3 +82,9 @@ HIV-Treatment-and-Medical-Services-System/
 ├── package.json               # Root package.json
 ├── .gitignore
 └── README.md
+
+-- nếu xài thêm zustand để quản lý state:
+│   │   ├── store/             # Zustand stores
+│   │   │   ├── authStore.js
+│   │   │   ├── patientStore.js
+│   │   │   └── appointmentStore.js
