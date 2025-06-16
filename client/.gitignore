@@ -26,10 +26,6 @@ dist-ssr
 # Vite cache
 .vite/
 
-# Env files 
-.env
-.env.*   # .env.development, .env.production, v.v.
-
 # Build tool cache
 .cache/
 
