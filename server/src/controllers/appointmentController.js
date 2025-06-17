@@ -29,3 +29,57 @@ exports.updateStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+//GET, lấy bệnh nhân chờ xét nghiệm với service_type='test'
+exports.getLabTestQueue = async (req, res) => {
+  try {
+    const queue = await appointmentService.getLabTestQueue();
+    res.json({
+      message: 'Lấy danh sách bệnh nhân chờ xét nghiệm thành công',
+      data: queue
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET, lấy bệnh nhân đang xét nghiệm với service_type='test'
+exports.getLabTestInProgress = async (req, res) => {
+  try {
+    const inProgress = await appointmentService.getLabTestInProgress();
+    res.json({
+      message: 'Lấy danh sách bệnh nhân đang xét nghiệm thành công',
+      data: inProgress
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET, lấy bệnh nhân đã hoàn thành xét nghiệm với service_type='test'
+exports.getLabTestFinished = async (req, res) => {
+  try {
+    const finished = await appointmentService.getLabTestFinished();
+    res.json({
+      message: 'Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công',
+      data: finished
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// GET, lấy bệnh nhân đã hoàn thành xét nghiệm với service_type='test'
+exports.getLabTestFinished = async (req, res) => {
+  try {
+    const finished = await appointmentService.getLabTestFinished();
+    res.json({
+      message: 'Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công',
+      data: finished
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
