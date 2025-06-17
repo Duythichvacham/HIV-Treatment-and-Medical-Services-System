@@ -74,11 +74,9 @@ HIV-Treatment-and-Medical-Services-System/
 │   │   ├── utils/             # Utility functions
 │   │   │   ├── constants.js
 │   │   │   └── helpers.js
-│   │   └── app.js             # Express app setup
+│   │   └── app.js             # Entry point, Express app setup
 │   ├── package.json
-│   ├── server.js              # Entry point
 │   └── .env
-│
 ├── package.json               # Root package.json
 ├── .gitignore
 └── README.md

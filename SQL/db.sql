@@ -35,6 +35,7 @@ CREATE TABLE Doctors (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20) UNIQUE,
+    image VARCHAR(255), -- lưu đường dẫn ảnh đại diện
     degrees TEXT,
     experience_years INT NULL CHECK (experience_years >= 0),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
