@@ -6,7 +6,7 @@ const config = {
   password: process.env.DB_PASSWORD,
   server: process.env.DB_HOST,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT, // Default SQL Server port
+   port: parseInt(process.env.DB_PORT), // Default SQL Server port
   options: {
     encrypt: false, // Use encryption for data transfer
     trustServerCertificate: true, // Trust the server certificate - bỏ qua xác thực chứng chỉ
