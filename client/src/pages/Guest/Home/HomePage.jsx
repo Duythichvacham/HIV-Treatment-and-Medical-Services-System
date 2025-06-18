@@ -13,7 +13,7 @@ const HomePage = () => {
             <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-green-800">"Đồng hành cùng sức khỏe của bạn"</h1>
             <p className="text-lg font-medium text-green-600">Chăm sóc toàn diện, chuyên nghiệp và bảo mật</p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-              <Link to="/login" className="bg-green-600 text-white px-8 py-3 rounded-full font-semibold shadow hover:bg-green-700 transition">Đăng nhập để đặt lịch</Link>
+              <Link to="/login/patient" className="bg-green-600 text-white px-8 py-3 rounded-full font-semibold shadow hover:bg-green-700 transition">Đăng nhập để đặt lịch</Link>
               <span className="bg-green-100 text-green-700 px-6 py-3 rounded-full font-semibold shadow border border-green-300">Hotline 24/7: 1900-1234</span>
             </div>
           </div>
