@@ -17,7 +17,7 @@ HIV-Treatment-and-Medical-Services-System/
 │   │   │   │   ├── Home/
 │   │   │   │   └── About/
 │   │   │   ├── Auth/          # Login/Register
-│   │   │   ├── Customer/      # Dashboard bệnh nhân + các chức năng hạn chế với guest + Guest
+│   │   │   ├── Patients/      # Dashboard bệnh nhân + các chức năng hạn chế với guest + Guest
 │   │   │   ├── Staff/         # Dashboard nhân viên
 │   │   │   ├── Doctor/        # Dashboard bác sĩ
 │   │   │   ├── Manager/       # Dashboard quản lý
