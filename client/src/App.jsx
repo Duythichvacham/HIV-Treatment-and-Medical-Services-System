@@ -4,7 +4,7 @@ import { Header, Footer, HomePage, StaffLogin, PatientLogin } from './index'
 import LabStaff from './pages/Staff/LabStaff'
 import LabProcess from './pages/Staff/LabProcess'
 import LabResult from './pages/Staff/LabResult'
-import ChuyenGia from './pages/Guest/ChuyenGia'
+import DoctorPage from './pages/Guest/DoctorPage'
 
 function App() {
   // State lưu thông tin user đăng nhập
@@ -17,16 +17,14 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/dang-nhap-nhan-vien" element={<StaffLogin onLogin={setUser} />} />
-            <Route path="/dang-nhap-benh-nhan" element={<PatientLogin onLogin={setUser} />} />
+            <Route path="/login/staff" element={<StaffLogin onLogin={setUser} />} />
+            <Route path="/login/patient" element={<PatientLogin onLogin={setUser} />} />
             <Route path="/lab-staff" element={<LabStaff user={user} />} />
             <Route path="/lab-process" element={<LabProcess />} />
             <Route path="/lab-result" element={<LabResult />} />
-            {/* Trang đăng nhập chung, chọn loại đăng nhập */}
-            <Route path="/dang-nhap" element={<LoginSelect />} />
-            {/* Trang đăng ký (placeholder) */}
-            <Route path="/dang-ky" element={<RegisterPlaceholder />} />
-            <Route path="/chuyen-gia" element={<ChuyenGia />} />
+            
+            <Route path="/register" element={<RegisterPlaceholder />} />
+            <Route path="/doctorpage" element={<DoctorPage />} />
           </Routes>
         </main>
         {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
@@ -42,8 +40,8 @@ function LoginSelect() {
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
       <h2 className="text-2xl font-bold text-green-700 mb-4">Chọn loại đăng nhập</h2>
       <div className="flex gap-6">
-        <a href="/dang-nhap-benh-nhan" className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-green-700 transition">Đăng nhập Bệnh nhân</a>
-        <a href="/dang-nhap-nhan-vien" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition">Đăng nhập Nhân viên</a>
+        <a href="/login/patient" className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-green-700 transition">Đăng nhập Bệnh nhân</a>
+        <a href="/login/staff" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition">Đăng nhập Nhân viên</a>
       </div>
     </div>
   )
