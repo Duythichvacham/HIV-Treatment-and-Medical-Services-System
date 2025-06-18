@@ -35,19 +35,19 @@ const Header = ({ user, setUser }) => {
           {/* Desktop Navigation */}
           {!isStaff && (
             <nav className="hidden md:flex items-center space-x-8">
-              <Link to="/gioi-thieu" className="text-gray-700 hover:text-red-600 font-medium">
+              <Link to="/about" className="text-gray-700 hover:text-red-600 font-medium">
                 Giới thiệu
               </Link>
-              <Link to="/chuyen-gia" className="text-gray-700 hover:text-red-600 font-medium">
+              <Link to="/doctorpage" className="text-gray-700 hover:text-red-600 font-medium">
                 Chuyên Gia - Bác sĩ
               </Link>
-              <Link to="/tin-tuc" className="text-gray-700 hover:text-red-600 font-medium">
+              <Link to="/news" className="text-gray-700 hover:text-red-600 font-medium">
                 Tin tức
               </Link>
-              <Link to="/dich-vu-hiv" className="text-gray-700 hover:text-red-600 font-medium">
+              <Link to="/services" className="text-gray-700 hover:text-red-600 font-medium">
                 Dịch vụ HIV
               </Link>
-              <Link to="/dat-lich" className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium">
+              <Link to="/login" className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium">
                 Đặt lịch
               </Link>
             </nav>
@@ -60,13 +60,13 @@ const Header = ({ user, setUser }) => {
             ) : (
               <>
                 <Link
-                  to="/dang-nhap-benh-nhan"
+                  to="/login/patient"
                   state={{ from: location.pathname }}
                   className="text-gray-700 hover:text-red-600 font-medium"
                 >
                   Đăng nhập
                 </Link>
-                <Link to="/dang-ky" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 font-medium border">
+                <Link to="/register" className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 font-medium border">
                   Đăng ký
                 </Link>
               </>
@@ -98,35 +98,35 @@ const Header = ({ user, setUser }) => {
               {!isStaff && (
                 <>
                   <Link
-                    to="/gioi-thieu"
+                    to="/about"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Giới thiệu
                   </Link>
                   <Link
-                    to="/chuyen-gia"
+                    to="/doctorpage"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Chuyên Gia - Bác sĩ
                   </Link>
                   <Link
-                    to="/tin-tuc"
+                    to="/news"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Tin tức
                   </Link>
                   <Link
-                    to="/dich-vu-hiv"
+                    to="/services"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dịch vụ HIV
                   </Link>
                   <Link
-                    to="/dat-lich"
+                    to="/login/patient"
                     className="block px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium mx-3"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -140,7 +140,7 @@ const Header = ({ user, setUser }) => {
                 ) : (
                   <>
                     <Link
-                      to="/dang-nhap-benh-nhan"
+                      to="/login/patient"
                       state={{ from: location.pathname }}
                       className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                       onClick={() => setIsMenuOpen(false)}
@@ -148,7 +148,7 @@ const Header = ({ user, setUser }) => {
                       Đăng nhập
                     </Link>
                     <Link
-                      to="/dang-ky"
+                      to="/register"
                       className="block px-3 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 font-medium mx-3 mt-1"
                       onClick={() => setIsMenuOpen(false)}
                     >

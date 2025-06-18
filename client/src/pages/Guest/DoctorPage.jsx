@@ -43,7 +43,7 @@ const doctors = [
   },
 ];
 
-const ChuyenGia = () => {
+const DoctorPage = () => {
   return (
     <div className="pb-16">
       {/* Hero */}
@@ -96,4 +96,4 @@ const ChuyenGia = () => {
   );
 };
 
-export default ChuyenGia;
+export default DoctorPage;
