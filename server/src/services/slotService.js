@@ -1,6 +1,6 @@
 const { poolPromise } = require("../config/db");
 
-const getAllSlots = async (req, res) => {
+const getAllSlots = async () => {
   try {
     const pool = await poolPromise;
     const result = await pool
@@ -10,8 +10,43 @@ const getAllSlots = async (req, res) => {
     return result.recordset;
   } catch (err) {
     console.error("Error fetching slots:", err);
-    res.status(500).json({ message: "Failed to fetch slots" });
+    throw err;
   }
 };
 
-module.exports = { getAllSlots };
+// Lấy slots có sẵn cho doctor trong ngày cụ thể
+const getAvailableSlots = async (doctorId, date) => {
+  try {
+    const pool = await poolPromise;
+
+    // Đơn giản hóa query để debug
+    const result = await pool
+      .request()
+      .input("doctorId", doctorId)
+      .input("date", date).query(`
+        SELECT 
+          s.slot_id,
+          s.start_time,
+          s.end_time,
+          ws.max_patients_per_slot,
+          0 as current_bookings,
+          ws.max_patients_per_slot as available_spots
+        FROM Slots s
+        CROSS JOIN WorkingShifts ws
+        WHERE ws.doctor_id = @doctorId 
+          AND ws.shift_date = @date
+          AND ws.status = 'approved'
+        ORDER BY s.start_time
+      `);
+
+    return result.recordset;
+  } catch (err) {
+    console.error("Error fetching available slots:", err);
+    throw err;
+  }
+};
+
+module.exports = {
+  getAllSlots,
+  getAvailableSlots,
+};

@@ -1,47 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Clock, Users } from "lucide-react";
+import {
+  getDoctors,
+  getSlots,
+  createAppointment,
+} from "../../../../services/api";
 
 const DoctorAppointment = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("19/06/2025");
+  const [selectedDate, setSelectedDate] = useState("2025-06-19"); // Ngày hiện tại
   const [selectedTime, setSelectedTime] = useState(null);
   const [reason, setReason] = useState("");
+  const [doctors, setDoctors] = useState([]);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  // Fetch doctors when date changes
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true);
+        // Truyền selectedDate để chỉ lấy doctors có working shift trong ngày đó
+        const doctorsData = await getDoctors(selectedDate);
+        setDoctors(doctorsData);
+      } catch (err) {
+        setError("Không thể tải danh sách bác sĩ");
+        console.error("Error fetching doctors:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const doctors = [
-    {
-      id: 1,
-      name: "BS.CKI Nguyễn Văn An",
-      specialty: "Chuyên gia HIV/AIDS",
-      experience: "18 năm kinh nghiệm",
-      rating: 4.9,
-      price: "0 VND",
-    },
-    {
-      id: 2,
-      name: "BS Trần Thị Bình",
-      specialty: "Tư vấn tâm lý HIV",
-      experience: "12 năm kinh nghiệm",
-      rating: 4.8,
-      price: "0 VND",
-    },
-    {
-      id: 3,
-      name: "BS Lê Văn Cường",
-      specialty: "Xét nghiệm & Chẩn đoán",
-      experience: "15 năm kinh nghiệm",
-      rating: 4.7,
-      price: "0 VND",
-    },
-  ];
+    if (selectedDate) {
+      fetchDoctors();
+    }
+  }, [selectedDate]); // Thêm selectedDate vào dependency  // Fetch time slots when date or doctor changes
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!selectedDate || !selectedDoctor) return;
 
-  const timeSlots = [
-    { time: "07:00-08:00", available: 2, total: 6, status: "warning" },
-    { time: "08:00-09:00", available: 0, total: 6, status: "full" },
-    { time: "09:00-10:00", available: 4, total: 6, status: "available" },
-    { time: "10:00-11:00", available: 1, total: 6, status: "warning" },
-    { time: "13:00-14:00", available: 6, total: 6, status: "available" },
-    { time: "14:00-15:00", available: 3, total: 6, status: "available" },
-  ];
+      try {
+        setLoading(true);
+        // Truyền date và doctor_id để lấy slots có sẵn
+        const slotsData = await getSlots(selectedDate, selectedDoctor.id);
+
+        // Sử dụng data từ API thay vì mock
+        const transformedSlots = slotsData.map((slot) => ({
+          id: slot.slot_id,
+          time_slot: `${slot.start_time}-${slot.end_time}`,
+          time: `${slot.start_time}-${slot.end_time}`,
+          available_slots: slot.available_spots || 0,
+          total_slots: slot.max_patients_per_slot || 6,
+          available: slot.available_spots || 0,
+          total: slot.max_patients_per_slot || 6,
+          status: slot.available_spots > 0 ? "available" : "full",
+        }));
+        setTimeSlots(transformedSlots);
+      } catch (err) {
+        setError("Không thể tải danh sách khung giờ");
+        console.error("Error fetching slots:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSlots();
+  }, [selectedDate, selectedDoctor]); // Thêm selectedDoctor vào dependency
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -68,9 +92,31 @@ const DoctorAppointment = () => {
         return "";
     }
   };
+  const handleBooking = async () => {
+    if (!selectedDoctor || !selectedTime || !reason.trim()) {
+      alert("Vui lòng điền đầy đủ thông tin!");
+      return;
+    }
 
-  const handleBooking = () => {
-    alert("Đặt lịch khám bác sĩ thành công!");
+    try {
+      setLoading(true);
+      await createAppointment({
+        doctor_id: selectedDoctor.id,
+        appointment_date: selectedDate,
+        time_slot: selectedTime.time,
+        reason: reason.trim(),
+        service_type: "doctor_consultation",
+      });
+      alert("Đặt lịch khám bác sĩ thành công!");
+      // Reset form
+      setSelectedTime(null);
+      setReason("");
+    } catch (err) {
+      alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!");
+      console.error("Error booking appointment:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isBookingReady = () => {
@@ -88,9 +134,13 @@ const DoctorAppointment = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Chọn bác sĩ
-          </h2>
+          </h2>{" "}
           <p className="text-gray-500 text-sm mb-6">Danh sách bác sĩ có sẵn</p>
-
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -103,12 +153,16 @@ const DoctorAppointment = () => {
                   const doctor = doctors.find((d) => d.id === doctorId);
                   setSelectedDoctor(doctor || null);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
               >
-                <option value="">Chọn bác sĩ...</option>
+                <option value="">
+                  {loading ? "Đang tải..." : "Chọn bác sĩ..."}
+                </option>{" "}
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
-                    {doctor.name} - {doctor.specialty} - ⭐ {doctor.rating}
+                    {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
+                    {doctor.experience} năm kinh nghiệm
                   </option>
                 ))}
               </select>
@@ -123,21 +177,18 @@ const DoctorAppointment = () => {
                       {selectedDoctor.name}
                     </h4>
                     <p className="text-gray-600 text-sm mb-1">
-                      {selectedDoctor.specialty}
+                      {selectedDoctor.degrees || "Bác sĩ HIV/AIDS"}
                     </p>
                     <p className="text-gray-500 text-sm">
-                      {selectedDoctor.experience}
-                    </p>
+                      {selectedDoctor.experience} năm kinh nghiệm
+                    </p>{" "}
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center space-x-1 mb-1">
-                      <span className="text-yellow-400">★</span>
-                      <span className="font-medium text-sm">
-                        {selectedDoctor.rating}
-                      </span>
-                    </div>
-                    <p className="text-green-600 font-semibold text-sm">
-                      {selectedDoctor.price}
+                    <p className="text-sm text-gray-600 mb-1">
+                      {selectedDoctor.email}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {selectedDoctor.phone}
                     </p>
                   </div>
                 </div>
@@ -149,7 +200,7 @@ const DoctorAppointment = () => {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
             Chọn ngày và giờ khám
-          </h2>
+          </h2>{" "}
           {/* Date Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -157,8 +208,9 @@ const DoctorAppointment = () => {
             </label>
             <input
               type="date"
-              value="2025-06-19"
+              value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
               className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>{" "}
@@ -170,63 +222,64 @@ const DoctorAppointment = () => {
               </label>
               <div className="flex items-center text-gray-500 text-sm">
                 <Clock className="h-4 w-4 mr-1" />
-                <span>Mỗi khung giờ có tối đa 6 slot khám</span>
+                <span>Khung giờ khám bệnh</span>
               </div>
-            </div>
-
-            <select
-              value={selectedTime || ""}
-              onChange={(e) => setSelectedTime(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Chọn khung giờ khám...</option>
-              {timeSlots.map((slot, index) => (
-                <option
-                  key={index}
-                  value={slot.time}
-                  disabled={slot.status === "full"}
-                >
-                  {slot.time} - {slot.available}/{slot.total} slot -{" "}
-                  {getStatusText(slot.status)}
-                </option>
-              ))}
-            </select>
-
+            </div>{" "}
+            {loading ? (
+              <p className="text-gray-500 text-sm mb-4">
+                Đang tải khung giờ...
+              </p>
+            ) : (
+              <select
+                value={selectedTime?.id || ""}
+                onChange={(e) => {
+                  const slotId = parseInt(e.target.value);
+                  const slot = timeSlots.find((s) => s.id === slotId);
+                  setSelectedTime(slot || null);
+                }}
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+              >
+                <option value="">Chọn khung giờ khám...</option>
+                {timeSlots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    {slot.time_slot || slot.time} - Có sẵn
+                    {slot.total_slots || slot.total} slot -{" "}
+                    {getStatusText(slot.status)}
+                  </option>
+                ))}
+              </select>
+            )}{" "}
             {/* Time Slot Details Display */}
             {selectedTime && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                {(() => {
-                  const selectedSlot = timeSlots.find(
-                    (slot) => slot.time === selectedTime
-                  );
-                  return selectedSlot ? (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">
-                          Khung giờ khám: {selectedSlot.time}
-                        </h4>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Thời gian khám dự kiến: 30 phút
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center space-x-1 mb-1">
-                          <Users className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm font-medium">
-                            {selectedSlot.available}/{selectedSlot.total} slot
-                          </span>
-                        </div>
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(
-                            selectedSlot.status
-                          )}`}
-                        >
-                          {getStatusText(selectedSlot.status)}
-                        </span>
-                      </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Khung giờ khám:{" "}
+                      {selectedTime.time_slot || selectedTime.time}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Thời gian khám dự kiến: 30 phút
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center space-x-1 mb-1">
+                      <Users className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {selectedTime.available_slots || selectedTime.available}
+                        /{selectedTime.total_slots || selectedTime.total} slot
+                      </span>
                     </div>
-                  ) : null;
-                })()}
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        selectedTime.status
+                      )}`}
+                    >
+                      {getStatusText(selectedTime.status)}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -257,7 +310,6 @@ const DoctorAppointment = () => {
           <h3 className="text-xl font-semibold text-gray-900 mb-6">
             Tóm tắt đặt lịch khám
           </h3>
-
           {selectedDoctor && (
             <div className="space-y-4 mb-6">
               <div>
@@ -295,20 +347,21 @@ const DoctorAppointment = () => {
                 </span>
               </div>
             </div>
-          )}
-
+          )}{" "}
           <button
             onClick={handleBooking}
-            disabled={!isBookingReady()}
+            disabled={!isBookingReady() || loading}
             className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${
-              isBookingReady()
+              isBookingReady() && !loading
                 ? "bg-gray-900 text-white hover:bg-gray-800"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
             <span>📅</span>
             <span>
-              {isBookingReady()
+              {loading
+                ? "Đang đặt lịch..."
+                : isBookingReady()
                 ? "Đặt lịch ngay"
                 : "Vui lòng điền đầy đủ thông tin"}
             </span>

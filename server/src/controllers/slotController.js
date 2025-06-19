@@ -1,8 +1,19 @@
 const slotService = require("../services/slotService");
-// (GET, lấy danh sách slot
+
+// (GET, lấy danh sách slot có sẵn - filter theo doctor và date)
 const getSlots = async (req, res) => {
   try {
-    const slots = await slotService.getAllSlots();
+    const { doctor_id, date } = req.query;
+
+    let slots;
+    if (doctor_id && date) {
+      // Lấy slots có sẵn cho doctor trong ngày được chỉ định
+      slots = await slotService.getAvailableSlots(doctor_id, date);
+    } else {
+      // Lấy tất cả slots (fallback cho compatibility)
+      slots = await slotService.getAllSlots();
+    }
+
     return res.status(200).json({
       success: true,
       data: slots,
@@ -12,6 +23,7 @@ const getSlots = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 module.exports = {
   getSlots,
 };

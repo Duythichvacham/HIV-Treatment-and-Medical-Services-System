@@ -71,4 +71,59 @@ api.interceptors.response.use(
   }
 );
 
+// ===========================================
+// API ENDPOINTS
+// ===========================================
+
+/**
+ * Get list of doctors
+ * @param {string} date - Date in YYYY-MM-DD format (optional)
+ */
+export const getDoctors = async (date = null) => {
+  console.log("🔄 API Call: getDoctors with date:", date);
+
+  const params = {};
+  if (date) params.date = date;
+
+  try {
+    const response = await api.get("/api/public/doctors/", { params });
+    console.log("✅ getDoctors response:", response.data);
+    return response.data.data || response.data; // Handle both formats
+  } catch (error) {
+    console.error("❌ getDoctors error:", error);
+    throw error;
+  }
+};
+//return response.data;
+/**
+ * Get list of time slots
+ * @param {string} date - Date in YYYY-MM-DD format (optional)
+ * @param {number} doctorId - Doctor ID (optional)
+ */
+export const getSlots = async (date = null, doctorId = null) => {
+  console.log("🔄 API Call: getSlots with date:", date, "doctorId:", doctorId);
+
+  const params = {};
+  if (date) params.date = date;
+  if (doctorId) params.doctor_id = doctorId;
+
+  try {
+    const response = await api.get("/api/public/slots/", { params });
+    console.log("✅ getSlots response:", response.data);
+    return response.data.data || response.data; // Handle both formats
+  } catch (error) {
+    console.error("❌ getSlots error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create appointment
+ * @param {Object} appointmentData - Appointment data
+ */
+export const createAppointment = async (appointmentData) => {
+  const response = await api.post("/api/appointments/", appointmentData);
+  return response.data;
+};
+
 export default api;
