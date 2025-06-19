@@ -3,7 +3,7 @@ import { useLocation, Link } from 'react-router-dom';
 
 const LabResult = () => {
   const { state } = useLocation();
-  const { note, results, patient, serviceName, testType, room } = state || {};
+  const { note, results, patient, testType, room } = state || {};
 
   if (!note || !results) {
     return (
@@ -77,3 +77,4 @@ const LabResult = () => {
 };
 
 export default LabResult;
+

@@ -1,109 +1,63 @@
-import React, { useState } from "react";
-import { User, FileText, MessageCircle, Clock, Users } from "lucide-react";
+import React, { useState } from 'react';
+import { User, FileText, MessageCircle } from 'lucide-react';
+import DoctorCard from '../../components/common/DoctorCard';
+import ServiceCard from '../../components/common/ServiceCard';
+import AppointmentForm from '../../components/common/AppointmentForm';
+import { doctors, services } from '../../mockData/data';
 
-const Appointment = () => {
-  const [activeTab, setActiveTab] = useState("doctor");
+const Appointment = ({ user }) => {
+  const [activeTab, setActiveTab] = useState('doctor');
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("19/06/2025");
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [reason, setReason] = useState("");
-
-  const doctors = [
-    {
-      id: 1,
-      name: "BS.CKI Nguyễn Văn An",
-      specialty: "Chuyên gia HIV/AIDS",
-      experience: "18 năm kinh nghiệm",
-      rating: 4.9,
-      price: "0 VND",
-    },
-    {
-      id: 2,
-      name: "BS Trần Thị Bình",
-      specialty: "Tư vấn tâm lý HIV",
-      experience: "12 năm kinh nghiệm",
-      rating: 4.8,
-      price: "0 VND",
-    },
-    {
-      id: 3,
-      name: "BS Lê Văn Cường",
-      specialty: "Xét nghiệm & Chẩn đoán",
-      experience: "15 năm kinh nghiệm",
-      rating: 4.7,
-      price: "0 VND",
-    },
-  ];
-
-  const timeSlots = [
-    { time: "07:00-08:00", available: 2, total: 6, status: "warning" },
-    { time: "08:00-09:00", available: 0, total: 6, status: "full" },
-    { time: "09:00-10:00", available: 4, total: 6, status: "available" },
-    { time: "10:00-11:00", available: 1, total: 6, status: "warning" },
-    { time: "13:00-14:00", available: 6, total: 6, status: "available" },
-    { time: "14:00-15:00", available: 3, total: 6, status: "available" },
-  ];
+  const [selectedService, setSelectedService] = useState(null);
 
   const tabs = [
-    { id: "doctor", label: "Đặt lịch khám bác sĩ", icon: User },
-    { id: "test", label: "Đặt lịch xét nghiệm", icon: FileText },
-    { id: "consult", label: "Đặt lịch tư vấn", icon: MessageCircle },
+    { id: 'doctor', label: 'Đặt lịch khám bác sĩ', icon: User },
+    { id: 'test', label: 'Đặt lịch xét nghiệm', icon: FileText },
+    { id: 'consult', label: 'Đặt lịch tư vấn', icon: MessageCircle }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "available":
-        return "text-green-600 bg-green-50 border-green-200";
-      case "warning":
-        return "text-orange-600 bg-orange-50 border-orange-200";
-      case "full":
-        return "text-red-600 bg-red-50 border-red-200";
-      default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
-    }
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    setSelectedDoctor(null);
+    setSelectedService(null);
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "available":
-        return "Còn chỗ";
-      case "warning":
-        return "Sắp đầy";
-      case "full":
-        return "Hết chỗ";
-      default:
-        return "";
-    }
+  const handleDoctorSelect = (doctor) => {
+    setSelectedDoctor(doctor);
+  };
+
+  const handleServiceSelect = (service) => {
+    setSelectedService(service);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section */}
-      <div className="bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <h1 className="text-4xl font-bold mb-4">
             Đặt lịch khám và xét nghiệm
           </h1>
-          <p className="text-gray-600">
+          <p className="text-xl opacity-90">
             Đặt lịch khám bác sĩ, thực hiện xét nghiệm hoặc tư vấn trực tuyến
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="bg-white rounded-xl shadow-sm mb-8">
           <div className="flex border-b border-gray-200">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-6 py-4 font-medium text-sm border-b-2 ${
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`flex items-center space-x-3 px-8 py-6 font-semibold text-sm border-b-3 transition-all duration-300 ${
                     activeTab === tab.id
-                      ? "border-purple-500 text-purple-600 bg-purple-50"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
@@ -114,205 +68,132 @@ const Appointment = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Doctor List */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Selection */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Doctor Selection */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Chọn bác sĩ
-              </h2>
-              <p className="text-gray-500 text-sm mb-6">
-                Danh sách bác sĩ có sẵn
-              </p>
+            {activeTab === 'doctor' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Chọn bác sĩ
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Danh sách bác sĩ chuyên khoa HIV/AIDS
+                </p>
 
-              <div className="space-y-4">
-                {doctors.map((doctor) => (
-                  <div
-                    key={doctor.id}
-                    className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                      selectedDoctor?.id === doctor.id
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => setSelectedDoctor(doctor)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">
-                          {doctor.name}
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-1">
-                          {doctor.specialty}
-                        </p>
-                        <p className="text-gray-500 text-sm">
-                          {doctor.experience}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center space-x-1 mb-1">
-                          <span className="text-yellow-400">★</span>
-                          <span className="font-medium text-sm">
-                            {doctor.rating}
-                          </span>
-                        </div>
-                        <p className="text-blue-600 font-semibold text-sm">
-                          {doctor.price}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Date and Time Selection */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                Chọn ngày và giờ khám
-              </h2>
-
-              {/* Date Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Chọn ngày
-                </label>
-                <input
-                  type="date"
-                  value="2025-06-19"
-                  className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              {/* Time Selection */}
-              <div>
-                <div className="flex items-center space-x-2 mb-4">
-                  <label className="text-sm font-medium text-gray-700">
-                    Chọn khung giờ khám
-                  </label>
-                  <div className="flex items-center text-gray-500 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Mỗi khung giờ có tối đa 6 slot khám</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  {timeSlots.map((slot, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        slot.status !== "full" && setSelectedTime(slot.time)
-                      }
-                      disabled={slot.status === "full"}
-                      className={`p-4 rounded-lg border-2 text-center transition-all ${
-                        selectedTime === slot.time
-                          ? "border-purple-500 bg-purple-50"
-                          : `border-gray-200 hover:border-gray-300 ${getStatusColor(
-                              slot.status
-                            )}`
-                      } ${
-                        slot.status === "full"
-                          ? "cursor-not-allowed opacity-60"
-                          : "cursor-pointer"
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {doctors.map((doctor) => (
+                    <div
+                      key={doctor.id}
+                      className={`border-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                        selectedDoctor?.id === doctor.id
+                          ? 'border-blue-400 bg-blue-50 shadow-lg'
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                       }`}
+                      onClick={() => handleDoctorSelect(doctor)}
                     >
-                      <div className="font-semibold text-sm mb-2">
-                        {slot.time}
-                      </div>
-                      <div className="flex items-center justify-center space-x-1 text-xs mb-2">
-                        <Users className="h-3 w-3" />
-                        <span>
-                          {slot.available}/{slot.total}
-                        </span>
-                      </div>
-                      <div
-                        className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(
-                          slot.status
-                        )}`}
-                      >
-                        {getStatusText(slot.status)}
-                      </div>
-                    </button>
+                      <DoctorCard
+                        {...doctor}
+                        
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Additional Information */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Thông tin bổ sung
-              </h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Lý do khám <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Mô tả ngắn gọn triệu chứng hoặc lý do cần khám..."
-                />
+            {activeTab === 'test' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Chọn dịch vụ xét nghiệm
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Các dịch vụ xét nghiệm HIV có sẵn
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {services.map((service) => (
+                    <div
+                      key={service.id}
+                      onClick={() => handleServiceSelect(service)}
+                      className={`h-full flex flex-col rounded-xl transition duration-300 transform cursor-pointer ${
+                        selectedService?.id === service.id
+                          ? 'border-2 border-green-400 bg-green-50 shadow-lg scale-105'
+                          : 'border border-gray-200 hover:border-green-300 hover:shadow-md hover:scale-105'
+                      }`}
+                    >
+                      <ServiceCard
+                        iconBg="bg-green-600"
+                        iconColor="text-white"
+                        icon={service.icon}
+                        name={service.name}
+                        subtitle={service.subtitle}
+                        duration={service.duration}
+                        price={service.price}
+                        features={service.features}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'consult' && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Tư vấn trực tuyến
+                </h2>
+                <div className="text-center py-12">
+                  <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">
+                    Tính năng tư vấn trực tuyến đang được phát triển
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right Column - Booking Summary */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">
-                Tóm tắt đặt lịch khám
-              </h3>
+          {/* Right Column - Appointment Form */}
+          <div className="lg:col-span-1">
+            {activeTab === 'doctor' && selectedDoctor && (
+              <div className="sticky top-24">
+                <AppointmentForm
+                  serviceType={`doctor_${selectedDoctor.id}`}
+                  serviceName={selectedDoctor.name}
+                  duration="Theo lịch"
+                  price={selectedDoctor.price}
+                  user={user}
+                />
+              </div>
+            )}
 
-              {selectedDoctor && (
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Bác sĩ
-                    </label>
-                    <p className="font-semibold text-gray-900">
-                      {selectedDoctor.name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {selectedDoctor.specialty}
-                    </p>
-                  </div>
+            {activeTab === 'test' && selectedService && (
+              <div className="sticky top-24">
+                
+                <AppointmentForm
+                  serviceType={`service_${selectedService.id}`}
+                  serviceName={selectedService.name}
+                  duration={selectedService.duration}
+                  price={selectedService.price}
+                  user={user}
+                />
+              </div>
+            )}
 
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">
-                      Ngày khám
-                    </label>
-                    <p className="font-semibold text-gray-900">
-                      {selectedDate}
-                    </p>
-                  </div>
-
-                  {selectedTime && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">
-                        Giờ khám
-                      </label>
-                      <p className="font-semibold text-gray-900">
-                        {selectedTime}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <span className="font-medium text-gray-700">Phí khám:</span>
-                    <span className="text-lg font-bold text-green-600">
-                      Miễn phí
-                    </span>
-                  </div>
+            {!selectedDoctor && !selectedService && (
+              <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                <div className="text-gray-400 mb-4">
+                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-              )}
-
-              <button className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2">
-                <span>$</span>
-                <span>Đăng nhập để đặt lịch</span>
-              </button>
-            </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Chọn để đặt lịch
+                </h3>
+                <p className="text-gray-500">
+                  {activeTab === 'doctor' ? 'Vui lòng chọn bác sĩ' : 'Vui lòng chọn dịch vụ'} để tiếp tục đặt lịch
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ServiceCard from '../../../components/common/ServiceCard'; // Import ServiceCard component
+import DoctorCard from '../../../components/common/DoctorCard';
 
 const HomePage = () => {
   return (
@@ -47,70 +49,52 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold text-center text-green-700 mb-2">Dịch vụ nổi bật</h2>
             <p className="text-center text-gray-500 mb-10">Các dịch vụ chăm sóc sức khỏe toàn diện</p>
             <div className="grid md:grid-cols-3 gap-8">
-              {/* Card 1 */}
-              <div className="bg-white rounded-xl p-8 shadow border border-green-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center mb-2">
-                    <div className="bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3 font-bold text-xl">✓</div>
-                    <div>
-                      <h3 className="font-bold text-lg text-green-700">Xét nghiệm sàng lọc</h3>
-                      <p className="text-gray-500 text-sm">Sàng lọc HIV từ giai đoạn sớm (giai đoạn phơi nhiễm sau 18 ngày)</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-gray-500 text-sm mb-2">30 phút</div>
-                  <div className="text-right font-bold text-lg text-green-700 mb-2">169.000đ</div>
-                  <div className="font-semibold mb-1">Đặc điểm:</div>
-                  <ul className="text-green-700 text-sm list-disc list-inside mb-4">
-                    <li>Sàng lọc từ giai đoạn sớm</li>
-                    <li>Kết quả nhanh</li>
-                    <li>Bảo mật tuyệt đối</li>
-                  </ul>
-                </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full mt-2">Xem chi tiết</button>
-              </div>
-              {/* Card 2 */}
-              <div className="bg-white rounded-xl p-8 shadow border border-green-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center mb-2">
-                    <div className="bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3 font-bold text-xl">✓</div>
-                    <div>
-                      <h3 className="font-bold text-lg text-green-700">Xét nghiệm khẳng định</h3>
-                      <p className="text-gray-500 text-sm">Dùng cho trường hợp sau khi test Combo HIV Ag/Ab có phản ứng hoặc dương tính</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-gray-500 text-sm mb-2">60 phút</div>
-                  <div className="text-right font-bold text-lg text-green-700 mb-2">500.000đ</div>
-                  <div className="font-semibold mb-1">Đặc điểm:</div>
-                  <ul className="text-green-700 text-sm list-disc list-inside mb-4">
-                    <li>Độ chính xác cao</li>
-                    <li>Công nghệ hiện đại</li>
-                    <li>Báo cáo chi tiết</li>
-                  </ul>
-                </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full mt-2">Xem chi tiết</button>
-              </div>
-              {/* Card 3 */}
-              <div className="bg-white rounded-xl p-8 shadow border border-green-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center mb-2">
-                    <div className="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center mr-3 font-bold text-xl">!</div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg text-red-600">PEP - Dự phòng sau phơi nhiễm HIV</h3>
-                      <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full ml-2">Miễn phí</span>
-                      <p className="text-gray-500 text-sm">Phương pháp dự phòng HIV sau khi tiếp xúc với nguy cơ phơi nhiễm</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-gray-500 text-sm mb-2">28 ngày</div>
-                  <div className="text-right font-bold text-lg text-green-700 mb-2">Liên hệ</div>
-                  <div className="font-semibold mb-1">Đặc điểm:</div>
-                  <ul className="text-green-700 text-sm list-disc list-inside mb-4">
-                    <li>Hiệu quả lên đến 99%</li>
-                    <li>Trong vòng 72h</li>
-                    <li>Theo dõi chuyên nghiệp</li>
-                  </ul>
-                </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full mt-2">Xem chi tiết</button>
-              </div>
+              {/* Map services via ServiceCard component */}
+              <ServiceCard
+                iconBg="bg-green-600"
+                iconColor="text-white"
+                icon={<span>✓</span>}
+                title="Xét nghiệm sàng lọc"
+                subtitle="Sàng lọc HIV từ giai đoạn sớm"
+                duration="30 phút"
+                price="169.000đ"
+                features={[
+                  'Sàng lọc từ giai đoạn sớm',
+                  'Kết quả nhanh',
+                  'Bảo mật tuyệt đối',
+                ]}
+                link="/services/screening"
+              />
+              <ServiceCard
+                iconBg="bg-green-600"
+                iconColor="text-white"
+                icon={<span>✓</span>}
+                title="Xét nghiệm khẳng định"
+                subtitle="Dùng cho trường hợp test Combo có phản ứng"
+                duration="60 phút"
+                price="500.000đ"
+                features={[
+                  'Độ chính xác cao',
+                  'Công nghệ hiện đại',
+                  'Báo cáo chi tiết',
+                ]}
+                link="/services/confirm"
+              />
+              <ServiceCard
+                iconBg="bg-red-500"
+                iconColor="text-white"
+                icon={<span>!</span>}
+                title="PEP - Dự phòng sau phơi nhiễm HIV"
+                subtitle="Miễn phí, trong vòng 72h"
+                duration="28 ngày"
+                price="Liên hệ"
+                features={[
+                  'Hiệu quả lên đến 99%',
+                  'Trong vòng 72h',
+                  'Theo dõi chuyên nghiệp',
+                ]}
+                link="/services/pep"
+              />
             </div>
           </div>
         </section>
@@ -121,78 +105,39 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold text-center text-green-700 mb-2">Đội ngũ bác sĩ chuyên nghiệp</h2>
             <p className="text-center text-gray-500 mb-10">Các chuyên gia hàng đầu trong lĩnh vực HIV/AIDS</p>
             <div className="grid md:grid-cols-4 gap-8">
-              {/* Card 1 */}
-              <div className="bg-green-50 rounded-xl p-6 shadow text-center border border-green-100 flex flex-col items-center">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="TS.BS Nguyễn Văn A" className="w-20 h-20 rounded-full object-cover mb-3 border-4 border-white shadow" />
-                <div className="font-bold text-lg text-green-700 mb-1">TS.BS Nguyễn Văn A</div>
-                <div className="text-sm text-green-600 mb-1">HIV/AIDS</div>
-                <div className="text-gray-600 text-sm mb-2">Chuyên gia hàng đầu về điều trị HIV/AIDS với 15 năm kinh nghiệm</div>
-                <div className="italic text-xs text-gray-500 mb-2">Tiến sĩ Y học - Đại học Y Hà Nội</div>
-                <div className="flex justify-between text-xs text-gray-500 mb-2 w-full">
-                  <span>15 năm</span>
-                  <span>2000+</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2 w-full">Thứ 2-6, 8:00-17:00</div>
-                <div className="flex justify-between items-center w-full mb-2">
-                  <span className="text-yellow-500 font-bold flex items-center">★ 4.9</span>
-                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Có lịch</span>
-                </div>
-                <button className="bg-green-600 text-white px-3 py-1 rounded-full text-xs hover:bg-green-700 transition w-full">Xem chi tiết</button>
-              </div>
-              {/* Card 2 */}
-              <div className="bg-green-50 rounded-xl p-6 shadow text-center border border-green-100 flex flex-col items-center">
-                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="BS.CKI Trần Thị B" className="w-20 h-20 rounded-full object-cover mb-3 border-4 border-white shadow" />
-                <div className="font-bold text-lg text-green-700 mb-1">BS.CKI Trần Thị B</div>
-                <div className="text-sm text-green-600 mb-1">Nội khoa</div>
-                <div className="text-gray-600 text-sm mb-2">Bác sĩ nội khoa giàu kinh nghiệm trong điều trị các bệnh lý phức tạp</div>
-                <div className="italic text-xs text-gray-500 mb-2">Bác sĩ chuyên khoa I - Bệnh viện Bạch Mai</div>
-                <div className="flex justify-between text-xs text-gray-500 mb-2 w-full">
-                  <span>12 năm</span>
-                  <span>1500+</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2 w-full">Thứ 2,4,6. 8:00-12:00</div>
-                <div className="flex justify-between items-center w-full mb-2">
-                  <span className="text-yellow-500 font-bold flex items-center">★ 4.8</span>
-                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Có lịch</span>
-                </div>
-                <button className="bg-green-600 text-white px-3 py-1 rounded-full text-xs hover:bg-green-700 transition w-full">Xem chi tiết</button>
-              </div>
-              {/* Card 3 */}
-              <div className="bg-green-50 rounded-xl p-6 shadow text-center border border-green-100 flex flex-col items-center">
-                <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="BS Lê Văn C" className="w-20 h-20 rounded-full object-cover mb-3 border-4 border-white shadow" />
-                <div className="font-bold text-lg text-green-700 mb-1">BS Lê Văn C</div>
-                <div className="text-sm text-green-600 mb-1">Tâm lý</div>
-                <div className="text-gray-600 text-sm mb-2">Chuyên gia tâm lý hỗ trợ bệnh nhân HIV/AIDS vượt qua khó khăn</div>
-                <div className="italic text-xs text-gray-500 mb-2">Thạc sĩ Tâm lý học - Đại học Sư phạm Hà Nội</div>
-                <div className="flex justify-between text-xs text-gray-500 mb-2 w-full">
-                  <span>8 năm</span>
-                  <span>800+</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2 w-full">Thứ 3,5,7. 14:00-18:00</div>
-                <div className="flex justify-between items-center w-full mb-2">
-                  <span className="text-yellow-500 font-bold flex items-center">★ 4.7</span>
-                  <span className="bg-gray-400 text-white text-xs px-2 py-1 rounded-full">Hết lịch</span>
-                </div>
-                <button className="bg-green-600 text-white px-3 py-1 rounded-full text-xs hover:bg-green-700 transition w-full">Xem chi tiết</button>
-              </div>
-              {/* Card 4 */}
-              <div className="bg-green-50 rounded-xl p-6 shadow text-center border border-green-100 flex flex-col items-center">
-                <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="BS Phạm Thị D" className="w-20 h-20 rounded-full object-cover mb-3 border-4 border-white shadow" />
-                <div className="font-bold text-lg text-green-700 mb-1">BS Phạm Thị D</div>
-                <div className="text-sm text-green-600 mb-1">Xét nghiệm</div>
-                <div className="text-gray-600 text-sm mb-2">Chuyên gia xét nghiệm và chẩn đoán HIV với nhiều năm kinh nghiệm</div>
-                <div className="italic text-xs text-gray-500 mb-2">Bác sĩ Y học - Đại học Y Dược TP.HCM</div>
-                <div className="flex justify-between text-xs text-gray-500 mb-2 w-full">
-                  <span>10 năm</span>
-                  <span>3000+</span>
-                </div>
-                <div className="text-xs text-gray-500 mb-2 w-full">Thứ 2-7. 7:00-16:00</div>
-                <div className="flex justify-between items-center w-full mb-2">
-                  <span className="text-yellow-500 font-bold flex items-center">★ 4.6</span>
-                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Có lịch</span>
-                </div>
-                <button className="bg-green-600 text-white px-3 py-1 rounded-full text-xs hover:bg-green-700 transition w-full">Xem chi tiết</button>
-              </div>
+              {/* Use DoctorCard component for each doctor */}
+              <DoctorCard
+                image="https://randomuser.me/api/portraits/men/32.jpg"
+                name="TS.BS Nguyễn Văn A"
+                gender="Nam"
+                schedule="Thứ 2-6, 8:00-17:00"
+                price="300.000đ"
+                link="/doctors/1"
+              />
+              <DoctorCard
+                image="https://randomuser.me/api/portraits/women/44.jpg"
+                name="BS.CKI Trần Thị B"
+                gender="Nữ"
+                schedule="Thứ 2,4,6. 8:00-12:00"
+                price="250.000đ"
+                link="/doctors/2"
+              />
+              <DoctorCard
+                image="https://randomuser.me/api/portraits/men/45.jpg"
+                name="BS Lê Văn C"
+                gender="Nam"
+                schedule="Thứ 3,5,7. 14:00-18:00"
+                price="200.000đ"
+                link="/doctors/3"
+              />
+              <DoctorCard
+                image="https://randomuser.me/api/portraits/women/65.jpg"
+                name="BS Phạm Thị D"
+                gender="Nữ"
+                schedule="Thứ 2-7. 7:00-16:00"
+                price="220.000đ"
+                link="/doctors/4"
+              />
             </div>
           </div>
         </section>
