@@ -1,38 +1,42 @@
 const appointmentService = require('../services/appointmentService');
 
-exports.updateStatus = async (req, res) => {
+
+exports.updateStatus = async (req, res, next) => {
   try {
     const { appointment_id } = req.params;
     const { status, doctor_id } = req.body;
 
     const validStatus = ['requested', 'in_progress', 'completed', 'cancelled'];
     if (!validStatus.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      const err = new Error('Invalid status');
+      err.statusCode = 400;
+      throw err;
     }
 
     if (!doctor_id) {
-      // Cập nhật status cho Appointment
       const appointment = await appointmentService.updateAppointmentStatus(appointment_id, status);
       if (!appointment) {
-        return res.status(404).json({ message: 'Appointment not found' });
+        const err = new Error('Appointment not found');
+        err.statusCode = 404;
+        throw err;
       }
       return res.json({ message: 'Appointment status updated', appointment });
     } else {
-      // Cập nhật status cho TestRequest
       const testRequest = await appointmentService.updateTestRequestStatus(appointment_id, doctor_id, status);
       if (!testRequest) {
-        return res.status(404).json({ message: 'TestRequest not found' });
+        const err = new Error('TestRequest not found');
+        err.statusCode = 404;
+        throw err;
       }
       return res.json({ message: 'TestRequest status updated', testRequest });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error); // Gửi lỗi sang errorHandler
   }
 };
 
 
-//GET, lấy bệnh nhân chờ xét nghiệm với service_type='test'
-exports.getLabTestQueue = async (req, res) => {
+exports.getLabTestQueue = async (req, res, next) => {
   try {
     const queue = await appointmentService.getLabTestQueue();
     res.json({
@@ -40,12 +44,11 @@ exports.getLabTestQueue = async (req, res) => {
       data: queue
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// GET, lấy bệnh nhân đang xét nghiệm với service_type='test'
-exports.getLabTestInProgress = async (req, res) => {
+exports.getLabTestInProgress = async (req, res, next) => {
   try {
     const inProgress = await appointmentService.getLabTestInProgress();
     res.json({
@@ -53,12 +56,12 @@ exports.getLabTestInProgress = async (req, res) => {
       data: inProgress
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-// GET, lấy bệnh nhân đã hoàn thành xét nghiệm với service_type='test'
-exports.getLabTestFinished = async (req, res) => {
+// ❌ BỊ DUPLICATE — chỉ giữ 1 bản thôi
+exports.getLabTestFinished = async (req, res, next) => {
   try {
     const finished = await appointmentService.getLabTestFinished();
     res.json({
@@ -66,20 +69,6 @@ exports.getLabTestFinished = async (req, res) => {
       data: finished
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-// GET, lấy bệnh nhân đã hoàn thành xét nghiệm với service_type='test'
-exports.getLabTestFinished = async (req, res) => {
-  try {
-    const finished = await appointmentService.getLabTestFinished();
-    res.json({
-      message: 'Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công',
-      data: finished
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
