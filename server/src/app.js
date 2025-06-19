@@ -1,7 +1,7 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const express = require("express"); // import express
 const app = express(); // khởi tạo ứng dụng express
-const errorHandler = require("./middleware./errorHandler"); // Import middleware xử lý lỗi
+const errorHandler = require("./middleware/errorHandler"); // Import middleware xử lý lỗi
 
 app.use(express.json());
 const route = require("./routes"); // import index.js trong routes

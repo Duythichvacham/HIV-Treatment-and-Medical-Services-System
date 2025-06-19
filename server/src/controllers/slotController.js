@@ -2,7 +2,7 @@ const slotService = require("../services/slotService");
 // (GET, lấy danh sách slot
 const getSlots = async (req, res) => {
   try {
-    const slots = await slotService.getSlots();
+    const slots = await slotService.getAllSlots();
     return res.status(200).json({
       success: true,
       data: slots,

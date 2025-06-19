@@ -1,4 +1,4 @@
-const { poolPromise } = require("../db");
+const { poolPromise } = require("../config/db");
 
 const getAllSlots = async (req, res) => {
   try {

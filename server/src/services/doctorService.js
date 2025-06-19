@@ -1,4 +1,4 @@
-const poolPromise = require("../config/db");
+const { poolPromise } = require("../config/db");
 
 // (GET, lấy danh sách bác sĩ)
 const getDoctors = async (req, res) => {
@@ -13,7 +13,7 @@ const getDoctors = async (req, res) => {
         d.degrees,
         d.experience_years,
         d.created_at,
-        a.username,
+        a.username
       FROM Doctors d INNER JOIN Accounts a ON d.account_id = a.account_id
       WHERE a.status = 'active'
       ORDER BY d.experience_years DESC, d.created_at DESC

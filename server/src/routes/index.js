@@ -25,8 +25,8 @@ function route(app) {
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
   app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);
   //GET, lấy danh sách bác sĩ
-  app.use("api/public/doctors", doctorRouter);
-  app.use("api/public/slots", slotRouter);
+  app.use("/api/public/doctors", doctorRouter);
+  app.use("/api/public/slots", slotRouter);
 }
 
 module.exports = route;
