@@ -40,21 +40,41 @@ const DoctorAppointment = () => {
       if (!selectedDate || !selectedDoctor) return;
 
       try {
-        setLoading(true);
-        // Truyền date và doctor_id để lấy slots có sẵn
+        setLoading(true); // Truyền date và doctor_id để lấy slots có sẵn
         const slotsData = await getSlots(selectedDate, selectedDoctor.id);
 
         // Sử dụng data từ API thay vì mock
-        const transformedSlots = slotsData.map((slot) => ({
-          id: slot.slot_id,
-          time_slot: `${slot.start_time}-${slot.end_time}`,
-          time: `${slot.start_time}-${slot.end_time}`,
-          available_slots: slot.available_spots || 0,
-          total_slots: slot.max_patients_per_slot || 6,
-          available: slot.available_spots || 0,
-          total: slot.max_patients_per_slot || 6,
-          status: slot.available_spots > 0 ? "available" : "full",
-        }));
+        const transformedSlots = slotsData.map((slot) => {
+          // Đơn giản hóa format time - chỉ lấy phần time từ ISO string
+          const formatTime = (timeStr) => {
+            if (!timeStr) return "";
+            // Nếu timeStr là ISO date string, extract chỉ time part
+            if (typeof timeStr === "string" && timeStr.includes("T")) {
+              const timePart = timeStr.split("T")[1];
+              return timePart.substring(0, 5); // HH:MM
+            }
+            // Fallback cho các format khác
+            return timeStr.toString().substring(0, 5);
+          };
+
+          const startTime = formatTime(slot.start_time);
+          const endTime = formatTime(slot.end_time);
+          const transformedSlot = {
+            id: slot.slot_id,
+            time_slot: `${startTime} - ${endTime}`,
+            time: `${startTime} - ${endTime}`,
+            available_slots: Number(slot.available_spots) || 0,
+            total_slots: Number(slot.max_patients_per_slot) || 6,
+            available: Number(slot.available_spots) || 0,
+            total: Number(slot.max_patients_per_slot) || 6,
+            status:
+              slot.available_spots && slot.available_spots > 0
+                ? "available"
+                : "full",
+          };
+
+          return transformedSlot;
+        });
         setTimeSlots(transformedSlots);
       } catch (err) {
         setError("Không thể tải danh sách khung giờ");
@@ -103,7 +123,7 @@ const DoctorAppointment = () => {
       await createAppointment({
         doctor_id: selectedDoctor.id,
         appointment_date: selectedDate,
-        time_slot: selectedTime.time,
+        time_slot: selectedTime.time_slot || selectedTime.time,
         reason: reason.trim(),
         service_type: "doctor_consultation",
       });
@@ -162,7 +182,7 @@ const DoctorAppointment = () => {
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
                     {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
-                    {doctor.experience} năm kinh nghiệm
+                    {doctor.experience || 0} năm kinh nghiệm
                   </option>
                 ))}
               </select>
@@ -178,9 +198,9 @@ const DoctorAppointment = () => {
                     </h4>
                     <p className="text-gray-600 text-sm mb-1">
                       {selectedDoctor.degrees || "Bác sĩ HIV/AIDS"}
-                    </p>
+                    </p>{" "}
                     <p className="text-gray-500 text-sm">
-                      {selectedDoctor.experience} năm kinh nghiệm
+                      {selectedDoctor.experience || 0} năm kinh nghiệm
                     </p>{" "}
                   </div>
                   <div className="text-right">
@@ -240,12 +260,10 @@ const DoctorAppointment = () => {
                 disabled={loading}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
               >
-                <option value="">Chọn khung giờ khám...</option>
+                <option value="">Chọn khung giờ khám...</option>{" "}
                 {timeSlots.map((slot) => (
                   <option key={slot.id} value={slot.id}>
-                    {slot.time_slot || slot.time} - Có sẵn
-                    {slot.total_slots || slot.total} slot -{" "}
-                    {getStatusText(slot.status)}
+                    {slot.time_slot || slot.time} - {getStatusText(slot.status)}
                   </option>
                 ))}
               </select>
@@ -265,10 +283,13 @@ const DoctorAppointment = () => {
                   </div>
                   <div className="text-right">
                     <div className="flex items-center space-x-1 mb-1">
-                      <Users className="h-4 w-4 text-gray-500" />
+                      <Users className="h-4 w-4 text-gray-500" />{" "}
                       <span className="text-sm text-gray-600">
-                        {selectedTime.available_slots || selectedTime.available}
-                        /{selectedTime.total_slots || selectedTime.total} slot
+                        {selectedTime.available_slots ||
+                          selectedTime.available ||
+                          0}
+                        /{selectedTime.total_slots || selectedTime.total || 6}{" "}
+                        slot
                       </span>
                     </div>
                     <span
@@ -323,23 +344,22 @@ const DoctorAppointment = () => {
                   {selectedDoctor.specialty}
                 </p>
               </div>
-
               <div>
                 <label className="text-sm font-medium text-gray-600">
                   Ngày khám
                 </label>
                 <p className="font-semibold text-gray-900">{selectedDate}</p>
-              </div>
-
+              </div>{" "}
               {selectedTime && (
                 <div>
                   <label className="text-sm font-medium text-gray-600">
                     Giờ khám
                   </label>
-                  <p className="font-semibold text-gray-900">{selectedTime}</p>
+                  <p className="font-semibold text-gray-900">
+                    {selectedTime.time_slot || selectedTime.time}
+                  </p>
                 </div>
               )}
-
               <div className="flex justify-between items-center pt-4 border-t">
                 <span className="font-medium text-gray-700">Phí khám:</span>
                 <span className="text-lg font-bold text-green-600">

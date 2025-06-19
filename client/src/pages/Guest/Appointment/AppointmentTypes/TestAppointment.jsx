@@ -63,11 +63,28 @@ const TestAppointment = () => {
         setLoading(true);
         const slotsData = await getSlots(selectedDate);
         // Transform data để tương thích với UI
-        const transformedSlots = slotsData.map((slot) => ({
-          id: slot.slot_id,
-          time_slot: `${slot.start_time}-${slot.end_time}`,
-          time: `${slot.start_time}-${slot.end_time}`,
-        }));
+        const transformedSlots = slotsData.map((slot) => {
+          // Đơn giản hóa format time - chỉ lấy phần time từ ISO string
+          const formatTime = (timeStr) => {
+            if (!timeStr) return "";
+            // Nếu timeStr là ISO date string, extract chỉ time part
+            if (typeof timeStr === "string" && timeStr.includes("T")) {
+              const timePart = timeStr.split("T")[1];
+              return timePart.substring(0, 5); // HH:MM
+            }
+            // Fallback cho các format khác
+            return timeStr.toString().substring(0, 5);
+          };
+
+          const startTime = formatTime(slot.start_time);
+          const endTime = formatTime(slot.end_time);
+
+          return {
+            id: slot.slot_id,
+            time_slot: `${startTime} - ${endTime}`,
+            time: `${startTime} - ${endTime}`,
+          };
+        });
         setTimeSlots(transformedSlots);
       } catch (err) {
         setError("Không thể tải danh sách khung giờ");

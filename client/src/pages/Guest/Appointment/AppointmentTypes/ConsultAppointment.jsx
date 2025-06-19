@@ -43,19 +43,36 @@ const ConsultAppointment = () => {
       try {
         setLoading(true);
         // Truyền date và doctor_id để lấy slots có sẵn
-        const slotsData = await getSlots(selectedDate, selectedDoctor.id);
+        const slotsData = await getSlots(selectedDate, selectedDoctor.id); // Sử dụng data từ API thay vì mock
+        const transformedSlots = slotsData.map((slot) => {
+          // Đơn giản hóa format time - chỉ lấy phần time từ ISO string
+          const formatTime = (timeStr) => {
+            if (!timeStr) return "";
+            // Nếu timeStr là ISO date string, extract chỉ time part
+            if (typeof timeStr === "string" && timeStr.includes("T")) {
+              const timePart = timeStr.split("T")[1];
+              return timePart.substring(0, 5); // HH:MM
+            }
+            // Fallback cho các format khác
+            return timeStr.toString().substring(0, 5);
+          };
 
-        // Sử dụng data từ API thay vì mock
-        const transformedSlots = slotsData.map((slot) => ({
-          id: slot.slot_id,
-          time_slot: `${slot.start_time}-${slot.end_time}`,
-          time: `${slot.start_time}-${slot.end_time}`,
-          available_slots: slot.available_spots || 0,
-          total_slots: slot.max_patients_per_slot || 6,
-          available: slot.available_spots || 0,
-          total: slot.max_patients_per_slot || 6,
-          status: slot.available_spots > 0 ? "available" : "full",
-        }));
+          const startTime = formatTime(slot.start_time);
+          const endTime = formatTime(slot.end_time);
+          return {
+            id: slot.slot_id,
+            time_slot: `${startTime} - ${endTime}`,
+            time: `${startTime} - ${endTime}`,
+            available_slots: Number(slot.available_spots) || 0,
+            total_slots: Number(slot.max_patients_per_slot) || 6,
+            available: Number(slot.available_spots) || 0,
+            total: Number(slot.max_patients_per_slot) || 6,
+            status:
+              slot.available_spots && slot.available_spots > 0
+                ? "available"
+                : "full",
+          };
+        });
         setTimeSlots(transformedSlots);
       } catch (err) {
         setError("Không thể tải danh sách khung giờ");
@@ -168,7 +185,7 @@ const ConsultAppointment = () => {
                 {doctors.map((doctor) => (
                   <option key={doctor.id} value={doctor.id}>
                     {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
-                    {doctor.experience} năm kinh nghiệm
+                    {doctor.experience || 0} năm kinh nghiệm
                   </option>
                 ))}
               </select>
@@ -186,7 +203,7 @@ const ConsultAppointment = () => {
                       {selectedDoctor.degrees || "Bác sĩ HIV/AIDS"}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      {selectedDoctor.experience} năm kinh nghiệm
+                      {selectedDoctor.experience || 0} năm kinh nghiệm
                     </p>
                   </div>
                   <div className="text-right">
@@ -282,6 +299,9 @@ const ConsultAppointment = () => {
                 onChange={(e) => {
                   const slotId = parseInt(e.target.value);
                   const slot = timeSlots.find((s) => s.id === slotId);
+                  console.log("Selected slot:", slot);
+                  console.log("Slot time_slot:", slot?.time_slot);
+                  console.log("Slot time:", slot?.time);
                   setSelectedTime(slot || null);
                 }}
                 disabled={loading}
@@ -310,10 +330,13 @@ const ConsultAppointment = () => {
                   </div>
                   <div className="text-right">
                     <div className="flex items-center space-x-1 mb-1">
-                      <Users className="h-4 w-4 text-gray-500" />
+                      <Users className="h-4 w-4 text-gray-500" />{" "}
                       <span className="text-sm text-gray-600">
-                        {selectedTime.available_slots || selectedTime.available}
-                        /{selectedTime.total_slots || selectedTime.total} slot
+                        {selectedTime.available_slots ||
+                          selectedTime.available ||
+                          0}
+                        /{selectedTime.total_slots || selectedTime.total || 6}{" "}
+                        slot
                       </span>
                     </div>
                     <span

@@ -36,7 +36,7 @@ const getDoctors = async () => {
 // (GET, lấy danh sách bác sĩ theo ngày có WorkingShifts)
 const getDoctorsByDate = async (date) => {
   const pool = await poolPromise;
-  
+
   // Sử dụng approach khác để tránh lỗi với TEXT column
   const result = await pool.request().input("date", date).query(`
       SELECT 
