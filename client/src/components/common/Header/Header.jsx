@@ -15,9 +15,20 @@ const Header = ({ user, setUser }) => {
       user.role
     );
 
+  // Debug log
+  console.log('Header - User:', user);
+  console.log('Header - isStaff:', isStaff);
   const handleLogout = () => {
     setUser(null);
-    // Do not navigate away, stay on current page
+    // Clear session storage
+    sessionStorage.clear();
+    
+    // Navigate to appropriate login page based on user role
+    if (isStaff) {
+      navigate("/login/staff");
+    } else {
+      navigate("/login/patient");
+    }
   };
 
   useEffect(() => {
@@ -34,10 +45,11 @@ const Header = ({ user, setUser }) => {
     <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo as link */}
-          <button
+          {/* Logo as link */}          <button
             onClick={() => {
-              if (isStaff) navigate("/lab-staff");
+              if (user?.role === 'Lab-Staff') navigate("/lab-staff");
+              else if (user?.role === 'Registration-staff') navigate("/registration-staff");
+              else if (isStaff) navigate("/lab-staff"); // fallback cho Manager, Doctor
               else navigate("/");
             }}
             className="flex items-center focus:outline-none"
