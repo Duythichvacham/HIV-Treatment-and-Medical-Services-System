@@ -1,27 +1,28 @@
-const { poolPromise } = require('../config/db');
+const { poolPromise } = require("../config/db");
 
 //(PATCH, cập nhật status của TestRequests nếu service_type là "examination")
 exports.updateTestRequestExamStatus = async (request_id, status) => {
   const pool = await poolPromise;
 
   // Kiểm tra service_type là 'examination'
-  const check = await pool.request()
-    .input('request_id', request_id)
-    .query(`
+  const check = await pool.request().input("request_id", request_id).query(`
       SELECT s.service_type
       FROM Services s
       WHERE s.request_id = @request_id
     `);
 
-  if (!check.recordset.length || check.recordset[0].service_type !== 'examination') {
+  if (
+    !check.recordset.length ||
+    check.recordset[0].service_type !== "examination"
+  ) {
     return null; // Không phải loại 'exam' hoặc không tồn tại
   }
 
   // Cập nhật status
-  const result = await pool.request()
-    .input('request_id', request_id)
-    .input('status', status)
-    .query(`
+  const result = await pool
+    .request()
+    .input("request_id", request_id)
+    .input("status", status).query(`
       UPDATE TestRequests
       SET status = @status
       WHERE request_id = @request_id;
@@ -34,8 +35,7 @@ exports.updateTestRequestExamStatus = async (request_id, status) => {
 //(GET, lấy chi tiết phiếu xét nghiệm)
 exports.getTestNoteDetail = async (test_note_id) => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .input('test_note_id', test_note_id)
+  const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
       SELECT 
         tn.test_note_id,
@@ -67,18 +67,18 @@ exports.createTestResultAndComplete = async ({
   result_value,
   unit,
   reference_range,
-  notes
+  notes,
 }) => {
   const pool = await poolPromise;
 
   // 1. Thêm kết quả xét nghiệm mới
-  const insertResult = await pool.request()
-    .input('test_note_id', test_note_id)
-    .input('result_value', result_value)
-    .input('unit', unit)
-    .input('reference_range', reference_range)
-    .input('notes', notes)
-    .query(`
+  const insertResult = await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .input("result_value", result_value)
+    .input("unit", unit)
+    .input("reference_range", reference_range)
+    .input("notes", notes).query(`
       INSERT INTO TestResults (test_note_id, result_value, unit, reference_range, notes)
       VALUES (@test_note_id, @result_value, @unit, @reference_range, @notes);
       SELECT * FROM TestResults WHERE result_id = SCOPE_IDENTITY();
@@ -86,9 +86,7 @@ exports.createTestResultAndComplete = async ({
 
   // 2. Cập nhật trạng thái phiếu xét nghiệm (nếu muốn)
   // Ví dụ: cập nhật status của TestRequests liên quan thành 'completed'
-  await pool.request()
-    .input('test_note_id', test_note_id)
-    .query(`
+  await pool.request().input("test_note_id", test_note_id).query(`
       UPDATE tr
       SET tr.status = 'completed'
       FROM TestRequests tr

@@ -1,0 +1,374 @@
+import React, { useState, useEffect } from "react";
+import { Clock } from "lucide-react";
+import { getSlots, createAppointment } from "../../../../services/api";
+
+const TestAppointment = () => {
+  const [selectedTestType, setSelectedTestType] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("2025-06-19"); // Ngày hiện tại
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [reason, setReason] = useState("");
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Static test types (không cần API cho test types)
+  const testTypes = [
+    {
+      id: 1,
+      name: "HIV Test nhanh",
+      description: "Xét nghiệm HIV nhanh, có kết quả trong 15 phút",
+      price: "0 VND",
+      duration: "15 phút",
+      code: "HIV_RAPID",
+    },
+    {
+      id: 2,
+      name: "HIV Test ELISA",
+      description: "Xét nghiệm HIV bằng phương pháp ELISA",
+      price: "0 VND",
+      duration: "30 phút",
+      code: "HIV_ELISA",
+    },
+    {
+      id: 3,
+      name: "HIV Test PCR",
+      description: "Xét nghiệm HIV bằng phương pháp PCR (chính xác cao)",
+      price: "0 VND",
+      duration: "45 phút",
+      code: "HIV_PCR",
+    },
+    {
+      id: 4,
+      name: "Combo Test HIV + Syphilis",
+      description: "Xét nghiệm kết hợp HIV và giang mai",
+      price: "0 VND",
+      duration: "30 phút",
+      code: "HIV_SYPHILIS_COMBO",
+    },
+    {
+      id: 5,
+      name: "Gói xét nghiệm toàn diện",
+      description: "Bao gồm HIV, Hepatitis B/C, Syphilis",
+      price: "0 VND",
+      duration: "60 phút",
+      code: "COMPREHENSIVE_PACKAGE",
+    },
+  ];
+  // Fetch time slots when date changes
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!selectedDate) return;
+
+      try {
+        setLoading(true);
+        const slotsData = await getSlots(selectedDate);
+        // Transform data để tương thích với UI
+        const transformedSlots = slotsData.map((slot) => {
+          // Đơn giản hóa format time - chỉ lấy phần time từ ISO string
+          const formatTime = (timeStr) => {
+            if (!timeStr) return "";
+            // Nếu timeStr là ISO date string, extract chỉ time part
+            if (typeof timeStr === "string" && timeStr.includes("T")) {
+              const timePart = timeStr.split("T")[1];
+              return timePart.substring(0, 5); // HH:MM
+            }
+            // Fallback cho các format khác
+            return timeStr.toString().substring(0, 5);
+          };
+
+          const startTime = formatTime(slot.start_time);
+          const endTime = formatTime(slot.end_time);
+
+          return {
+            id: slot.slot_id,
+            time_slot: `${startTime} - ${endTime}`,
+            time: `${startTime} - ${endTime}`,
+          };
+        });
+        setTimeSlots(transformedSlots);
+      } catch (err) {
+        setError("Không thể tải danh sách khung giờ");
+        console.error("Error fetching slots:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSlots();
+  }, [selectedDate]);
+
+  const handleBooking = async () => {
+    if (!selectedTestType || !selectedTime || !reason.trim()) {
+      alert("Vui lòng điền đầy đủ thông tin!");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await createAppointment({
+        test_type: selectedTestType.code,
+        appointment_date: selectedDate,
+        time_slot: selectedTime.time_slot || selectedTime.time,
+        reason: reason.trim(),
+        service_type: "test",
+      });
+      alert("Đặt lịch xét nghiệm thành công!");
+      // Reset form
+      setSelectedTime(null);
+      setReason("");
+    } catch (err) {
+      alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!");
+      console.error("Error booking appointment:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isBookingReady = () => {
+    return (
+      selectedTestType !== null && selectedTime !== null && reason.trim() !== ""
+    );
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Left Column */}
+      <div className="lg:col-span-2 space-y-6">
+        {/* Test Type Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Chọn loại xét nghiệm
+          </h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Chọn dịch vụ xét nghiệm phù hợp với nhu cầu của bạn
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Loại xét nghiệm <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={selectedTestType?.id || ""}
+                onChange={(e) => {
+                  const testId = parseInt(e.target.value);
+                  const test = testTypes.find((t) => t.id === testId);
+                  setSelectedTestType(test || null);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Chọn loại xét nghiệm...</option>
+                {testTypes.map((test) => (
+                  <option key={test.id} value={test.id}>
+                    {test.name} - {test.duration} - {test.price}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Test Type Details Display */}
+            {selectedTestType && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      {selectedTestType.name}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedTestType.description}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">
+                          {selectedTestType.duration}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-green-600 font-semibold text-sm">
+                      {selectedTestType.price}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Date and Time Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Chọn ngày và giờ xét nghiệm
+          </h2>
+
+          {/* Date Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Chọn ngày
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+              className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+
+          {/* Time Selection */}
+          <div>
+            <div className="flex items-center space-x-2 mb-4">
+              <label className="text-sm font-medium text-gray-700">
+                Chọn khung giờ xét nghiệm{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center text-gray-500 text-sm">
+                <Clock className="h-4 w-4 mr-1" />
+                <span>Không giới hạn số lượng slot</span>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            {loading ? (
+              <p className="text-gray-500 text-sm mb-4">
+                Đang tải khung giờ...
+              </p>
+            ) : (
+              <select
+                value={selectedTime?.id || ""}
+                onChange={(e) => {
+                  const slotId = parseInt(e.target.value);
+                  const slot = timeSlots.find((s) => s.id === slotId);
+                  setSelectedTime(slot || null);
+                }}
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+              >
+                <option value="">Chọn khung giờ xét nghiệm...</option>
+                {timeSlots.map((slot) => (
+                  <option key={slot.id} value={slot.id}>
+                    {slot.time_slot || slot.time} - Có sẵn
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Time Slot Details Display */}
+            {selectedTime && (
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">
+                      Khung giờ xét nghiệm:{" "}
+                      {selectedTime.time_slot || selectedTime.time}
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Dự kiến hoàn thành:{" "}
+                      {selectedTestType?.duration || "30 phút"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-block px-2 py-1 rounded-full text-xs font-medium text-green-600 bg-green-50 border-green-200">
+                      Có sẵn
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Additional Information */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Thông tin bổ sung
+          </h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lý do xét nghiệm / Ghi chú <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Vui lòng mô tả lý do xét nghiệm hoặc ghi chú đặc biệt..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column - Summary */}
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-sm p-6 sticky top-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Tóm tắt đặt lịch
+          </h3>
+
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Loại xét nghiệm:</span>
+              <span className="font-medium text-right">
+                {selectedTestType ? selectedTestType.name : "Chưa chọn"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Ngày:</span>
+              <span className="font-medium">
+                {selectedDate
+                  ? new Date(selectedDate).toLocaleDateString("vi-VN")
+                  : "Chưa chọn"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Giờ:</span>
+              <span className="font-medium">
+                {selectedTime
+                  ? selectedTime.time_slot || selectedTime.time
+                  : "Chưa chọn"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Thời gian:</span>
+              <span className="font-medium">
+                {selectedTestType ? selectedTestType.duration : "--"}
+              </span>
+            </div>
+            <hr className="my-3" />
+            <div className="flex justify-between text-lg font-semibold">
+              <span>Tổng chi phí:</span>
+              <span className="text-green-600">0 VND</span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleBooking}
+            disabled={!isBookingReady() || loading}
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6 ${
+              isBookingReady() && !loading
+                ? "bg-gray-900 text-white hover:bg-gray-800"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            <span>🧪</span>
+            <span>
+              {loading
+                ? "Đang đặt lịch..."
+                : isBookingReady()
+                ? "Đặt lịch ngay"
+                : "Vui lòng điền đầy đủ thông tin"}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TestAppointment;

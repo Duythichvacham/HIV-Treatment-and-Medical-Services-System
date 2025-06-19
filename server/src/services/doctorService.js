@@ -1,6 +1,7 @@
 const { poolPromise } = require("../config/db");
 
-exports.getAppointmentsByStatus = async (doctor_id, status) => {
+//Get: lấy danh sách bệnh nhân queued/in_progress/finished cho bác sĩ
+const getAppointmentsByStatus = async (doctor_id, status) => {
   const pool = await poolPromise;
   const result = await pool
     .request()
@@ -27,22 +28,81 @@ exports.getAppointmentsByStatus = async (doctor_id, status) => {
     `);
   return result.recordset;
 };
-exports.test = async (doctor_id) => {
+
+// (GET, lấy danh sách bác sĩ)
+const getDoctors = async () => {
   const pool = await poolPromise;
-  if (!doctor_id || isNaN(doctor_id)) {
-    throw new Error("doctorId không hợp lệ");
-  }
-  // const result = await pool.request().input("doctorId", sql.Int, doctorId)
-  //   .query(`
-  //     SELECT * FROM DOCTORS
-  //     WHERE doctor_id = @doctorId
-
-  //   `);
-
-  const result2 = await pool.request().input("doctor_id", doctor_id).query(`
-      SELECT * FROM DOCTORS
-      WHERE doctor_id = @doctor_id
-        
+  const result = await pool.request().query(`
+      SELECT 
+        d.doctor_id,
+        d.full_name,
+        d.email,
+        d.phone,
+        d.image_url,
+        d.degrees,
+        d.experience_years,
+        d.created_at,
+        a.username
+      FROM Doctors d INNER JOIN Accounts a ON d.account_id = a.account_id
+      WHERE a.status = 'active'
+      ORDER BY d.experience_years DESC, d.created_at DESC
     `);
-  return result2.recordset;
+  // Format dữ liệu cho front :V
+  const formatted = result.recordset.map((doctor) => ({
+    id: doctor.doctor_id,
+    name: doctor.full_name,
+    email: doctor.email,
+    phone: doctor.phone,
+    avatar: doctor.image_url,
+    degrees: doctor.degrees,
+    experience: doctor.experience_years,
+    joinedAt: new Date(doctor.created_at).toLocaleDateString("vi-VN"), // hoặc dùng thư viện dayjs nếu muốn
+    username: doctor.username,
+  }));
+  return formatted;
 };
+
+// (GET, lấy danh sách bác sĩ theo ngày có WorkingShifts)
+const getDoctorsByDate = async (date) => {
+  const pool = await poolPromise;
+
+  // Sử dụng approach khác để tránh lỗi với TEXT column
+  const result = await pool.request().input("date", date).query(`
+      SELECT 
+        d.doctor_id,
+        d.full_name,
+        d.email, 
+        d.phone,
+        d.image_url,
+        d.degrees,
+        d.experience_years,
+        d.created_at,
+        a.username
+      FROM Doctors d 
+      INNER JOIN Accounts a ON d.account_id = a.account_id
+      WHERE a.status = 'active'
+        AND d.doctor_id IN (
+          SELECT DISTINCT ws.doctor_id 
+          FROM WorkingShifts ws 
+          WHERE ws.shift_date = @date AND ws.status = 'approved'
+        )
+      ORDER BY d.experience_years DESC, d.created_at DESC
+    `);
+
+  // Format dữ liệu cho front
+  const formatted = result.recordset.map((doctor) => ({
+    id: doctor.doctor_id,
+    name: doctor.full_name,
+    email: doctor.email,
+    phone: doctor.phone,
+    avatar: doctor.image_url,
+    degrees: doctor.degrees,
+    experience: doctor.experience_years,
+    joinedAt: new Date(doctor.created_at).toLocaleDateString("vi-VN"),
+    username: doctor.username,
+  }));
+
+  return formatted;
+};
+
+module.exports = { getDoctors, getDoctorsByDate, getAppointmentsByStatus };
