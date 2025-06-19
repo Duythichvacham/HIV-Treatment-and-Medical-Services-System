@@ -45,19 +45,7 @@ const Footer = () => {
             <p className="text-gray-300 text-sm mb-4">
               Cập nhật thông tin mới nhất về HIV/AIDS và các dịch vụ hỗ trợ
             </p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Nhập email của bạn"
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
-              >
-                Đăng ký
-              </button>
-            </form>
+            
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6">

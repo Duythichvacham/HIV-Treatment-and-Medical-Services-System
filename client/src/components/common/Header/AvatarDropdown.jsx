@@ -27,7 +27,13 @@ const AvatarDropdown = ({ user, onLogout }) => {
           </Link>
           <button
             className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => { setOpen(false); onLogout && onLogout(); }}
+            onClick={() => {
+              setOpen(false);
+              // Clear all session storage and reload to reset forms
+              sessionStorage.clear();
+              onLogout && onLogout();
+              window.location.reload();
+            }}
           >
             Đăng Xuất
           </button>
