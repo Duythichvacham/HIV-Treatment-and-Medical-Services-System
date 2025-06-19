@@ -133,4 +133,17 @@ VALUES
 (2, 2, NULL, 50000, N'consultation', 'pending'),
 (2, NULL, 2, 380000, N'test', 'unpaid');
 
+-- insert more sample for working shifts
+INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, max_patients_per_slot)
+VALUES
+-- Doctor 1 làm việc từ thứ 2 đến thứ 6
+(5, 1, '2025-06-19', 1, 'approved', 6), -- Thứ 5
+(5, 1, '2025-06-20', 1, 'approved', 6), -- Thứ 6  
+(5, 1, '2025-06-21', 1, 'approved', 6), -- Thứ 7
+(5, 1, '2025-06-23', 1, 'approved', 6), -- Thứ 2
+(5, 1, '2025-06-24', 1, 'approved', 6), -- Thứ 3
+(5, 1, '2025-06-25', 1, 'approved', 6), -- Thứ 4
+(5, 1, '2025-06-26', 1, 'approved', 6), -- Thứ 5
+(5, 1, '2025-06-27', 1, 'approved', 6); -- Thứ 6
+
 GO
