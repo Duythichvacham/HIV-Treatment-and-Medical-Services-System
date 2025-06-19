@@ -19,12 +19,17 @@ const StaffLogin = ({ onLogin }) => {
     e.preventDefault();
     const found = STAFF_ACCOUNTS.find(
       (acc) => acc.username === username && acc.password === password
-    );
-    if (found) {
+    );    if (found) {
       setError('');
       onLogin && onLogin(found);
-      // Determine redirect path: original or default
-      const from = location.state?.from || (found.role === 'Lab-Staff' ? '/lab-staff' : '/');
+      // Determine redirect path based on role
+      let defaultPath = '/';
+      if (found.role === 'Lab-Staff') {
+        defaultPath = '/lab-staff';
+      } else if (found.role === 'Registration-staff') {
+        defaultPath = '/registration-staff';
+      }
+      const from = location.state?.from || defaultPath;
       navigate(from, { replace: true });
     } else {
       setError('Sai tài khoản hoặc mật khẩu!');

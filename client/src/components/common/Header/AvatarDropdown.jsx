@@ -1,8 +1,25 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const AvatarDropdown = ({ user, onLogout }) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  
+  const isStaff = user && ["Lab-Staff", "Registration-staff", "Manager", "Doctor"].includes(user.role);
+  
+  const handleLogout = () => {
+    setOpen(false);
+    // Clear all session storage
+    sessionStorage.clear();
+    onLogout && onLogout();
+    
+    // Navigate to appropriate login page based on user role
+    if (isStaff) {
+      navigate("/login/staff");
+    } else {
+      navigate("/login/patient");
+    }
+  };
   return (
     <div className="relative ml-4">
       <button
@@ -24,16 +41,9 @@ const AvatarDropdown = ({ user, onLogout }) => {
             onClick={() => setOpen(false)}
           >
             Hồ Sơ
-          </Link>
-          <button
+          </Link>          <button
             className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => {
-              setOpen(false);
-              // Clear all session storage and reload to reset forms
-              sessionStorage.clear();
-              onLogout && onLogout();
-              window.location.reload();
-            }}
+            onClick={handleLogout}
           >
             Đăng Xuất
           </button>
