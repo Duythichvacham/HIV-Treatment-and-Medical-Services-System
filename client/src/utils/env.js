@@ -7,7 +7,7 @@
 // này giống kiểu đặt biệt danh cho dễ gọi ấy(giống thôi nha):))
 export const ENV = {
   // API Configuration
-  API_URL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  API_URL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT) || 10000,
 
   // App Settings
