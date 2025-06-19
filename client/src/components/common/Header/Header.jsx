@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import AvatarDropdown from "./AvatarDropdown";
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import AvatarDropdown from './AvatarDropdown';
 
 const Header = ({ user, setUser }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isServiceOpen, setIsServiceOpen] = useState(false);
+  const serviceRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,8 +17,18 @@ const Header = ({ user, setUser }) => {
 
   const handleLogout = () => {
     setUser(null);
-    navigate("/");
+    // Do not navigate away, stay on current page
   };
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (serviceRef.current && !serviceRef.current.contains(event.target)) {
+        setIsServiceOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
@@ -57,16 +69,29 @@ const Header = ({ user, setUser }) => {
               >
                 Tin tức
               </Link>
-              <Link
-                to="/services"
-                className="text-gray-700 hover:text-red-600 font-medium"
-              >
-                Dịch vụ HIV
-              </Link>
-              <Link
-                to="/Appointment"
-                className="text-gray-700 hover:text-red-600 font-medium"
-              >
+              <div className="relative" ref={serviceRef}>
+                <button
+                  className="inline-flex items-center text-gray-700 hover:text-red-600 font-medium focus:outline-none"
+                  onClick={() => setIsServiceOpen(!isServiceOpen)}
+                >
+                  Dịch vụ HIV
+                  <svg className="ml-1 h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06-.02L10 10.67l3.71-3.48a.75.75 0 111.04 1.08l-4.25 4a.75.75 0 01-1.04 0l-4.25-4a.75.75 0 01-.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                <div className={`absolute right-0 w-48 bg-white border border-gray-200 shadow-lg rounded-md mt-2 py-1 z-50 transition ease-out duration-150 origin-top-right ${isServiceOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                  <Link to="/services/screening" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={() => setIsServiceOpen(false)}>
+                    Xét nghiệm sàng lọc
+                  </Link>
+                  <Link to="/services/confirm" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={() => setIsServiceOpen(false)}>
+                    Xét nghiệm khẳng định
+                  </Link>
+                  <Link to="/services/pep" className="block px-4 py-2 text-gray-700 hover:bg-gray-100" onClick={() => setIsServiceOpen(false)}>
+                    PEP - Dự phòng
+                  </Link>
+                </div>
+              </div>
+              <Link to="/booking" className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 font-medium">
                 Đặt lịch
               </Link>
             </nav>
@@ -155,13 +180,34 @@ const Header = ({ user, setUser }) => {
                   >
                     Tin tức
                   </Link>
-                  <Link
-                    to="/services"
-                    className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Dịch vụ HIV
-                  </Link>
+                  <div className="relative">
+                    <button className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium focus:outline-none">
+                      Dịch vụ HIV
+                    </button>
+                    <div className="mt-1 ml-4 space-y-1">
+                      <Link
+                        to="/services/screening"
+                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Xét nghiệm sàng lọc
+                      </Link>
+                      <Link
+                        to="/services/confirm"
+                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Xét nghiệm khẳng định
+                      </Link>
+                      <Link
+                        to="/services/pep"
+                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        PEP - Dự phòng
+                      </Link>
+                    </div>
+                  </div>
                   <Link
                     to="/Appointment"
                     className="block px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium mx-3"

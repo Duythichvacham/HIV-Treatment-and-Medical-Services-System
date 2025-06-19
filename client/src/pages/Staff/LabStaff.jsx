@@ -158,10 +158,9 @@ const LabStaff = ({ user }) => {
         {/* Search */}
         <div className="mb-6">
           <input className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-200" placeholder="Tìm theo tên, mã bệnh nhân hoặc xét nghiệm..." />
-        </div>
-        {/* Sections */}
+        </div>        {/* Sections */}
         <div className="grid md:grid-cols-3 gap-6">
-          {sections.map((section, idx) => (
+          {sections.map((section) => (
             <div key={section.title} className={`border-t-4 ${section.color} bg-white rounded-xl shadow p-4 flex-1 min-w-0`}>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xl">{section.icon}</span>
