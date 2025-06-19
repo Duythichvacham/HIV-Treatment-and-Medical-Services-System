@@ -1,3 +1,14 @@
+import React, { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Header, Footer, HomePage, StaffLogin, PatientLogin, DoctorDetail } from './index'
+import LabStaff from './pages/Staff/LabStaff'
+import LabProcess from './pages/Staff/LabProcess'
+import LabResult from './pages/Staff/LabResult'
+import ScreeningDetail from './pages/Guest/ServiceDetail/ScreeningDetail';
+import ConfirmDetail from './pages/Guest/ServiceDetail/ConfirmDetail';
+import PepDetail from './pages/Guest/ServiceDetail/PepDetail';
+import DoctorPage from './pages/Guest/DoctorPage'
+import Appointment from './pages/Guest/Appointment'
 
 function App() {
   // State lưu thông tin user đăng nhập
@@ -10,7 +21,7 @@ function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route
+            <Route path="/login/staff" element={<StaffLogin onLogin={setUser} />} />
             <Route path="/login/patient" element={<PatientLogin onLogin={setUser} />} />
             <Route path="/lab-staff" element={<LabStaff user={user} />} />
             <Route path="/lab-process" element={<LabProcess />} />
@@ -18,6 +29,8 @@ function App() {
             
             <Route path="/register" element={<RegisterPlaceholder />} />
             <Route path="/services/screening" element={<ScreeningDetail user={user} />} />
+            <Route path="/services/confirm" element={<ConfirmDetail user={user} />} />
+            <Route path="/services/pep" element={<PepDetail user={user} />} />
             <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
             <Route path="/doctorpage" element={<DoctorPage />} />
             <Route path="/booking" element={<Appointment user={user} />} />
