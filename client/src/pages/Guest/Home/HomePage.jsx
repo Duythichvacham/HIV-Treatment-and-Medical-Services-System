@@ -1,9 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ServiceCard from '../../../components/common/ServiceCard'; // Import ServiceCard component
 import DoctorCard from '../../../components/common/DoctorCard';
+import { getDoctors, getServices } from '../../../services/api';
 
 const HomePage = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [doctorsError, setDoctorsError] = useState(null);
+  
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [servicesError, setServicesError] = useState(null);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const data = await getDoctors();
+        setDoctors(data);
+      } catch (err) {
+        setDoctorsError('Không thể tải danh sách bác sĩ.');
+      } finally {
+        setLoadingDoctors(false);
+      }
+    };
+      const fetchServices = async () => {
+      try {
+        const data = await getServices("test"); // Lấy services với type="test"
+        console.log("Services data:", data);
+        setServices(data);
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setServicesError('Không thể tải danh sách dịch vụ.');
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+    
+    fetchDoctors();
+    fetchServices();
+  }, []);
+  // Map services to display format based on actual DB data
+  const getServiceDisplayData = (serviceName) => {
+    const mappings = {
+      'lần 1': {
+        icon: <span>✓</span>,
+        iconBg: 'bg-green-600',
+        link: '/services/screening'
+      },
+      'lần 2': {
+        icon: <span>✓</span>,
+        iconBg: 'bg-green-600',
+        link: '/services/screening'
+      },
+      'khẳng định': {
+        icon: <span>✓</span>,
+        iconBg: 'bg-blue-600', 
+        link: '/services/confirm'
+      },
+      'arv': {
+        icon: <span>💊</span>,
+        iconBg: 'bg-red-500',
+        link: '/services/pep'
+      },
+      'tư vấn': {
+        icon: <span>💬</span>,
+        iconBg: 'bg-purple-600',
+        link: '/services/pep'
+      }
+    };
+    
+    const key = Object.keys(mappings).find(k => 
+      serviceName.toLowerCase().includes(k)
+    );
+      return mappings[key] || {
+      icon: <span>🏥</span>,
+      iconBg: 'bg-blue-600',
+      link: '/services/screening' // Default fallback thay vì '/services'
+    };
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header và Footer đã được bọc ở App.jsx, không render ở đây */}
@@ -46,56 +122,30 @@ const HomePage = () => {
         {/* Dịch vụ nổi bật */}
         <section className="bg-green-50 py-16">
           <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center text-green-700 mb-2">Dịch vụ nổi bật</h2>
-            <p className="text-center text-gray-500 mb-10">Các dịch vụ chăm sóc sức khỏe toàn diện</p>
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Map services via ServiceCard component */}
-              <ServiceCard
-                iconBg="bg-green-600"
-                iconColor="text-white"
-                icon={<span>✓</span>}
-                title="Xét nghiệm sàng lọc"
-                subtitle="Sàng lọc HIV từ giai đoạn sớm"
-                duration="30 phút"
-                price="169.000đ"
-                features={[
-                  'Sàng lọc từ giai đoạn sớm',
-                  'Kết quả nhanh',
-                  'Bảo mật tuyệt đối',
-                ]}
-                link="/services/screening"
-              />
-              <ServiceCard
-                iconBg="bg-green-600"
-                iconColor="text-white"
-                icon={<span>✓</span>}
-                title="Xét nghiệm khẳng định"
-                subtitle="Dùng cho trường hợp test Combo có phản ứng"
-                duration="60 phút"
-                price="500.000đ"
-                features={[
-                  'Độ chính xác cao',
-                  'Công nghệ hiện đại',
-                  'Báo cáo chi tiết',
-                ]}
-                link="/services/confirm"
-              />
-              <ServiceCard
-                iconBg="bg-red-500"
-                iconColor="text-white"
-                icon={<span>!</span>}
-                title="PEP - Dự phòng sau phơi nhiễm HIV"
-                subtitle="Miễn phí, trong vòng 72h"
-                duration="28 ngày"
-                price="Liên hệ"
-                features={[
-                  'Hiệu quả lên đến 99%',
-                  'Trong vòng 72h',
-                  'Theo dõi chuyên nghiệp',
-                ]}
-                link="/services/pep"
-              />
-            </div>
+            <h2 className="text-3xl font-bold text-center text-green-700 mb-2">Dịch vụ nổi bật</h2>            <p className="text-center text-gray-500 mb-10">Các dịch vụ chăm sóc sức khỏe toàn diện</p>
+            {loadingServices ? (
+              <div className="text-center p-6">Đang tải danh sách dịch vụ...</div>
+            ) : servicesError ? (
+              <div className="text-center p-6 text-red-500">{servicesError}</div>
+            ) : (
+              <div className="grid md:grid-cols-3 gap-8">
+                {services.slice(0, 3).map((service) => {
+                  const displayData = getServiceDisplayData(service.name);
+                  return (
+                    <ServiceCard
+                      key={service.service_id}
+                      iconBg={displayData.iconBg}
+                      iconColor="text-white"
+                      icon={displayData.icon}
+                      name={service.name}
+                      description={service.description || 'Dịch vụ chăm sóc sức khỏe chuyên nghiệp'}
+                      price={service.price === 0 || service.price === null ? 'Miễn phí' : `${Number(service.price).toLocaleString()}đ`}
+                      link={displayData.link}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 
@@ -104,41 +154,22 @@ const HomePage = () => {
           <div className="max-w-6xl mx-auto px-4">
             <h2 className="text-3xl font-bold text-center text-green-700 mb-2">Đội ngũ bác sĩ chuyên nghiệp</h2>
             <p className="text-center text-gray-500 mb-10">Các chuyên gia hàng đầu trong lĩnh vực HIV/AIDS</p>
-            <div className="grid md:grid-cols-4 gap-8">
-              {/* Use DoctorCard component for each doctor */}
-              <DoctorCard
-                image="https://randomuser.me/api/portraits/men/32.jpg"
-                name="TS.BS Nguyễn Văn A"
-                gender="Nam"
-                schedule="Thứ 2-6, 8:00-17:00"
-                price="300.000đ"
-                link="/doctors/1"
-              />
-              <DoctorCard
-                image="https://randomuser.me/api/portraits/women/44.jpg"
-                name="BS.CKI Trần Thị B"
-                gender="Nữ"
-                schedule="Thứ 2,4,6. 8:00-12:00"
-                price="250.000đ"
-                link="/doctors/2"
-              />
-              <DoctorCard
-                image="https://randomuser.me/api/portraits/men/45.jpg"
-                name="BS Lê Văn C"
-                gender="Nam"
-                schedule="Thứ 3,5,7. 14:00-18:00"
-                price="200.000đ"
-                link="/doctors/3"
-              />
-              <DoctorCard
-                image="https://randomuser.me/api/portraits/women/65.jpg"
-                name="BS Phạm Thị D"
-                gender="Nữ"
-                schedule="Thứ 2-7. 7:00-16:00"
-                price="220.000đ"
-                link="/doctors/4"
-              />
-            </div>
+            {loadingDoctors ? (
+              <div className="text-center p-6">Đang tải danh sách bác sĩ...</div>
+            ) : doctorsError ? (
+              <div className="text-center p-6 text-red-500">{doctorsError}</div>
+            ) : (
+              <div className="grid md:grid-cols-4 gap-8">
+                {doctors.map((doc) => (
+                  <DoctorCard
+                    key={doc.id}
+                    image={doc.avatar}
+                    name={doc.name}
+                    link={`/doctors/${doc.id}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

@@ -1,4 +1,4 @@
-﻿USE master
+﻿﻿USE master
 GO
 DROP DATABASE HIV_HEATH_CARE
 GO
@@ -213,4 +213,3 @@ CREATE TABLE Invoices (
     issued_at DATETIME NOT NULL DEFAULT GETDATE(),
     pdf_url VARCHAR(255)
 );
-
