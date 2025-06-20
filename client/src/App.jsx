@@ -52,7 +52,7 @@ function AppContent({ user, setUser }) {
           <Route path="/lab-result" element={<LabResult />} />
           <Route path="/registration-staff" element={<RegistrationStaff user={user} />} />          <Route path="/register" element={<RegisterPlaceholder />} />
           <Route
-            path="/services/:type"
+            path="/service/:serviceId"
             element={<MainServiceDetail user={user} />}
           />
           <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />

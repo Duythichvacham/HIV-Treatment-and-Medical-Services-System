@@ -39,44 +39,38 @@ const HomePage = () => {
     
     fetchDoctors();
     fetchServices();
-  }, []);
-  // Map services to display format based on actual DB data
+  }, []);  // Map services to display format based on actual DB data
   const getServiceDisplayData = (serviceName) => {
     const mappings = {
       'lần 1': {
         icon: <span>✓</span>,
-        iconBg: 'bg-green-600',
-        link: '/services/screening'
+        iconBg: 'bg-green-600'
       },
       'lần 2': {
         icon: <span>✓</span>,
-        iconBg: 'bg-green-600',
-        link: '/services/screening'
+        iconBg: 'bg-green-600'
       },
       'khẳng định': {
         icon: <span>✓</span>,
-        iconBg: 'bg-blue-600', 
-        link: '/services/confirm'
+        iconBg: 'bg-blue-600'
       },
       'arv': {
         icon: <span>💊</span>,
-        iconBg: 'bg-red-500',
-        link: '/services/pep'
+        iconBg: 'bg-red-500'
       },
       'tư vấn': {
         icon: <span>💬</span>,
-        iconBg: 'bg-purple-600',
-        link: '/services/pep'
+        iconBg: 'bg-purple-600'
       }
     };
     
     const key = Object.keys(mappings).find(k => 
       serviceName.toLowerCase().includes(k)
     );
-      return mappings[key] || {
+    
+    return mappings[key] || {
       icon: <span>🏥</span>,
-      iconBg: 'bg-blue-600',
-      link: '/services/screening' // Default fallback thay vì '/services'
+      iconBg: 'bg-blue-600'
     };
   };
 
@@ -127,8 +121,7 @@ const HomePage = () => {
               <div className="text-center p-6">Đang tải danh sách dịch vụ...</div>
             ) : servicesError ? (
               <div className="text-center p-6 text-red-500">{servicesError}</div>
-            ) : (
-              <div className="grid md:grid-cols-3 gap-8">
+            ) : (              <div className="grid md:grid-cols-3 gap-8">
                 {services.slice(0, 3).map((service) => {
                   const displayData = getServiceDisplayData(service.name);
                   return (
@@ -140,7 +133,7 @@ const HomePage = () => {
                       name={service.name}
                       description={service.description || 'Dịch vụ chăm sóc sức khỏe chuyên nghiệp'}
                       price={service.price === 0 || service.price === null ? 'Miễn phí' : `${Number(service.price).toLocaleString()}đ`}
-                      link={displayData.link}
+                      link={`/service/${service.service_id}`}
                     />
                   );
                 })}
