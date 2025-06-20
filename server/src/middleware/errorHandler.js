@@ -1,4 +1,4 @@
-module.exports = function errorHandler(err, req, res, next) {
+const errorHandler = (err, req, res, next) => {
   const status = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   console.error(`[${req.method}] ${req.originalUrl} - ${message}`);
@@ -7,3 +7,4 @@ module.exports = function errorHandler(err, req, res, next) {
     message: message,
   });
 };
+module.exports = errorHandler;
