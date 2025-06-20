@@ -1,6 +1,7 @@
+﻿
 ﻿-- Sample data inserts for HIV_HEATH_CARE database
 
-USE HIV_HEATH_CARE;
+USE HIV_HEATH_CARE
 GO
 
 -- 1. Accounts
