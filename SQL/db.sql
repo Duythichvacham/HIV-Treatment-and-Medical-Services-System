@@ -209,7 +209,7 @@ CREATE TABLE Invoices (
     request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
     amount DECIMAL(10,2) NOT NULL,
     service_type NVARCHAR(50) NOT NULL,
-    status VARCHAR(20) NOT NULL CHECK (status IN ('paid', 'unpaid', 'pending')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'paid', 'cancelled')),
     issued_at DATETIME NOT NULL DEFAULT GETDATE(),
     pdf_url VARCHAR(255)
 );

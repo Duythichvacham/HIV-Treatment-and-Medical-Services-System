@@ -24,8 +24,7 @@ function route(app) {
   app.use(`${process.env.API_PREFIX}/lab/test-notes`, testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);  //GET, lấy danh sách dịch vụ xét nghiệm
-  app.use(`${process.env.API_PREFIX}/services`, serviceRouter);
+  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);
   //GET, lấy danh sách bác sĩ
   app.use("/api/public/doctors", doctorRouter);
   //GET, lấy danh sách dịch vụ public

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Users } from "lucide-react";
+import { Clock, Users, Video, MessageCircle } from "lucide-react";
 import {
   getDoctors,
   getSlots,
@@ -8,57 +8,58 @@ import {
 
 const ConsultAppointment = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("2025-06-19"); // Ngày hiện tại
+  const [selectedDate, setSelectedDate] = useState("2025-06-19");
   const [selectedTime, setSelectedTime] = useState(null);
-  const [consultType, setConsultType] = useState("video"); // video hoặc chat
+  const [consultType, setConsultType] = useState("video");
   const [reason, setReason] = useState("");
   const [doctors, setDoctors] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [error, setError] = useState(null);
+
   // Fetch doctors when date changes
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        setLoading(true);
-        // Truyền selectedDate để chỉ lấy doctors có working shift trong ngày đó
+        setDoctorsLoading(true);
         const doctorsData = await getDoctors(selectedDate);
         setDoctors(doctorsData);
       } catch (err) {
         setError("Không thể tải danh sách bác sĩ");
         console.error("Error fetching doctors:", err);
       } finally {
-        setLoading(false);
+        setDoctorsLoading(false);
       }
     };
 
     if (selectedDate) {
       fetchDoctors();
     }
-  }, [selectedDate]); // Thêm selectedDate vào dependency  // Fetch time slots when date or doctor changes
+  }, [selectedDate]);
+
+  // Fetch time slots when date or doctor changes
   useEffect(() => {
     const fetchSlots = async () => {
       if (!selectedDate || !selectedDoctor) return;
 
       try {
         setLoading(true);
-        // Truyền date và doctor_id để lấy slots có sẵn
-        const slotsData = await getSlots(selectedDate, selectedDoctor.id); // Sử dụng data từ API thay vì mock
+        const slotsData = await getSlots(selectedDate, selectedDoctor.id);
+
         const transformedSlots = slotsData.map((slot) => {
-          // Đơn giản hóa format time - chỉ lấy phần time từ ISO string
           const formatTime = (timeStr) => {
             if (!timeStr) return "";
-            // Nếu timeStr là ISO date string, extract chỉ time part
             if (typeof timeStr === "string" && timeStr.includes("T")) {
               const timePart = timeStr.split("T")[1];
-              return timePart.substring(0, 5); // HH:MM
+              return timePart.substring(0, 5);
             }
-            // Fallback cho các format khác
             return timeStr.toString().substring(0, 5);
           };
 
           const startTime = formatTime(slot.start_time);
           const endTime = formatTime(slot.end_time);
+
           return {
             id: slot.slot_id,
             time_slot: `${startTime} - ${endTime}`,
@@ -83,7 +84,7 @@ const ConsultAppointment = () => {
     };
 
     fetchSlots();
-  }, [selectedDate, selectedDoctor]); // Thêm selectedDoctor vào dependency
+  }, [selectedDate, selectedDoctor]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -98,22 +99,28 @@ const ConsultAppointment = () => {
     }
   };
 
-  const getStatusText = (status) => {
+  const getStatusText = (status, available, total) => {
     switch (status) {
       case "available":
-        return "Còn chỗ";
+        return `Còn ${available}/${total} chỗ`;
       case "warning":
-        return "Sắp đầy";
+        return `Còn ${available}/${total} chỗ`;
       case "full":
-        return "Hết chỗ";
+        return "Đã đầy";
       default:
-        return "";
+        return "Không rõ";
     }
   };
 
+  const getConsultPrice = () => {
+    if (consultType === "video") return "200.000đ";
+    if (consultType === "chat") return "150.000đ";
+    return "0đ";
+  };
+
   const handleBooking = async () => {
-    if (!selectedDoctor || !selectedTime || !reason.trim()) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+    if (!selectedDoctor || !selectedTime) {
+      alert("Vui lòng chọn bác sĩ và khung giờ!");
       return;
     }
 
@@ -123,12 +130,12 @@ const ConsultAppointment = () => {
         doctor_id: selectedDoctor.id,
         appointment_date: selectedDate,
         time_slot: selectedTime.time_slot || selectedTime.time,
-        reason: reason.trim(),
-        consult_type: consultType,
+        reason: reason.trim() || "Không có ghi chú",
         service_type: "consultation",
+        consultation_type: consultType,
       });
       alert("Đặt lịch tư vấn thành công!");
-      // Reset form
+      setSelectedDoctor(null);
       setSelectedTime(null);
       setReason("");
     } catch (err) {
@@ -140,22 +147,43 @@ const ConsultAppointment = () => {
   };
 
   const isBookingReady = () => {
-    return (
-      selectedDoctor !== null && selectedTime !== null && reason.trim() !== ""
-    );
+    return selectedDoctor !== null && selectedTime !== null;
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {" "}
       {/* Left Column */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Doctor Selection */}
+        {/* 1. Date Selection */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            1. Chọn ngày tư vấn
+          </h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Chọn ngày <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => {
+                setSelectedDate(e.target.value);
+                setSelectedDoctor(null); // Reset doctor when date changes
+                setSelectedTime(null); // Reset time when date changes
+              }}
+              min={new Date().toISOString().split("T")[0]}
+              className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+        </div>
+        {/* 2. Doctor Selection */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Chọn bác sĩ tư vấn
+            2. Chọn bác sĩ tư vấn
           </h2>
           <p className="text-gray-500 text-sm mb-6">
-            Chọn bác sĩ bạn muốn tư vấn
+            Danh sách bác sĩ có sẵn cho tư vấn trực tuyến vào ngày đã chọn
           </p>
 
           {error && (
@@ -167,51 +195,62 @@ const ConsultAppointment = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bác sĩ tư vấn <span className="text-red-500">*</span>
+                Bác sĩ <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedDoctor?.id || ""}
-                onChange={(e) => {
-                  const doctorId = parseInt(e.target.value);
-                  const doctor = doctors.find((d) => d.id === doctorId);
-                  setSelectedDoctor(doctor || null);
-                }}
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
-              >
-                <option value="">
-                  {loading ? "Đang tải..." : "Chọn bác sĩ tư vấn..."}
-                </option>{" "}
-                {doctors.map((doctor) => (
-                  <option key={doctor.id} value={doctor.id}>
-                    {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
-                    {doctor.experience || 0} năm kinh nghiệm
+              {!selectedDate ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Vui lòng chọn ngày trước</p>
+                </div>
+              ) : doctorsLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">Đang tải danh sách bác sĩ...</p>
+                </div>
+              ) : (
+                <select
+                  value={selectedDoctor?.id || ""}
+                  onChange={(e) => {
+                    const doctorId = parseInt(e.target.value);
+                    const doctor = doctors.find((d) => d.id === doctorId);
+                    setSelectedDoctor(doctor || null);
+                    setSelectedTime(null); // Reset time when doctor changes
+                  }}
+                  disabled={doctorsLoading || !selectedDate}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                >
+                  <option value="">
+                    {doctorsLoading ? "Đang tải..." : "Chọn bác sĩ..."}
                   </option>
-                ))}
-              </select>
+                  {doctors.map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>
+                      {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
+                      {doctor.experience || 0} năm kinh nghiệm
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
-            {/* Doctor Details Display */}
             {selectedDoctor && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-semibold text-gray-900 mb-1">
                       {selectedDoctor.name}
-                    </h4>{" "}
-                    <p className="text-sm text-gray-600 mt-1">
+                    </h4>
+                    <p className="text-gray-600 text-sm mb-1">
                       {selectedDoctor.degrees || "Bác sĩ HIV/AIDS"}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {selectedDoctor.experience || 0} năm kinh nghiệm
-                    </p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-sm text-gray-600">
+                          {selectedDoctor.experience || 0} năm kinh nghiệm
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600 mb-1">
-                      {selectedDoctor.email}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {selectedDoctor.phone}
+                    <p className="text-green-600 font-semibold text-sm">
+                      {getConsultPrice()}
                     </p>
                   </div>
                 </div>
@@ -219,103 +258,79 @@ const ConsultAppointment = () => {
             )}
           </div>
         </div>
-
-        {/* Consultation Type Selection */}
+        {/* 3. Time Slot Selection */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Loại hình tư vấn
-          </h2>
-          <div className="space-y-3">
-            <div className="flex items-center">
-              <input
-                id="video"
-                type="radio"
-                name="consultType"
-                value="video"
-                checked={consultType === "video"}
-                onChange={() => setConsultType("video")}
-                className="w-4 h-4 text-blue-600"
-              />
-              <label htmlFor="video" className="ml-2 text-gray-700">
-                Tư vấn video
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="chat"
-                type="radio"
-                name="consultType"
-                value="chat"
-                checked={consultType === "chat"}
-                onChange={() => setConsultType("chat")}
-                className="w-4 h-4 text-blue-600"
-              />
-              <label htmlFor="chat" className="ml-2 text-gray-700">
-                Tư vấn chat
-              </label>
-            </div>
-          </div>
-        </div>
-
-        {/* Date and Time Selection */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Chọn ngày và giờ tư vấn
+            3. Chọn khung giờ tư vấn
           </h2>
 
-          {/* Date Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Chọn ngày
-            </label>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split("T")[0]}
-              className="border border-gray-300 rounded-lg px-4 py-2 w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-
-          {/* Time Selection */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <label className="text-sm font-medium text-gray-700">
-                Chọn khung giờ <span className="text-red-500">*</span>
+                Khung giờ có sẵn <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center text-gray-500 text-sm">
-                <Clock className="h-4 w-4 mr-1" />
-                <span>Khung giờ tư vấn</span>
+                <Users className="h-4 w-4 mr-1" />
+                <span>Giới hạn số lượng bệnh nhân</span>
               </div>
-            </div>{" "}
-            {loading ? (
+            </div>
+
+            {!selectedDate || !selectedDoctor ? (
+              <p className="text-gray-500 text-sm mb-4">
+                Vui lòng chọn ngày và bác sĩ trước để xem khung giờ có sẵn
+              </p>
+            ) : loading ? (
               <p className="text-gray-500 text-sm mb-4">
                 Đang tải khung giờ...
               </p>
+            ) : timeSlots.length === 0 ? (
+              <p className="text-gray-500 text-sm mb-4">
+                Không có khung giờ nào khả dụng cho ngày và bác sĩ đã chọn
+              </p>
             ) : (
-              <select
-                value={selectedTime?.id || ""}
-                onChange={(e) => {
-                  const slotId = parseInt(e.target.value);
-                  const slot = timeSlots.find((s) => s.id === slotId);
-                  console.log("Selected slot:", slot);
-                  console.log("Slot time_slot:", slot?.time_slot);
-                  console.log("Slot time:", slot?.time);
-                  setSelectedTime(slot || null);
-                }}
-                disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
-              >
-                <option value="">Chọn khung giờ tư vấn...</option>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {timeSlots.map((slot) => (
-                  <option key={slot.id} value={slot.id}>
-                    {slot.time_slot || slot.time} - Có sẵn
-                  </option>
+                  <div
+                    key={slot.id}
+                    onClick={() =>
+                      slot.status === "available" && setSelectedTime(slot)
+                    }
+                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                      selectedTime?.id === slot.id
+                        ? "border-purple-500 bg-purple-50"
+                        : slot.status === "available"
+                        ? "border-gray-300 hover:border-purple-300 hover:bg-purple-50"
+                        : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {slot.time_slot || slot.time}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          30 phút tư vấn
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                            slot.status
+                          )}`}
+                        >
+                          {getStatusText(
+                            slot.status,
+                            slot.available,
+                            slot.total
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </select>
+              </div>
             )}
-            {/* Time Slot Details Display */}
+
             {selectedTime && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between">
@@ -325,53 +340,93 @@ const ConsultAppointment = () => {
                       {selectedTime.time_slot || selectedTime.time}
                     </h4>
                     <p className="text-sm text-gray-600 mt-1">
-                      Thời gian tư vấn dự kiến: 30 phút
+                      Thời gian tư vấn: 30 phút
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center space-x-1 mb-1">
-                      <Users className="h-4 w-4 text-gray-500" />{" "}
-                      <span className="text-sm text-gray-600">
-                        {selectedTime.available_slots ||
-                          selectedTime.available ||
-                          0}
-                        /{selectedTime.total_slots || selectedTime.total || 6}{" "}
-                        slot
-                      </span>
-                    </div>
                     <span
-                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
                         selectedTime.status
                       )}`}
                     >
-                      {getStatusText(selectedTime.status)}
+                      {getStatusText(
+                        selectedTime.status,
+                        selectedTime.available,
+                        selectedTime.total
+                      )}
                     </span>
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </div>
-
-        {/* Additional Information */}
+        </div>{" "}
+        {/* 4. Consultation Type Selection */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Thông tin bổ sung
+            4. Chọn hình thức tư vấn
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div
+              onClick={() => setConsultType("video")}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                consultType === "video"
+                  ? "border-purple-500 bg-purple-50"
+                  : "border-gray-300 hover:border-purple-300 hover:bg-purple-50"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Video className="h-8 w-8 text-purple-600" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Video Call</h4>
+                  <p className="text-sm text-gray-600">Tư vấn qua video</p>
+                  <p className="text-sm font-semibold text-green-600">
+                    200.000đ
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setConsultType("chat")}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                consultType === "chat"
+                  ? "border-purple-500 bg-purple-50"
+                  : "border-gray-300 hover:border-purple-300 hover:bg-purple-50"
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <MessageCircle className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Chat</h4>
+                  <p className="text-sm text-gray-600">Tư vấn qua tin nhắn</p>
+                  <p className="text-sm font-semibold text-green-600">
+                    150.000đ
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* 5. Additional Information - OPTIONAL */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            5. Thông tin bổ sung
           </h2>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nội dung cần tư vấn <span className="text-red-500">*</span>
+              Câu hỏi / Vấn đề cần tư vấn{" "}
+              <span className="text-gray-400">(Tùy chọn)</span>
             </label>
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Vui lòng mô tả vấn đề bạn muốn tư vấn..."
+              placeholder="Mô tả vấn đề hoặc câu hỏi cần tư vấn..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
             />
           </div>
         </div>
       </div>
-
       {/* Right Column - Summary */}
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow-sm p-6 sticky top-6">
@@ -380,18 +435,6 @@ const ConsultAppointment = () => {
           </h3>
 
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Bác sĩ:</span>
-              <span className="font-medium text-right">
-                {selectedDoctor ? selectedDoctor.name : "Chưa chọn"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Loại tư vấn:</span>
-              <span className="font-medium">
-                {consultType === "video" ? "Tư vấn video" : "Tư vấn chat"}
-              </span>
-            </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Ngày:</span>
               <span className="font-medium">
@@ -408,10 +451,28 @@ const ConsultAppointment = () => {
                   : "Chưa chọn"}
               </span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Bác sĩ:</span>
+              <span className="font-medium text-right">
+                {selectedDoctor ? selectedDoctor.name : "Chưa chọn"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Hình thức:</span>
+              <span className="font-medium">
+                {consultType === "video" ? "Video Call" : "Chat"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Thời gian:</span>
+              <span className="font-medium">30 phút</span>
+            </div>
             <hr className="my-3" />
             <div className="flex justify-between text-lg font-semibold">
               <span>Tổng chi phí:</span>
-              <span className="text-green-600">0 VND</span>
+              <span className="text-green-600">
+                {selectedDoctor ? getConsultPrice() : "0đ"}
+              </span>
             </div>
           </div>
 
@@ -430,7 +491,7 @@ const ConsultAppointment = () => {
                 ? "Đang đặt lịch..."
                 : isBookingReady()
                 ? "Đặt lịch ngay"
-                : "Vui lòng điền đầy đủ thông tin"}
+                : "Vui lòng chọn ngày giờ và bác sĩ"}
             </span>
           </button>
         </div>
