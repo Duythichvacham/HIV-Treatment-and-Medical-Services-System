@@ -1,10 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DoctorCard from '../../components/common/DoctorCard';
-import { doctors } from '../../mockData/data';
+import { getDoctors } from '../../services/api';
 
 
 
 const DoctorPage = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const data = await getDoctors();
+        setDoctors(data);
+      } catch (err) {
+        setError('Không thể tải danh sách bác sĩ.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDoctors();
+  }, []);
+
+  if (loading) return <div className="p-6 text-center">Đang tải danh sách...</div>;
+  if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
+
   return (
     <div className="pb-16">
       {/* Hero */}
@@ -23,15 +44,12 @@ const DoctorPage = () => {
           <p className="text-gray-600">Đội ngũ chuyên gia giàu kinh nghiệm, tận tâm chăm sóc sức khỏe của bạn</p>
         </div>
         <div className="max-w-6xl mx-auto grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 px-4">
-          {doctors.map(doc => (
+          {doctors.map((doc) => (
             <DoctorCard
               key={doc.id}
-              image={doc.image}
+              image={doc.avatar}
               name={doc.name}
-              gender={doc.gender}
-              specialty={doc.specialty}
-              schedule={doc.schedule}
-              price={doc.price}
+              // API returns no gender, schedule or price by default
               link={`/doctors/${doc.id}`}
             />
           ))}

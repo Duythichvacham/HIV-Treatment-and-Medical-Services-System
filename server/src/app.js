@@ -21,9 +21,8 @@ route(app);
 app.get("/", (req, res) => {
   res.send("HIV Clinic API is running");
 });
-
+app.use(errorHandler);
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-app.use(errorHandler);

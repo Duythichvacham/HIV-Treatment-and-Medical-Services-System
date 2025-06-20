@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import AppointmentSuccessModal from './AppointmentSuccessModal';
 import AppointmentConfirmModal from './AppointmentConfirmModal';
 
-const AppointmentForm = ({ serviceType, serviceName, duration, price, user }) => {
+const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const [reason, setReason] = useState('');
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');
@@ -72,7 +72,7 @@ const AppointmentForm = ({ serviceType, serviceName, duration, price, user }) =>
           </div>
           <div>
             <div className="text-sm text-gray-500">Thời gian</div>
-            <div className="font-semibold">{duration}</div>
+          
           </div>
           <div className="sm:col-span-3">
             <label className="block text-gray-700 mb-1">Lý do khám <span className="text-red-500">*</span></label>
