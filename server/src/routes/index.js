@@ -31,6 +31,9 @@ function route(app) {
   ///api/v1/doctor/appointments/finished||in-progress||queue
   app.use("/api/v1/doctor/appointments", doctorRouter);
 
+  ///api/patient/:patientId/exam-history
+  app.use("/api/v1/doctor/patient", doctorRouter);
+
   //POST, cập nhật status cho appointments
   app.use(`${process.env.API_PREFIX}/appointments`, appointmentRouter);
 

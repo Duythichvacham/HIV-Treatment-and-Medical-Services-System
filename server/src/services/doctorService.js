@@ -1,5 +1,34 @@
 const { poolPromise } = require("../config/db");
 
+//GET
+const getExamHistory = async (patientId) => {
+  const pool = await poolPromise;
+  const result = await pool.request().input("patient_id", patientId)
+    .query(`SELECT 
+    CONVERT(DATE, a.created_at) AS ngay_kham,
+    d.full_name AS bac_si,
+    ce.diagnosis_primary AS chan_doan,
+    -- Mô tả đơn thuốc lấy doctor_notes hoặc mô phỏng từ tên phác đồ
+    CASE 
+        WHEN ar.name IS NOT NULL THEN N'Tiếp tục ' + ar.name
+        ELSE ISNULL(pr.doctor_notes, N'Duy trì điều trị hiện tại')
+    END AS don_thuoc,
+    -- Gợi ý hardcode loại khám
+    CASE 
+        WHEN ce.diagnosis_primary LIKE N'%định kỳ%' THEN N'Khám định kỳ'
+        WHEN ce.diagnosis_primary LIKE N'%theo dõi%' THEN N'Khám theo dõi'
+        ELSE N'Tái khám'
+    END AS loai_kham
+    FROM Appointments a
+    JOIN Doctors d ON a.doctor_id = d.doctor_id
+    JOIN ClinicalExams ce ON ce.appointment_id = a.appointment_id
+    LEFT JOIN Prescriptions pr ON pr.appointment_id = a.appointment_id
+    LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
+    WHERE a.patient_id = @patient_id
+    ORDER BY a.created_at DESC;`);
+  return result.recordset;
+};
+
 //Get: lấy danh sách bệnh nhân queued/in_progress/finished cho bác sĩ
 const getAppointmentsByStatus = async (doctor_id, status) => {
   const pool = await poolPromise;
@@ -134,4 +163,9 @@ const getDoctorsByDate = async (date) => {
   return formatted;
 };
 
-module.exports = { getDoctors, getDoctorsByDate, getAppointmentsByStatus };
+module.exports = {
+  getDoctors,
+  getDoctorsByDate,
+  getAppointmentsByStatus,
+  getExamHistory,
+};

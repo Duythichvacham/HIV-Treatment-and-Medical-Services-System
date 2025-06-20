@@ -56,6 +56,22 @@ const getAppointmentFinshed = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+const getExamHistory = async (req, res) => {
+  try {
+    const patientId = req.params.patientId; // Lấy id từ URL
+    console.log("getExamHistory called with patientId:", patientId);
+    const examHistory = await doctorService.getExamHistory(patientId);
+    res.status(200).json({
+      success: true,
+      data: examHistory,
+    });
+  } catch (error) {
+    console.error("Error fetching exam history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // (GET, lấy danh sách bác sĩ - có thể filter theo ngày)
 const getDoctors = async (req, res) => {
   try {
@@ -89,4 +105,5 @@ module.exports = {
   getAppointmentQueue,
   getAppointmentInProgress,
   getAppointmentFinshed,
+  getExamHistory,
 };
