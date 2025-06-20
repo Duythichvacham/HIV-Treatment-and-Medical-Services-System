@@ -36,7 +36,7 @@ CREATE TABLE Doctors (
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20) UNIQUE,
     image_url VARCHAR(255), -- lưu đường dẫn ảnh đại diện
-    degrees TEXT,
+    degrees NVARCHAR(500),
     experience_years INT NULL CHECK (experience_years >= 0),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
@@ -46,7 +46,7 @@ CREATE TABLE ARVRegimens (
     arv_regimen_id INT PRIMARY KEY IDENTITY(1,1),
     name NVARCHAR(100) UNIQUE NOT NULL,-- tên phác đồ
     for_group NVARCHAR(50),-- ex: mẹ bầu, trẻ em
-    components TEXT,-- thành phần
+    components NVARCHAR(500),-- thành phần
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 --Rooms
@@ -106,7 +106,7 @@ CREATE TABLE Services (
 	appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id),
     name NVARCHAR(100) NOT NULL, 
     service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
-    description TEXT,
+    description NVARCHAR(500),
     price DECIMAL(10,2),
     test_type_id INT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id), -- service_type phải là test
     is_active BIT DEFAULT 1
@@ -150,9 +150,9 @@ CREATE TABLE MedicalHistory (
     hiv_discovered_at DATE,
     arv_status VARCHAR(50),
     arv_adherence VARCHAR(20) NULL CHECK (arv_adherence IN ('good', 'average', 'poor')),
-    arv_side_effects TEXT,
-    medical_history TEXT,
-    allergies TEXT
+    arv_side_effects NVARCHAR(500),
+    medical_history NVARCHAR(500),
+    allergies NVARCHAR(500)
 );
 
 -- ClinicalExams
@@ -163,9 +163,9 @@ CREATE TABLE ClinicalExams (
     weight DECIMAL(5,2),
     height DECIMAL(5,2),
     bmi DECIMAL(5,2),
-    clinical_signs TEXT,
+    clinical_signs NVARCHAR(500),
     diagnosis_primary NVARCHAR(255),
-    diagnosis_secondary TEXT
+    diagnosis_secondary NVARCHAR(500)
 );
 
 -- Prescriptions
@@ -173,10 +173,10 @@ CREATE TABLE Prescriptions (
     prescription_id INT PRIMARY KEY IDENTITY(1,1),
     appointment_id INT NOT NULL FOREIGN KEY REFERENCES Appointments(appointment_id),
     arv_regimen_id INT NULL FOREIGN KEY REFERENCES ARVRegimens(arv_regimen_id),
-    support_drugs TEXT,
-    counseling_notes TEXT,
-    follow_up_plan TEXT,
-    doctor_notes TEXT
+    support_drugs NVARCHAR(500),
+    counseling_notes NVARCHAR(500),
+    follow_up_plan NVARCHAR(500),
+    doctor_notes NVARCHAR(500)
 );
 -- Bảng chi tiết các loại thuốc kê trong đơn thuốc
 CREATE TABLE PrescriptionDetails (
@@ -194,7 +194,7 @@ CREATE TABLE PrescriptionDetails (
 CREATE TABLE BlogPosts (
     post_id INT PRIMARY KEY IDENTITY(1,1),
     title NVARCHAR(255) NOT NULL,
-    content TEXT,
+    content NVARCHAR(500),
     author_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     is_educational BIT NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT GETDATE(),

@@ -12,7 +12,7 @@ const api = axios.create({
   baseURL: ENV.API_URL,
   timeout: ENV.API_TIMEOUT,
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json", // Default content type
   },
 });
 
@@ -116,7 +116,28 @@ export const getSlots = async (date = null, doctorId = null) => {
     throw error;
   }
 };
+/**
+ * Get list of services
+ * @param {string} type - Service type (e.g., "test", "consultation")
+ */
+// thằng này hiện tại mặc định là test vì mấy thằng kia không cần lấy
+export const getServices = async (type) => {
+  console.log("🔄 API Call: getServices with type:", type);
 
+  try {
+    const response = await api.get("/api/public/services/", {
+      params: { type }, // Default to "test" type
+    });
+    console.log(
+      "✅ getServices response:",
+      response.data || response.data.data
+    );
+    return response.data.data || response.data; // Handle both formats
+  } catch (error) {
+    console.error("❌ getServices error:", error);
+    throw error;
+  }
+};
 /**
  * Create appointment
  * @param {Object} appointmentData - Appointment data

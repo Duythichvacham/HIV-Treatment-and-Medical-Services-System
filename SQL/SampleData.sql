@@ -66,12 +66,10 @@ VALUES
 -- 10. Services (example of linking to appointments or testrequests)
 INSERT INTO Services (request_id, appointment_id, name, service_type, description, price, test_type_id)
 VALUES
-(1, NULL, N'Xét nghiệm lần 1', 'test', N'Test CD4', 200000, 1), -- CD4
-(1, NULL, N'Xét nghiệm lần 2', 'test', N'Test Sàng lọc', 100000, 3),
-(NULL, 1, N'Khám tổng quát', 'examination', N'Khám tổng quát cho bệnh nhân', 150000, NULL),
+(NULL, 1, N'Khám', 'examination', N'Khám tổng quát cho bệnh nhân', 150000, NULL),
 (NULL, 2, N'Tư vấn sức khỏe', 'consultation', N'Tư vấn cho bệnh nhân', 50000, NULL),
-(2, NULL, N'Xét nghiệm khẳng định', 'test', N'Xét nghiệm khẳng định', 130000, 4),
-(2, NULL, N'Xét nghiệm tải lượng virus', 'test', N'Test tải lượng virus', 250000, 2);
+(2, NULL, N'Xét nghiệm khẳng định', 'test', N'Demo', 130000, 4),
+(2, NULL, N'Xét nghiệm sàng lọc', 'test', N'Demo', 250000, 2);
 
 -- 11. WorkingShifts
 INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, max_patients_per_slot)
