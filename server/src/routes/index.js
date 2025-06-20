@@ -4,6 +4,8 @@ require("dotenv").config(); // load biến môi trường từ file .env
 const authRouter = require("./auth");
 const patientRouter = require("./patients");
 const userRouter = require("./users");
+const bookingRouter = require("./booking");
+
 const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
@@ -53,7 +55,17 @@ app.use('/api/v1/' , doctorRouter);
 
 // /api/v1/doctor/prescriptions (POST, tạo đơn thuốc), 
 app.use('/api/v1/doctor/prescriptions' , doctorRouter);
+
+//PATCH /booking/pay/:invoiceId – xác nhận thanh toán
+app.use('/booking',bookingRouter);
+//PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
+app.use('/booking',bookingRouter);
+
+
 }
+
+
+
 
 
 module.exports = route;
