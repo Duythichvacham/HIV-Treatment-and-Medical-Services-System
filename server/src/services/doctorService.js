@@ -5,24 +5,53 @@ const getAppointmentsByStatus = async (doctor_id, status) => {
   const pool = await poolPromise;
   const result = await pool
     .request()
-    .input("doctorId", doctor_id)
+    .input("doctorId", parseInt(doctor_id, 10))
     .input("status", status).query(`
       SELECT 
-        p.full_name, p.gender, p.phone, 
-        a.status, a.queue_number, 
-        sv.name, sv.service_type, sv.description AS service_description, sv.price,
-        tt.name AS name_test_type, 
-        r.room_name, r.room_type, 
-        sl.start_time, sl.end_time
+        a.appointment_id,
+        p.patient_id,
+        p.full_name,
+        p.gender,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        p.phone,
+        a.status,
+        a.queue_number,
+        a.created_at AS booking_time,
+        sl.start_time,
+        sl.end_time,
+        r.room_name,
+        r.room_type,
+        ar.name AS arv_regimen,
+        mh.arv_adherence,
+        -- CD4 result
+        (
+          SELECT TOP 1 tr.result_value
+          FROM TestNotes tn
+          JOIN TestResults tr ON tn.test_note_id = tr.test_note_id
+          JOIN Services sv2 ON tn.appointment_id = sv2.appointment_id
+          JOIN TestTypes tt ON sv2.test_type_id = tt.test_type_id
+          WHERE tn.appointment_id = a.appointment_id AND tt.name = N'CD4'
+          ORDER BY tn.test_datetime DESC
+        ) AS cd4,
+        -- Viral Load result
+        (
+          SELECT TOP 1 tr.result_value
+          FROM TestNotes tn
+          JOIN TestResults tr ON tn.test_note_id = tr.test_note_id
+          JOIN Services sv2 ON tn.appointment_id = sv2.appointment_id
+          JOIN TestTypes tt ON sv2.test_type_id = tt.test_type_id
+          WHERE tn.appointment_id = a.appointment_id AND tt.name = N'Tải lượng virus'
+          ORDER BY tn.test_datetime DESC
+        ) AS viral_load
       FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Services sv ON sv.appointment_id = a.appointment_id
       JOIN Doctors d ON d.doctor_id = a.doctor_id
       JOIN Rooms r ON a.room_id = r.room_id
-      JOIN Slots sl ON sl.slot_id = a.slot_id
-      LEFT JOIN TestTypes tt ON tt.test_type_id = sv.test_type_id
-      WHERE sv.service_type IN ('examination', 'consultation')
-        AND a.status = @status
+      JOIN Slots sl ON a.slot_id = sl.slot_id
+      LEFT JOIN Prescriptions pr ON pr.appointment_id = a.appointment_id
+      LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
+      LEFT JOIN MedicalHistory mh ON mh.patient_id = p.patient_id
+      WHERE a.status = @status
         AND d.doctor_id = @doctorId
       ORDER BY sl.start_time ASC, a.queue_number ASC
     `);

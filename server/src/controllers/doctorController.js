@@ -1,30 +1,32 @@
 const doctorService = require("../services/doctorService");
-
+// const doctor_id = 1;
 // GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn
 const getAppointmentQueue = async (req, res) => {
   try {
-    // const doctor_id = req.user.doctor_id;
-    const doctor_id = 1;
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
+    console.log("getAppointmentQueue called with doctor_id:", doctor_id);
+    console.log("req.params: ", req.params);
     const queue = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "requested"
     );
-    // const queue = await doctorService.test(1);
+
     res.status(200).json({
-      message: "Lấy danh sách lịch hẹn chờ của bác sĩ thành công",
+      success: true,
       data: queue,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
 
 //GET lấy danh sách bệnh nhân đang khám
 const getAppointmentInProgress = async (req, res) => {
   try {
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
     const in_progress = await doctorService.getAppointmentsByStatus(
-      doctorId,
+      doctor_id,
       "in_progress"
     );
     res.status(200).json({
@@ -40,8 +42,9 @@ const getAppointmentInProgress = async (req, res) => {
 //GET lấy danh sách bệnh nhân hoàn thành khám
 const getAppointmentFinshed = async (req, res) => {
   try {
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
     const finished = await doctorService.getAppointmentsByStatus(
-      doctorId,
+      doctor_id,
       "completed"
     );
     res.status(200).json({
