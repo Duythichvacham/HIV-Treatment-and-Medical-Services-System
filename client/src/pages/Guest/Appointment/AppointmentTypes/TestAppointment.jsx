@@ -1,59 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
-import { getSlots, createAppointment } from "../../../../services/api";
-
+import {
+  getSlots,
+  createAppointment,
+  getServices,
+} from "../../../../services/api";
 const TestAppointment = () => {
   const [selectedTestType, setSelectedTestType] = useState(null);
   const [selectedDate, setSelectedDate] = useState("2025-06-19"); // Ngày hiện tại
   const [selectedTime, setSelectedTime] = useState(null);
+  const [testTypes, setTestTypes] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [reason, setReason] = useState("");
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Static test types (không cần API cho test types)
-  const testTypes = [
-    {
-      id: 1,
-      name: "HIV Test nhanh",
-      description: "Xét nghiệm HIV nhanh, có kết quả trong 15 phút",
-      price: "0 VND",
-      duration: "15 phút",
-      code: "HIV_RAPID",
-    },
-    {
-      id: 2,
-      name: "HIV Test ELISA",
-      description: "Xét nghiệm HIV bằng phương pháp ELISA",
-      price: "0 VND",
-      duration: "30 phút",
-      code: "HIV_ELISA",
-    },
-    {
-      id: 3,
-      name: "HIV Test PCR",
-      description: "Xét nghiệm HIV bằng phương pháp PCR (chính xác cao)",
-      price: "0 VND",
-      duration: "45 phút",
-      code: "HIV_PCR",
-    },
-    {
-      id: 4,
-      name: "Combo Test HIV + Syphilis",
-      description: "Xét nghiệm kết hợp HIV và giang mai",
-      price: "0 VND",
-      duration: "30 phút",
-      code: "HIV_SYPHILIS_COMBO",
-    },
-    {
-      id: 5,
-      name: "Gói xét nghiệm toàn diện",
-      description: "Bao gồm HIV, Hepatitis B/C, Syphilis",
-      price: "0 VND",
-      duration: "60 phút",
-      code: "COMPREHENSIVE_PACKAGE",
-    },
-  ];
+  // Debug log để theo dõi selectedTestType changes
+  useEffect(() => {
+    console.log("🔄 selectedTestType changed:", selectedTestType);
+  }, [selectedTestType]);
+
   // Fetch time slots when date changes
   useEffect(() => {
     const fetchSlots = async () => {
@@ -96,7 +63,38 @@ const TestAppointment = () => {
 
     fetchSlots();
   }, [selectedDate]);
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setServicesLoading(true);
+        const response = await getServices("test");
+        console.log("🔍 API Response:", response);
 
+        // API trả về {message: "...", data: [...]}
+        const servicesData = response.data || response;
+        console.log("🔍 Services Data:", servicesData);
+
+        // Transform data để match với UI expectations
+        const transformedServices = servicesData.map((service) => ({
+          id: service.service_id,
+          name: service.name,
+          description: service.description || "Không có mô tả",
+          price: `${service.price.toLocaleString()} VND`,
+          duration: "30 phút", // Default duration
+          code: service.name.toUpperCase().replace(/\s+/g, "_"),
+        }));
+
+        console.log("🔍 Transformed Services:", transformedServices);
+        setTestTypes(transformedServices);
+      } catch (err) {
+        console.error("❌ Error fetching services:", err);
+        setError("Không thể tải danh sách dịch vụ xét nghiệm");
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
   const handleBooking = async () => {
     if (!selectedTestType || !selectedTime || !reason.trim()) {
       alert("Vui lòng điền đầy đủ thông tin!");
@@ -145,25 +143,47 @@ const TestAppointment = () => {
 
           <div className="space-y-4">
             <div>
+              {" "}
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Loại xét nghiệm <span className="text-red-500">*</span>
               </label>
-              <select
-                value={selectedTestType?.id || ""}
-                onChange={(e) => {
-                  const testId = parseInt(e.target.value);
-                  const test = testTypes.find((t) => t.id === testId);
-                  setSelectedTestType(test || null);
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Chọn loại xét nghiệm...</option>
-                {testTypes.map((test) => (
-                  <option key={test.id} value={test.id}>
-                    {test.name} - {test.duration} - {test.price}
-                  </option>
-                ))}
-              </select>
+              {servicesLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">
+                    Đang tải danh sách xét nghiệm...
+                  </p>
+                </div>
+              ) : (
+                <select
+                  value={selectedTestType?.id || ""}
+                  onChange={(e) => {
+                    console.log(
+                      "🔄 onChange triggered, value:",
+                      e.target.value
+                    );
+                    const testId = parseInt(e.target.value);
+                    console.log("🔄 Parsed testId:", testId);
+                    console.log("🔄 Available testTypes:", testTypes);
+                    const test = testTypes.find((t) => t.id === testId);
+                    console.log("🔄 Found test:", test);
+                    setSelectedTestType(test || null);
+                    console.log("🔄 Set selectedTestType to:", test);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={servicesLoading}
+                >
+                  <option value="">
+                    {servicesLoading
+                      ? "Đang tải..."
+                      : "Chọn loại xét nghiệm..."}
+                  </option>{" "}
+                  {testTypes.map((test) => (
+                    <option key={test.id} value={test.id}>
+                      {test.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Test Type Details Display */}
@@ -340,10 +360,12 @@ const TestAppointment = () => {
                 {selectedTestType ? selectedTestType.duration : "--"}
               </span>
             </div>
-            <hr className="my-3" />
+            <hr className="my-3" />{" "}
             <div className="flex justify-between text-lg font-semibold">
               <span>Tổng chi phí:</span>
-              <span className="text-green-600">0 VND</span>
+              <span className="text-green-600">
+                {selectedTestType ? selectedTestType.price : "0 VND"}
+              </span>
             </div>
           </div>
 

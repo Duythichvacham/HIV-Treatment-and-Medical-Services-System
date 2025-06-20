@@ -125,14 +125,14 @@ export const getServices = async (type) => {
   console.log("🔄 API Call: getServices with type:", type);
 
   try {
-    const response = await api.get("/api/public/services/", {
-      params: { type }, // Default to "test" type
+    const response = await api.get("/api/v1/services", {
+      params: { type },
     });
     console.log(
       "✅ getServices response:",
       response.data || response.data.data
     );
-    return response.data.data || response.data; // Handle both formats
+    return response.data; // Return the full response object
   } catch (error) {
     console.error("❌ getServices error:", error);
     throw error;
@@ -160,8 +160,5 @@ export const getDoctorById = async (id) => {
     throw error;
   }
 };
-
-
-
 
 export default api;
