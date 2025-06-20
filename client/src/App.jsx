@@ -1,5 +1,10 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import {
   Header,
   Footer,
@@ -11,6 +16,7 @@ import {
 import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
+import RegistrationStaff from "./pages/Staff/RegistrationStaff";
 import ScreeningDetail from "./pages/Guest/ServiceDetail/ScreeningDetail";
 import ConfirmDetail from "./pages/Guest/ServiceDetail/ConfirmDetail";
 import PepDetail from "./pages/Guest/ServiceDetail/PepDetail";
@@ -59,7 +65,57 @@ function App() {
         {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
         {(!user || user.role === "Patient") && <Footer />}
       </div>
+      <AppContent user={user} setUser={setUser} />
     </Router>
+  );
+}
+
+function AppContent({ user, setUser }) {
+  const location = useLocation();
+
+  // Ẩn header ở trang login staff
+  const hideHeader = location.pathname === "/login/staff";
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {!hideHeader && <Header user={user} setUser={setUser} />}
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/login/staff"
+            element={<StaffLogin onLogin={setUser} />}
+          />
+          <Route
+            path="/login/patient"
+            element={<PatientLogin onLogin={setUser} />}
+          />
+          <Route path="/lab-staff" element={<LabStaff user={user} />} />
+          <Route path="/lab-process" element={<LabProcess />} />
+          <Route path="/lab-result" element={<LabResult />} />
+          <Route
+            path="/registration-staff"
+            element={<RegistrationStaff user={user} />}
+          />
+
+          <Route path="/register" element={<RegisterPlaceholder />} />
+          <Route
+            path="/services/screening"
+            element={<ScreeningDetail user={user} />}
+          />
+          <Route
+            path="/services/confirm"
+            element={<ConfirmDetail user={user} />}
+          />
+          <Route path="/services/pep" element={<PepDetail user={user} />} />
+          <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
+          <Route path="/doctorpage" element={<DoctorPage />} />
+          <Route path="/appointment" element={<Appointment user={user} />} />
+        </Routes>
+      </main>
+      {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
+      {(!user || user.role === "Patient") && <Footer />}
+    </div>
   );
 }
 

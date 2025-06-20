@@ -29,6 +29,7 @@ const STAFF_ACCOUNTS = [
     role: "Doctor",
     name: "BS. Lê Văn C",
     avatar: "https://randomuser.me/api/portraits/men/45.jpg",
+    doctor_id: 1,
   },
 ];
 
@@ -47,14 +48,17 @@ const StaffLogin = ({ onLogin }) => {
     if (found) {
       setError("");
       onLogin && onLogin(found);
-      // Determine redirect path: original or default
-      const from =
-        location.state?.from ||
-        (found.role === "Lab-Staff"
-          ? "/lab-staff"
-          : found.role === "Doctor"
-          ? "/doctor"
-          : "/");
+      localStorage.setItem("staff", JSON.stringify(found)); // Lưu thông tin đăng nhập
+      // Determine redirect path based on role
+      let defaultPath = "/";
+      if (found.role === "Lab-Staff") {
+        defaultPath = "/lab-staff";
+      } else if (found.role === "Registration-staff") {
+        defaultPath = "/registration-staff";
+      } else if (found.role === "Doctor") {
+        defaultPath = "/doctor";
+      }
+      const from = location.state?.from || defaultPath;
       navigate(from, { replace: true });
     } else {
       setError("Sai tài khoản hoặc mật khẩu!");
