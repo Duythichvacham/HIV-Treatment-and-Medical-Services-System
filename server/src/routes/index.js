@@ -8,6 +8,7 @@ const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
+
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 function route(app) {
   //POST, cập nhật status cho appointments
@@ -27,6 +28,7 @@ function route(app) {
   //GET, lấy danh sách bác sĩ
   app.use("/api/public/doctors", doctorRouter);
   app.use("/api/public/slots", slotRouter);
+  app.use("/api/auth", authRouter);
 }
 
 module.exports = route;
