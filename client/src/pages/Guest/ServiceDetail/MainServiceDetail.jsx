@@ -4,58 +4,87 @@ import AppointmentForm from '../../../components/common/AppointmentForm';
 import { getServices } from '../../../services/api';
 
 const MainServiceDetail = ({ user }) => {
-  const { type } = useParams(); // screening, confirm, pep
+  const { type, serviceId } = useParams(); // Support both /services/:type and /services/:serviceId
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  useEffect(() => {
-    const fetchService = async () => {      try {
-        // Map URL params to actual service names in DB
-        const serviceMapping = {
-          screening: 'Xét nghiệm lần 2', // Sàng lọc (theo DB thực tế)
-          confirm: 'Xét nghiệm khẳng định', // Khẳng định  
-          pep: 'Tư vấn thuốc ARV' // PEP (sử dụng dịch vụ tư vấn ARV từ DB)
-        };
-
-        const serviceName = serviceMapping[type];
-        if (!serviceName) throw new Error('Service type not found');
-
+  const [error, setError] = useState(null);  useEffect(() => {
+    const fetchService = async () => {
+      try {
         // Get services by type
         const services = await getServices("test");
         console.log("All services:", services);
-        console.log("Looking for service:", serviceName);
         
-        // Tìm dịch vụ chính xác theo tên
-        let foundService = services.find(s => 
-          s.name && s.name.trim() === serviceName
-        );        // Nếu không tìm thấy, thử tìm theo từ khóa
-        if (!foundService) {
-          const keywords = {
-            screening: ['lần 2', 'sàng lọc'],
-            confirm: ['khẳng định'],
-            pep: ['tư vấn', 'ARV', 'thuốc']
-          };
-          
+        let foundService = null;
+        let serviceType = null;
+
+        // If serviceId is provided, find by service_id
+        if (serviceId) {
+          console.log("Looking for service with ID:", serviceId);
           foundService = services.find(s => 
-            s.name && keywords[type].some(keyword => 
-              s.name.toLowerCase().includes(keyword.toLowerCase())
-            )
+            s.service_id === parseInt(serviceId)
           );
+          
+          // Determine service type based on service name or default to 'test'
+          if (foundService) {
+            if (foundService.name.toLowerCase().includes('sàng lọc') || foundService.name.toLowerCase().includes('lần 2')) {
+              serviceType = 'screening';
+            } else if (foundService.name.toLowerCase().includes('khẳng định')) {
+              serviceType = 'confirm';
+            } else if (foundService.name.toLowerCase().includes('tư vấn') || foundService.name.toLowerCase().includes('arv')) {
+              serviceType = 'pep';
+            } else {
+              serviceType = 'test'; // default
+            }
+          }
+        } 
+        // If type is provided (old routing), find by type mapping
+        else if (type) {
+          const serviceMapping = {
+            screening: 'Xét nghiệm lần 2',
+            confirm: 'Xét nghiệm khẳng định',
+            pep: 'Tư vấn thuốc ARV'
+          };
+
+          const serviceName = serviceMapping[type];
+          console.log("Looking for service:", serviceName);
+          
+          // Tìm dịch vụ chính xác theo tên
+          foundService = services.find(s => 
+            s.name && s.name.trim() === serviceName
+          );
+
+          // Nếu không tìm thấy, thử tìm theo từ khóa
+          if (!foundService) {
+            const keywords = {
+              screening: ['lần 2', 'sàng lọc'],
+              confirm: ['khẳng định'],
+              pep: ['tư vấn', 'ARV', 'thuốc']
+            };
+            
+            foundService = services.find(s => 
+              s.name && keywords[type].some(keyword => 
+                s.name.toLowerCase().includes(keyword.toLowerCase())
+              )
+            );
+          }
+          
+          serviceType = type;
         }
 
         // Nếu vẫn không tìm thấy, lấy service đầu tiên làm fallback
         if (!foundService && services.length > 0) {
           foundService = services[0];
-          console.warn(`Service not found for type: ${type}, using fallback:`, foundService);
+          serviceType = 'test';
+          console.warn(`Service not found, using fallback:`, foundService);
         }
 
         if (!foundService) throw new Error('Service not found');
 
-        // Enhance service data with additional info based on type
+        // Enhance service data with additional info based on service type
         const enhancedService = {
           ...foundService,
-          details: getServiceDetails(type),
-          process: getServiceProcess(type)
+          details: getServiceDetails(serviceType),
+          process: getServiceProcess(serviceType)
         };
 
         setService(enhancedService);
@@ -65,11 +94,8 @@ const MainServiceDetail = ({ user }) => {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchService();
-  }, [type]);
-
+    };    fetchService();
+  }, [type, serviceId]);
   // Helper function to get service details based on type
   const getServiceDetails = (serviceType) => {
     const detailsMap = {
@@ -93,11 +119,17 @@ const MainServiceDetail = ({ user }) => {
         'Theo dõi chuyên nghiệp suốt 28 ngày',
         'Miễn phí hoàn toàn',
         'Hỗ trợ 24/7 trong quá trình điều trị'
+      ],
+      test: [
+        'Xét nghiệm chính xác và đáng tin cậy',
+        'Thực hiện bởi đội ngũ chuyên môn cao',
+        'Bảo mật thông tin tuyệt đối',
+        'Kết quả nhanh chóng',
+        'Hỗ trợ tư vấn chuyên nghiệp'
       ]
     };
-    return detailsMap[serviceType] || [];
+    return detailsMap[serviceType] || detailsMap.test;
   };
-
   // Helper function to get service process based on type
   const getServiceProcess = (serviceType) => {
     const processMap = {
@@ -120,9 +152,15 @@ const MainServiceDetail = ({ user }) => {
         'Theo dõi định kỳ hàng tuần',
         'Xét nghiệm sau 1 tháng',
         'Xét nghiệm sau 3 tháng'
+      ],
+      test: [
+        'Đăng ký và khai báo y tế',
+        'Lấy mẫu theo yêu cầu',
+        'Thực hiện xét nghiệm',
+        'Trả kết quả và tư vấn'
       ]
     };
-    return processMap[serviceType] || [];
+    return processMap[serviceType] || processMap.test;
   };
 
   if (loading) return <div className="p-6 text-center">Đang tải thông tin dịch vụ...</div>;

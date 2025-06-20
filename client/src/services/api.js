@@ -162,37 +162,6 @@ export const getDoctorById = async (id) => {
 };
 
 
-/**
- * Get all services 
- */
-export const getServices = async (type = "test") => {
-  console.log("🔄 API Call: getServices with type:", type);
 
-  const params = {};
-  if (type) params.type = type;
-
-  try {
-    const response = await api.get("/api/public/services/", { params });
-    console.log("✅ getServices response:", response.data);
-    return response.data.data || response.data;
-  } catch (error) {
-    console.error("❌ getServices error:", error);
-    throw error;
-  }
-};
-
-/**
- * Get service by ID
- * @param {string|number} id - Service ID
- */
-export const getServiceById = async (id) => {
-  try {
-    const services = await getServices();
-    return services.find((service) => String(service.service_id) === String(id));
-  } catch (error) {
-    console.error('❌ getServiceById error:', error);
-    throw error;
-  }
-};
 
 export default api;

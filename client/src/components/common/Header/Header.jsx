@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AvatarDropdown from "./AvatarDropdown";
+import { getServices } from "../../../services/api";
 
 const Header = ({ user, setUser }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
+  const [services, setServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const serviceRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +33,6 @@ const Header = ({ user, setUser }) => {
       navigate("/login/patient");
     }
   };
-
   useEffect(() => {
     function handleClickOutside(event) {
       if (serviceRef.current && !serviceRef.current.contains(event.target)) {
@@ -39,6 +41,24 @@ const Header = ({ user, setUser }) => {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch services when component mounts
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setServicesLoading(true);
+        const servicesData = await getServices("test"); // Fetch test services
+        setServices(servicesData || []);
+      } catch (error) {
+        console.error("Error fetching services:", error);
+        setServices([]);
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchServices();
   }, []);
 
   return (
@@ -98,35 +118,32 @@ const Header = ({ user, setUser }) => {
                       clipRule="evenodd"
                     />
                   </svg>
-                </button>
-                <div
+                </button>                <div
                   className={`absolute right-0 w-48 bg-white border border-gray-200 shadow-lg rounded-md mt-2 py-1 z-50 transition ease-out duration-150 origin-top-right ${
                     isServiceOpen
                       ? "opacity-100 scale-100"
                       : "opacity-0 scale-95"
                   }`}
                 >
-                  <Link
-                    to="/services/screening"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsServiceOpen(false)}
-                  >
-                    Xét nghiệm sàng lọc
-                  </Link>
-                  <Link
-                    to="/services/confirm"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsServiceOpen(false)}
-                  >
-                    Xét nghiệm khẳng định
-                  </Link>
-                  <Link
-                    to="/services/pep"
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsServiceOpen(false)}
-                  >
-                    PEP - Dự phòng
-                  </Link>
+                  {servicesLoading ? (
+                    <div className="px-4 py-2 text-gray-500 text-sm">
+                      Đang tải...
+                    </div>                  ) : services.length > 0 ? (
+                    services.map((service) => (
+                      <Link
+                        key={service.service_id}
+                        to={`/service/${service.service_id}`}
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsServiceOpen(false)}
+                      >
+                        {service.name}
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-gray-500 text-sm">
+                      Không có dịch vụ
+                    </div>
+                  )}
                 </div>
               </div>
               <Link
@@ -220,33 +237,30 @@ const Header = ({ user, setUser }) => {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Tin tức
-                  </Link>
-                  <div className="relative">
+                  </Link>                  <div className="relative">
                     <button className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium focus:outline-none">
                       Dịch vụ HIV
                     </button>
                     <div className="mt-1 ml-4 space-y-1">
-                      <Link
-                        to="/services/screening"
-                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Xét nghiệm sàng lọc
-                      </Link>
-                      <Link
-                        to="/services/confirm"
-                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Xét nghiệm khẳng định
-                      </Link>
-                      <Link
-                        to="/services/pep"
-                        className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        PEP - Dự phòng
-                      </Link>
+                      {servicesLoading ? (
+                        <div className="px-3 py-2 text-gray-500 text-sm">
+                          Đang tải...
+                        </div>                      ) : services.length > 0 ? (
+                        services.map((service) => (
+                          <Link
+                            key={service.service_id}
+                            to={`/service/${service.service_id}`}
+                            className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            {service.name}
+                          </Link>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500 text-sm">
+                          Không có dịch vụ
+                        </div>
+                      )}
                     </div>
                   </div>
                   <Link
