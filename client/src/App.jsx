@@ -16,7 +16,7 @@ import ConfirmDetail from "./pages/Guest/ServiceDetail/ConfirmDetail";
 import PepDetail from "./pages/Guest/ServiceDetail/PepDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
-
+import DoctorDashBoard from "./pages/Doctor/DoctorDashboard";
 function App() {
   // State lưu thông tin user đăng nhập
   const [user, setUser] = useState(null);
@@ -39,6 +39,7 @@ function App() {
             <Route path="/lab-staff" element={<LabStaff user={user} />} />
             <Route path="/lab-process" element={<LabProcess />} />
             <Route path="/lab-result" element={<LabResult />} />
+            <Route path="/doctor" element={<DoctorDashBoard />} />
 
             <Route path="/register" element={<RegisterPlaceholder />} />
             <Route
