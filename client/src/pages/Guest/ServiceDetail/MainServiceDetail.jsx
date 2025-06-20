@@ -4,7 +4,7 @@ import AppointmentForm from '../../../components/common/AppointmentForm';
 import { getServices } from '../../../services/api';
 
 const MainServiceDetail = ({ user }) => {
-  const { type, serviceId } = useParams(); // Support both /services/:type and /services/:serviceId
+  const { serviceId } = useParams(); // Only support /service/:serviceId
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);  useEffect(() => {
@@ -15,16 +15,16 @@ const MainServiceDetail = ({ user }) => {
         console.log("All services:", services);
         
         let foundService = null;
-        let serviceType = null;
+        let serviceType = 'test'; // default
 
-        // If serviceId is provided, find by service_id
+        // Find service by service_id
         if (serviceId) {
           console.log("Looking for service with ID:", serviceId);
           foundService = services.find(s => 
             s.service_id === parseInt(serviceId)
           );
           
-          // Determine service type based on service name or default to 'test'
+          // Determine service type based on service name
           if (foundService) {
             if (foundService.name.toLowerCase().includes('sàng lọc') || foundService.name.toLowerCase().includes('lần 2')) {
               serviceType = 'screening';
@@ -36,42 +36,9 @@ const MainServiceDetail = ({ user }) => {
               serviceType = 'test'; // default
             }
           }
-        } 
-        // If type is provided (old routing), find by type mapping
-        else if (type) {
-          const serviceMapping = {
-            screening: 'Xét nghiệm lần 2',
-            confirm: 'Xét nghiệm khẳng định',
-            pep: 'Tư vấn thuốc ARV'
-          };
-
-          const serviceName = serviceMapping[type];
-          console.log("Looking for service:", serviceName);
-          
-          // Tìm dịch vụ chính xác theo tên
-          foundService = services.find(s => 
-            s.name && s.name.trim() === serviceName
-          );
-
-          // Nếu không tìm thấy, thử tìm theo từ khóa
-          if (!foundService) {
-            const keywords = {
-              screening: ['lần 2', 'sàng lọc'],
-              confirm: ['khẳng định'],
-              pep: ['tư vấn', 'ARV', 'thuốc']
-            };
-            
-            foundService = services.find(s => 
-              s.name && keywords[type].some(keyword => 
-                s.name.toLowerCase().includes(keyword.toLowerCase())
-              )
-            );
-          }
-          
-          serviceType = type;
         }
 
-        // Nếu vẫn không tìm thấy, lấy service đầu tiên làm fallback
+        // Fallback if not found
         if (!foundService && services.length > 0) {
           foundService = services[0];
           serviceType = 'test';
@@ -95,7 +62,7 @@ const MainServiceDetail = ({ user }) => {
         setLoading(false);
       }
     };    fetchService();
-  }, [type, serviceId]);
+  }, [serviceId]);
   // Helper function to get service details based on type
   const getServiceDetails = (serviceType) => {
     const detailsMap = {
@@ -162,9 +129,52 @@ const MainServiceDetail = ({ user }) => {
     };
     return processMap[serviceType] || processMap.test;
   };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải thông tin dịch vụ...</p>
+        </div>
+      </div>
+    );
+  }
 
-  if (loading) return <div className="p-6 text-center">Đang tải thông tin dịch vụ...</div>;
-  if (error || !service) return <div className="p-6 text-center text-red-500">{error}</div>;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Oops!</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <Link
+            to="/"
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors inline-block"
+          >
+            Về trang chủ
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!service) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-400 text-6xl mb-4">📋</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Không tìm thấy dịch vụ</h2>
+          <p className="text-gray-600 mb-6">Dịch vụ bạn tìm kiếm không tồn tại</p>
+          <Link
+            to="/"
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors inline-block"
+          >
+            Về trang chủ
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
