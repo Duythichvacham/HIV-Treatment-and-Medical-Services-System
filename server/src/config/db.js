@@ -8,7 +8,7 @@ const config = {
   database: process.env.DB_NAME,
    port: parseInt(process.env.DB_PORT), // Default SQL Server port
   options: {
-    encrypt: false, // Use encryption for data transfer
+    encrypt: true, // Use encryption for data transfer
     trustServerCertificate: true, // Trust the server certificate - bỏ qua xác thực chứng chỉ
   },
   pool: {
