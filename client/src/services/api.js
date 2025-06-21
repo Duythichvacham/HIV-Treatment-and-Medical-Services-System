@@ -12,7 +12,7 @@ const api = axios.create({
   baseURL: ENV.API_URL,
   timeout: ENV.API_TIMEOUT,
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json", // Default content type
   },
 });
 
@@ -116,7 +116,28 @@ export const getSlots = async (date = null, doctorId = null) => {
     throw error;
   }
 };
+/**
+ * Get list of services
+ * @param {string} type - Service type (e.g., "test", "consultation")
+ */
+// thằng này hiện tại mặc định là test vì mấy thằng kia không cần lấy
+export const getServices = async (type) => {
+  console.log("🔄 API Call: getServices with type:", type);
 
+  try {
+    const response = await api.get("/api/public/services", {
+      params: { type },
+    });
+    console.log(
+      "✅ getServices response:",
+      response.data || response.data.data
+    );
+    return response.data; // Return the full response object
+  } catch (error) {
+    console.error("❌ getServices error:", error);
+    throw error;
+  }
+};
 /**
  * Create appointment
  * @param {Object} appointmentData - Appointment data
@@ -124,6 +145,20 @@ export const getSlots = async (date = null, doctorId = null) => {
 export const createAppointment = async (appointmentData) => {
   const response = await api.post("/api/appointments/", appointmentData);
   return response.data;
+};
+
+/**
+ * Get doctor by ID
+ * @param {string|number} id - Doctor ID
+ */
+export const getDoctorById = async (id) => {
+  try {
+    const doctors = await getDoctors();
+    return doctors.find((doc) => String(doc.id) === String(id));
+  } catch (error) {
+    console.error("❌ getDoctorById error:", error);
+    throw error;
+  }
 };
 
 export default api;

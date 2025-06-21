@@ -38,7 +38,9 @@ const StaffLogin = ({ onLogin }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const location = useLocation();
+  const location = useLocation(); // Lấy thông tin url hiện tại
+  // gồm pathname, search, hash, state,...
+  // location.state chứa dữ liệu truyền khi redirect
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -58,7 +60,10 @@ const StaffLogin = ({ onLogin }) => {
       } else if (found.role === "Doctor") {
         defaultPath = "/doctor";
       }
+      // user đến trang hiện tại từ đâu ? không có thì về defaultPath
+      // location.state có thể chứa thông tin từ trang trước đó
       const from = location.state?.from || defaultPath;
+
       navigate(from, { replace: true });
     } else {
       setError("Sai tài khoản hoặc mật khẩu!");

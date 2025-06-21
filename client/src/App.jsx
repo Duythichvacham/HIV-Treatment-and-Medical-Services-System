@@ -17,9 +17,7 @@ import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
 import RegistrationStaff from "./pages/Staff/RegistrationStaff";
-import ScreeningDetail from "./pages/Guest/ServiceDetail/ScreeningDetail";
-import ConfirmDetail from "./pages/Guest/ServiceDetail/ConfirmDetail";
-import PepDetail from "./pages/Guest/ServiceDetail/PepDetail";
+import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
 import DoctorDashBoard from "./pages/Doctor/DoctorDashboard";
@@ -97,17 +95,12 @@ function AppContent({ user, setUser }) {
             path="/registration-staff"
             element={<RegistrationStaff user={user} />}
           />
-
           <Route path="/register" element={<RegisterPlaceholder />} />
+
           <Route
-            path="/services/screening"
-            element={<ScreeningDetail user={user} />}
+            path="/service/:serviceId"
+            element={<MainServiceDetail user={user} />}
           />
-          <Route
-            path="/services/confirm"
-            element={<ConfirmDetail user={user} />}
-          />
-          <Route path="/services/pep" element={<PepDetail user={user} />} />
           <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
           <Route path="/doctorpage" element={<DoctorPage />} />
           <Route path="/appointment" element={<Appointment user={user} />} />
