@@ -9,7 +9,7 @@ const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
-const serviceRouter = require("./service");
+const serviceRouter = require('./service');
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 
