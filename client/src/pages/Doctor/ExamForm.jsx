@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
 const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
-  console.log('ExamForm - patient:', patient);
-  
   const [form, setForm] = useState({
     diagnosis: "",
     treatmentPlan: "",
@@ -12,8 +10,6 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
   });
 
   const [errors, setErrors] = useState({});
-  
-  console.log('ExamForm - form state:', form);
 
   const validateReExamDate = (dateString) => {
     if (!dateString) return true; // Ngày tái khám không bắt buộc
@@ -37,10 +33,8 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
     }
 
     return true;
-  };
-  const handleChange = (e) => {
+  };  const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log('handleChange called:', { name, value });
     setForm({ ...form, [name]: value });
 
     // Validate ngày tái khám khi thay đổi
@@ -65,10 +59,7 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         alert('Vui lòng kiểm tra lại ngày hẹn tái khám!');
         return;
       }
-    }
-      try {
-      console.log('Patient object:', patient);
-      
+    }    try {
       // Kiểm tra appointment_id
       const appointmentId = patient?.appointment_id;
       if (!appointmentId) {
@@ -90,8 +81,6 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         clinical_signs: null
       };
       
-      console.log('Sending exam data:', requestData);
-      
       const response = await fetch('http://localhost:5000/api/v1/doctor/save-exam-data', {
         method: 'POST',
         headers: {
@@ -102,12 +91,9 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
       });
 
       const result = await response.json();
-      
-      if (!response.ok) {
+        if (!response.ok) {
         throw new Error(result.message || 'Lỗi khi lưu dữ liệu khám bệnh');
       }
-      
-      console.log('Exam data saved successfully:', result);
       
       // Sau khi lưu thành công, gọi onFinish để cập nhật status
       const examData = {
@@ -116,10 +102,8 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         completed_at: new Date().toISOString()
       };
       
-      console.log('ExamForm calling onFinish with:', examData);
       onFinish?.(examData);
-      
-    } catch (error) {
+        } catch (error) {
       console.error('Error saving exam data:', error);
       alert('Có lỗi xảy ra khi lưu dữ liệu khám bệnh: ' + error.message);
     }
@@ -134,8 +118,6 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         return;
       }
     }    try {
-      console.log('Patient object (save temp):', patient);
-      
       // Kiểm tra appointment_id
       const appointmentId = patient?.appointment_id;
       if (!appointmentId) {
@@ -156,8 +138,6 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         clinical_signs: null
       };
       
-      console.log('Sending temp exam data:', requestData);
-      
       const response = await fetch('http://localhost:5000/api/v1/doctor/save-exam-data', {
         method: 'POST',
         headers: {
@@ -168,12 +148,10 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
       });
 
       const result = await response.json();
-      
-      if (!response.ok) {
+        if (!response.ok) {
         throw new Error(result.message || 'Lỗi khi lưu tạm dữ liệu khám bệnh');
       }
       
-      console.log('Exam data saved temporarily:', result);
       alert('Đã lưu tạm thành công!');
       
       // Gọi callback nếu có
@@ -183,69 +161,49 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         saved_at: new Date().toISOString()
       };
       
-      console.log('ExamForm calling onSaveTemp with:', examData);
       onSaveTemp?.(examData);
-      
-    } catch (error) {
+        } catch (error) {
       console.error('Error saving temporary exam data:', error);
       alert('Có lỗi xảy ra khi lưu tạm dữ liệu: ' + error.message);
     }
-  };
-  return (
+  };  return (
     <div className="bg-white rounded-xl shadow p-8 max-w-4xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-6">
         Chẩn đoán và kế hoạch điều trị
-      </h2>
-      
-      {/* Debug info */}
-      <div className="mb-4 p-2 bg-yellow-100 rounded text-sm">
-        <strong>Debug:</strong> Form đã load, bạn có thể điền thông tin bên dưới
-      </div><div className="mb-4">
-        <label className="font-semibold">Chẩn đoán *</label>
-        <textarea
+      </h2><div className="mb-4">
+        <label className="font-semibold">Chẩn đoán *</label>        <textarea
           className="w-full border rounded p-2 mt-2"
           name="diagnosis"
           value={form.diagnosis}
           onChange={handleChange}
           placeholder="Chẩn đoán chi tiết..."
-          disabled={false}
-          readOnly={false}
         />
       </div>
       <div className="mb-4">
-        <label className="font-semibold">Kế hoạch điều trị</label>
-        <input
+        <label className="font-semibold">Kế hoạch điều trị</label>        <input
           className="w-full border rounded p-2 mt-2"
           name="treatmentPlan"
           value={form.treatmentPlan}
           onChange={handleChange}
           placeholder="Tiếp tục phác đồ hiện tại"
-          disabled={false}
-          readOnly={false}
         />
       </div>
       <div className="mb-4">
-        <label className="font-semibold">Hướng dẫn khác</label>
-        <textarea
+        <label className="font-semibold">Hướng dẫn khác</label>        <textarea
           className="w-full border rounded p-2 mt-2"
           name="note"
           value={form.note}
           onChange={handleChange}
           placeholder="Hướng dẫn thêm về chế độ ăn uống, tập thể dục..."
-          disabled={false}
-          readOnly={false}
         />
       </div>      <div className="mb-4">
-        <label className="font-semibold">Ngày hẹn tái khám</label>
-        <input
+        <label className="font-semibold">Ngày hẹn tái khám</label>        <input
           type="date"
           className={`w-full border rounded p-2 mt-2 ${errors.reExamDate ? 'border-red-500' : ''}`}
           name="reExamDate"
           value={form.reExamDate}
           onChange={handleChange}
           min={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Ít nhất 1 tuần từ hôm nay
-          disabled={false}
-          readOnly={false}
         />
         {errors.reExamDate && (
           <div className="flex items-center gap-1 text-red-500 text-sm mt-1">
