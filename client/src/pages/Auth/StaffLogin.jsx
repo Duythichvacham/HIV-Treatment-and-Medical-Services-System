@@ -29,6 +29,7 @@ const STAFF_ACCOUNTS = [
     role: "Doctor",
     name: "BS. Lê Văn C",
     avatar: "https://randomuser.me/api/portraits/men/45.jpg",
+    doctor_id: 1,
   },
 ];
 
@@ -49,13 +50,15 @@ const StaffLogin = ({ onLogin }) => {
     if (found) {
       setError("");
       onLogin && onLogin(found);
+      localStorage.setItem("staff", JSON.stringify(found)); // Lưu thông tin đăng nhập
       // Determine redirect path based on role
       let defaultPath = "/";
       if (found.role === "Lab-Staff") {
         defaultPath = "/lab-staff";
       } else if (found.role === "Registration-staff") {
-        // này nên set xem role động, khác patient thì lấy
         defaultPath = "/registration-staff";
+      } else if (found.role === "Doctor") {
+        defaultPath = "/doctor";
       }
       // user đến trang hiện tại từ đâu ? không có thì về defaultPath
       // location.state có thể chứa thông tin từ trang trước đó

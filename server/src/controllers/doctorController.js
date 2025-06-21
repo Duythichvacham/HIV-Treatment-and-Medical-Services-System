@@ -1,4 +1,91 @@
 const doctorService = require("../services/doctorService");
+// const doctor_id = 1;
+// GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn
+const getAppointmentQueue = async (req, res) => {
+  try {
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
+    console.log("getAppointmentQueue called with doctor_id:", doctor_id);
+    console.log("req.params: ", req.params);
+    const queue = await doctorService.getAppointmentsByStatus(
+      doctor_id,
+      "requested"
+    );
+
+    res.status(200).json({
+      success: true,
+      data: queue,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+//GET lấy danh sách bệnh nhân đang khám
+const getAppointmentInProgress = async (req, res) => {
+  try {
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
+    const in_progress = await doctorService.getAppointmentsByStatus(
+      doctor_id,
+      "in_progress"
+    );
+    res.status(200).json({
+      message: "Lấy danh sách bệnh nhân đang khám thành công",
+      data: in_progress,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+//GET lấy danh sách bệnh nhân hoàn thành khám
+const getAppointmentFinshed = async (req, res) => {
+  try {
+    const doctor_id = req.params.doctorId; // Lấy id từ URL
+    const finished = await doctorService.getAppointmentsByStatus(
+      doctor_id,
+      "completed"
+    );
+    res.status(200).json({
+      message: "Lấy danh sách bệnh nhân hoàn thành khám thành công",
+      data: finished,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const getExamHistory = async (req, res) => {
+  try {
+    const patientId = req.params.patientId; // Lấy id từ URL
+    console.log("getExamHistory called with patientId:", patientId);
+    const examHistory = await doctorService.getExamHistory(patientId);
+    res.status(200).json({
+      success: true,
+      data: examHistory,
+    });
+  } catch (error) {
+    console.error("Error fetching exam history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getCurrentExam = async (req, res) => {
+  try {
+    const patientId = req.params.patientId; // Lấy id từ URL
+    console.log("getCurrentExam called with patientId:", patientId);
+    const currentExam = await doctorService.getCurrentExam(patientId);
+    res.status(200).json({
+      success: true,
+      data: currentExam,
+    });
+  } catch (error) {
+    console.error("Error fetching current exam:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 // (GET, lấy danh sách bác sĩ - có thể filter theo ngày)
 exports.getDoctors = async (req, res) => {
@@ -28,6 +115,7 @@ exports.getDoctors = async (req, res) => {
   }
 };
 
+
 // GET, lấy bệnh nhân đã hoàn thành xét nghiệm với service_type='test'
 exports.getPatientWait = async (req, res) => {
   try {
@@ -39,6 +127,15 @@ exports.getPatientWait = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+}
+module.exports = {
+  getDoctors,
+  getAppointmentQueue,
+  getAppointmentInProgress,
+  getAppointmentFinshed,
+  getExamHistory,
+  getCurrentExam,
+
 };
 
 
