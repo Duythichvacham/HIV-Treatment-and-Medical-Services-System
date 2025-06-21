@@ -8,6 +8,7 @@ const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
+const serviceRouter = require('./service');
 
 
 
