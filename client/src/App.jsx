@@ -46,14 +46,7 @@ function App() {
             <Route path="/doctor" element={<DoctorDashBoard />} />
 
             <Route path="/register" element={<RegisterPlaceholder />} />
-            <Route
-              path="/services/screening"
-              element={<ScreeningDetail user={user} />}
-            />
-            <Route
-              path="/services/confirm"
-              element={<ConfirmDetail user={user} />}
-            />
+            
             <Route path="/services/pep" element={<PepDetail user={user} />} />
             <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
             <Route path="/doctorpage" element={<DoctorPage />} />

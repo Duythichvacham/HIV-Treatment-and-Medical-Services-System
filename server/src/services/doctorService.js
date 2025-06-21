@@ -183,7 +183,7 @@ const getAppointmentsByStatus = async (doctor_id, status) => {
 };
 
 // (GET, lấy danh sách bác sĩ)
-exports.getDoctors = async () => {
+const getDoctors = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`
       SELECT 
@@ -216,7 +216,7 @@ exports.getDoctors = async () => {
 };
 
 // (GET, lấy danh sách bác sĩ theo ngày có WorkingShifts)
-exports.getDoctorsByDate = async (date) => {
+const getDoctorsByDate = async (date) => {
   const pool = await poolPromise;
 
   // Sử dụng approach khác để tránh lỗi với TEXT column
@@ -259,7 +259,7 @@ exports.getDoctorsByDate = async (date) => {
 };
 //------------------------------------------------------------------
 // Lấy danh sách bệnh nhân đang xét nghiệm (status = 'in_progress')
-exports.getListWait = async () => {
+const getListWait = async () => {
   const pool = await poolPromise;
   const result = await pool.request()   
     .query(`
@@ -279,7 +279,7 @@ SELECT TOP (1000) [service_id]
   return result.recordset;
 };
 
-exports.getListInprogress = async () => {
+const getListInprogress = async () => {
   const pool = await poolPromise;
   const result = await pool.request()   
     .query(`
@@ -301,7 +301,7 @@ WHERE a.status = 'in_progress';
 };
 
 
-exports.getListFinish= async () => {
+const getListFinish= async () => {
   const pool = await poolPromise;
   const result = await pool.request()   
     .query(`
@@ -324,7 +324,7 @@ WHERE a.status = 'completed'
   return result.recordset;
 };
 
-exports.getExams = async (examID) => {
+const getExams = async (examID) => {
   const pool = await poolPromise;
   const result = await pool.request()
     .input('examID', examID)
@@ -353,7 +353,7 @@ WHERE ce.exam_id = @examID;
 
 
 
-exports.createPrescription = async ( {
+const createPrescription = async ( {
   appointment_id,
   arv_regimen_id,
   support_drugs,
@@ -387,7 +387,7 @@ exports.createPrescription = async ( {
 };
 
 //api/v1/doctor/exams/{exam_id} (PATCH, cập nhật thẻ khá	m), -- liên quan nhiều bảng - tham khảo trang demo
-exports.updateExam = async ({
+const updateExam = async ({
   exam_id,
   appointment_id,
   vitals,
@@ -478,10 +478,14 @@ exports.updateExam = async ({
 //module.exports = { getDoctors, getDoctorsByDate };
 
 module.exports = {
+  getExams,
+  createPrescription,
+  
   getDoctors,
   getDoctorsByDate,
   getAppointmentsByStatus,
   getExamHistory,
   getCurrentExam,
+  updateExam
 };
 
