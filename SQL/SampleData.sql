@@ -19,11 +19,15 @@ INSERT INTO Patients (account_id, full_name, dob, gender, email, phone, address)
 VALUES
 (1, N'Nguyễn Văn A', '1990-05-15', 'Male', 'patient1@example.com', '0123456789', N'Hà Nội'),
 (2, N'Trần Thị B', '1985-08-20', 'Female', 'patient2@example.com', '0987654321', N'Hồ Chí Minh');
+(3, N'Trần Thị C', '1985-08-20', 'Female', 'patient2@example.com', '0987654321', N'Hồ Chí Minh');
+(4, N'Trần Thị D', '1985-08-20', 'Female', 'patient2@example.com', '0987654321', N'Hồ Chí Minh');
+(5, N'Trần Thị E', '1985-08-20', 'Female', 'patient2@example.com', '0987654321', N'Hồ Chí Minh');
 
 -- 3. Doctors
 INSERT INTO Doctors (account_id, full_name, email, phone, image_url, degrees, experience_years)
 VALUES
 (5, N'Bác sĩ Kiên', 'doctor1@example.com', '0111222333', 'http://example.com/doctor1.jpg', 'MD, HIV Specialist', 5);
+
 
 -- 4. ARVRegimens
 INSERT INTO ARVRegimens (name, for_group, components)
@@ -77,6 +81,13 @@ INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, m
 VALUES
 (6, 1, '2025-06-20', 1, 'approved', 6),
 (6, 1, '2025-06-21', 1, 'approved', 6);
+(6, 1, '2025-06-22', 1, 'approved', 6);
+(6, 1, '2025-06-23', 1, 'approved', 6);
+(6, 1, '2025-06-24', 1, 'approved', 6);
+(6, 1, '2025-06-25', 1, 'approved', 6);
+(6, 1, '2025-06-26', 1, 'approved', 6);
+(6, 1, '2025-06-27', 1, 'approved', 6);
+(6, 1, '2025-06-28', 1, 'approved', 6);
 
 -- 12. TestNotes
 INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime)
