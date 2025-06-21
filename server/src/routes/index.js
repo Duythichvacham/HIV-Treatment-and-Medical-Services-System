@@ -90,6 +90,8 @@ app.use('/booking',bookingRouter);
 
 
   app.use("/api/auth", authRouter);
+///booking (POST)
+app.use('/booking' , bookingRouter);
 
 }
 

@@ -6,6 +6,8 @@ const bookingController = require('../controllers/bookingController');
 router.patch('/pay/:invoiceId', bookingController.confirmPayment);
 //PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
 router.patch('/cancel/:invoiceId', bookingController.cancelBooking);
+router.post('/', bookingController.createBooking);
+
 
 
 
