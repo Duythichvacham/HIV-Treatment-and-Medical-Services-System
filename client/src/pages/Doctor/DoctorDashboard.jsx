@@ -93,15 +93,15 @@ const DoctorDashboard = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [mode, setMode] = useState(""); // "exam" hoặc ""
 
-  const handleStartExam = (patient) => {
-    setSelectedPatient(patient);
-    setMode("exam");
-    // Chuyển sang inProgress
-    setQueue((prev) =>
-      prev.filter((p) => p.appointment_id !== patient.appointment_id)
-    );
-    setInProgress((prev) => [...prev, { ...patient, status: "in_progress" }]);
-  };
+  // const handleStartExam = (patient) => {
+  //   setSelectedPatient(patient);
+  //   setMode("exam");
+  //   // Chuyển sang inProgress
+  //   setQueue((prev) =>
+  //     prev.filter((p) => p.appointment_id !== patient.appointment_id)
+  //   );
+  //   setInProgress((prev) => [...prev, { ...patient, status: "in_progress" }]);
+  // };
 
   const handleSaveTemp = (updatedPatient) => {
     // Cập nhật thông tin bệnh nhân đang khám (nếu có)
