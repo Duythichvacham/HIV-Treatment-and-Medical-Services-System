@@ -12,5 +12,6 @@ router.get("/", doctorController.getDoctors);
 
 //GET, lấy danh sách lịch sử khám bệnh của bệnh nhân
 router.get("/exam-history/:patientId", doctorController.getExamHistory);
+router.get("/currrent-exam/:patientId", doctorController.getCurrentExam);
 
 module.exports = router;

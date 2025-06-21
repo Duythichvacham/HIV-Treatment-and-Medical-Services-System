@@ -10,107 +10,8 @@ import {
   MessageCircle,
   Search,
 } from "lucide-react";
-
-const PatientCard = ({ patient, index, type }) => (
-  <div className="bg-white rounded-xl shadow border p-6 flex flex-col gap-3 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700">
-          {index + 1}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-gray-900">
-              {patient.full_name || patient.name}
-            </span>
-            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-              Thường
-            </span>
-          </div>
-          <div className="text-gray-400 text-sm">
-            {patient.code ||
-              `HIV${String(patient.patient_id).padStart(3, "0")}`}
-          </div>
-        </div>
-      </div>
-      {patient.status === "urgent" && (
-        <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-          Khẩn cấp
-        </span>
-      )}
-    </div>
-    <div className="flex flex-col gap-1 text-gray-700 text-sm mb-2">
-      <div className="flex items-center gap-1">
-        <User className="w-4 h-4 text-gray-400" />
-        {patient.age} tuổi -{" "}
-        {patient.gender === "Male"
-          ? "Nam"
-          : patient.gender === "Female"
-          ? "Nữ"
-          : patient.gender}
-      </div>
-      <div className="flex items-center gap-1">
-        <Clock className="w-4 h-4 text-gray-400" />
-        Hẹn lúc:{" "}
-        {patient.start_time
-          ? new Date(patient.start_time).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : ""}
-      </div>
-      <div className="flex items-center gap-1">
-        <Calendar className="w-4 h-4 text-gray-400" />
-        Đặt lúc:{" "}
-        {patient.booking_time
-          ? new Date(patient.booking_time).toLocaleString("vi-VN")
-          : ""}
-      </div>
-      {patient.phone && (
-        <div className="flex items-center gap-1">
-          <Phone className="w-4 h-4 text-pink-500" />
-          <span className="font-medium">{patient.phone}</span>
-        </div>
-      )}
-    </div>
-    <div className="bg-blue-50 rounded p-3 text-sm">
-      <span className="font-semibold">ARV:</span>{" "}
-      {patient.arv_regimen || "Chưa có"}
-      <br />
-      <span className="font-semibold">Tuân thủ:</span>{" "}
-      {patient.arv_adherence === "good"
-        ? "Tốt (>95%)"
-        : patient.arv_adherence === "average"
-        ? "Khá (90-95%)"
-        : patient.arv_adherence || "Chưa có"}
-    </div>
-    <div className="bg-green-50 rounded p-3 text-sm mt-2">
-      <span className="font-semibold">Viral Load:</span>{" "}
-      {patient.viral_load || "Chưa có"}
-      <br />
-      <span className="font-semibold">CD4:</span>{" "}
-      {patient.cd4 ? `${patient.cd4}` : "Chưa có"}
-    </div>
-    {type === "waiting" && (
-      <button className="w-full mt-2 bg-gray-900 text-white py-2 rounded-lg flex items-center justify-center gap-2 font-semibold hover:bg-gray-800 transition">
-        <FileText className="w-5 h-5" />
-        Bắt đầu khám
-      </button>
-    )}
-    {type === "examining" && (
-      <button className="w-full mt-2 bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2 font-semibold hover:bg-blue-700 transition">
-        <FileText className="w-5 h-5" />
-        Tiếp tục khám
-      </button>
-    )}
-    {type === "completed" && (
-      <button className="w-full mt-2 bg-gray-100 text-gray-700 py-2 rounded-lg flex items-center justify-center gap-2 font-semibold hover:bg-gray-200 transition">
-        <FileText className="w-5 h-5" />
-        Xem hồ sơ
-      </button>
-    )}
-  </div>
-);
+import PatientCard from "./PatientCard";
+import PatientExam from "./PatientExam";
 
 const DoctorDashboard = () => {
   const staff = JSON.parse(localStorage.getItem("staff"));
@@ -123,6 +24,7 @@ const DoctorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("queue");
   const [search, setSearch] = useState("");
+  const [viewingPatientId, setViewingPatientId] = useState(null);
 
   // Dữ liệu mẫu cho tư vấn trực tuyến
   const consultationPatients = [
@@ -160,6 +62,7 @@ const DoctorDashboard = () => {
         setQueue([]);
         setInProgress([]);
         setFinished([]);
+        console.error("Error fetching appointments:", err);
       } finally {
         setLoading(false);
       }
@@ -221,6 +124,14 @@ const DoctorDashboard = () => {
     setMode("");
     setSelectedPatient(null);
   };
+  if (viewingPatientId) {
+    return (
+      <PatientExam
+        patientId={viewingPatientId}
+        onBack={() => setViewingPatientId(null)}
+      />
+    );
+  }
   return (
     <div className="min-h-screen bg-blue-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -326,7 +237,13 @@ const DoctorDashboard = () => {
 
         {/* Content */}
         {tab === "queue" ? (
-          loading ? (
+          mode === "exam" && selectedPatient ? (
+            <ExamForm
+              patient={selectedPatient}
+              onSaveTemp={handleSaveTemp}
+              onFinish={handleFinishExam}
+            />
+          ) : loading ? (
             <p>Đang tải dữ liệu...</p>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -348,7 +265,10 @@ const DoctorDashboard = () => {
                         patient={patient}
                         index={idx}
                         type="waiting"
-                        onStartExam={() => handleStartExam(patient)}
+                        // onStartExam={() => handleStartExam(patient)}
+                        onStartExam={() =>
+                          setViewingPatientId(patient.patient_id)
+                        }
                       />
                     ))
                   )}
@@ -371,7 +291,10 @@ const DoctorDashboard = () => {
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
-                        type="examining"
+                        type="examining" // hoặc "completed"
+                        onContinueExam={() =>
+                          setViewingPatientId(patient.patient_id)
+                        }
                       />
                     ))
                   )}
@@ -395,6 +318,9 @@ const DoctorDashboard = () => {
                         patient={patient}
                         index={idx}
                         type="completed"
+                        onViewHistory={() =>
+                          setViewingPatientId(patient.patient_id)
+                        }
                       />
                     ))
                   )}
@@ -431,5 +357,80 @@ const DoctorDashboard = () => {
     </div>
   );
 };
+const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
+  const [form, setForm] = useState({
+    diagnosis: "",
+    treatmentPlan: "",
+    note: "",
+    reExamDate: "",
+  });
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow p-8 max-w-4xl mx-auto mt-8">
+      <h2 className="text-2xl font-bold mb-6">
+        Chẩn đoán và kế hoạch điều trị
+      </h2>
+      <div className="mb-4">
+        <label className="font-semibold">Chẩn đoán *</label>
+        <textarea
+          className="w-full border rounded p-2 mt-2"
+          name="diagnosis"
+          value={form.diagnosis}
+          onChange={handleChange}
+          placeholder="Chẩn đoán chi tiết..."
+        />
+      </div>
+      <div className="mb-4">
+        <label className="font-semibold">Kế hoạch điều trị</label>
+        <input
+          className="w-full border rounded p-2 mt-2"
+          name="treatmentPlan"
+          value={form.treatmentPlan}
+          onChange={handleChange}
+          placeholder="Tiếp tục phác đồ hiện tại"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="font-semibold">Hướng dẫn khác</label>
+        <textarea
+          className="w-full border rounded p-2 mt-2"
+          name="note"
+          value={form.note}
+          onChange={handleChange}
+          placeholder="Hướng dẫn thêm về chế độ ăn uống, tập thể dục..."
+        />
+      </div>
+      <div className="mb-4">
+        <label className="font-semibold">Ngày hẹn tái khám</label>
+        <input
+          className="w-full border rounded p-2 mt-2"
+          name="reExamDate"
+          value={form.reExamDate}
+          onChange={handleChange}
+          placeholder="dd/mm/yyyy"
+        />
+      </div>
+      <div className="flex gap-4 justify-end mt-8">
+        <button
+          className="bg-white border border-gray-300 px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-100"
+          onClick={() => onSaveTemp({ ...patient, ...form })}
+        >
+          <FileText className="w-5 h-5" />
+          Lưu tạm
+        </button>
+        <button
+          className="bg-gray-900 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-800"
+          onClick={() => onFinish({ ...patient, ...form })}
+        >
+          <CheckCircle className="w-5 h-5" />
+          Hoàn thành khám
+        </button>
+      </div>
+    </div>
+  );
+};
 export default DoctorDashboard;

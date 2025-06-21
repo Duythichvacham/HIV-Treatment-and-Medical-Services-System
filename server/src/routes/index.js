@@ -31,7 +31,7 @@ function route(app) {
   ///api/v1/doctor/appointments/finished||in-progress||queue
   app.use("/api/v1/doctor/appointments", doctorRouter);
 
-  ///api/patient/:patientId/exam-history
+  ///api/patient/:patientId/exam-history||current-exam
   app.use("/api/v1/doctor/patient", doctorRouter);
 
   //POST, cập nhật status cho appointments

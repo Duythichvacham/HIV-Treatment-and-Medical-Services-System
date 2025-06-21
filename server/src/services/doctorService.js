@@ -1,6 +1,101 @@
 const { poolPromise } = require("../config/db");
 
-//GET
+//
+const getCurrentExam = async (patientId) => {
+  const pool = await poolPromise;
+  const result = await pool.request().input("patient_id", patientId).query(`
+    
+    SELECT 
+    p.full_name AS ho_ten,
+    'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS ma_bn,
+    DATEDIFF(YEAR, p.dob, GETDATE()) AS tuoi,
+    p.gender,
+	s.start_time AS gio_hen
+INTO #PatientInfo
+FROM Patients p
+JOIN Appointments a ON p.patient_id = a.patient_id
+JOIN Slots s ON a.slot_id = s.slot_id
+WHERE p.patient_id = @patient_id
+ORDER BY a.created_at DESC;
+
+-- Lấy thông tin điều trị ARV hiện tại
+SELECT TOP 1
+    ar.name AS phac_do,
+    a.created_at AS ngay_bat_dau,
+    mh.arv_adherence AS tuan_thu,
+    mh.arv_side_effects AS tac_dung_phu
+INTO #ARVInfo
+FROM Prescriptions pr
+JOIN Appointments a ON pr.appointment_id = a.appointment_id
+JOIN Patients p ON a.patient_id = p.patient_id
+LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
+LEFT JOIN MedicalHistory mh ON p.patient_id = mh.patient_id
+WHERE p.patient_id = @patient_id
+ORDER BY a.created_at DESC;
+
+-- Lấy kết quả xét nghiệm gần nhất
+SELECT TOP 1
+    tr.test_note_id,
+    tn.test_datetime,
+    tr.result_value,
+    tr.notes,
+    tt.name AS test_type
+INTO #LatestTests
+FROM TestResults tr
+JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+JOIN Appointments a ON tn.appointment_id = a.appointment_id
+JOIN TestRequests r ON tn.request_id = r.request_id
+JOIN Services s ON s.request_id = r.request_id AND s.test_type_id IS NOT NULL
+JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+WHERE a.patient_id = @patient_id
+ORDER BY tn.test_datetime DESC;
+
+-- Pivot kết quả xét nghiệm (viral load, CD4, sàng lọc, khẳng định)
+SELECT 
+    MAX(CASE WHEN tt.name = N'Tải lượng virus' THEN result_value + ' ' + ISNULL(tr.unit, '') END) AS viral_load,
+    MAX(CASE WHEN tt.name = 'CD4' THEN result_value + ' ' + ISNULL(tr.unit, '') END) AS cd4,
+    MAX(CASE WHEN tt.name = N'Sàng lọc' THEN tr.notes END) AS sang_loc,
+    MAX(CASE WHEN tt.name = N'Khẳng định' THEN tr.notes END) AS khang_dinh
+INTO #XetNghiemGanNhat
+FROM TestResults tr
+JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+JOIN Appointments a ON tn.appointment_id = a.appointment_id
+JOIN TestRequests r ON tn.request_id = r.request_id
+JOIN Services s ON s.request_id = r.request_id AND s.test_type_id IS NOT NULL
+JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+WHERE a.patient_id = @patient_id
+GROUP BY tn.test_datetime
+ORDER BY tn.test_datetime DESC;
+
+-- Hiển thị tổng hợp tất cả
+SELECT 
+    pi.ho_ten,
+    pi.ma_bn,
+    pi.tuoi,
+    pi.gender,
+    pi.gio_hen,
+    ai.phac_do,
+    FORMAT(ai.ngay_bat_dau, 'yyyy-MM-dd') AS ngay_bat_dau,
+    ai.tuan_thu,
+    ai.tac_dung_phu,
+    xn.viral_load,
+    xn.cd4,
+    xn.sang_loc,
+    xn.khang_dinh
+FROM #PatientInfo pi
+JOIN #ARVInfo ai ON 1 = 1
+JOIN #XetNghiemGanNhat xn ON 1 = 1;
+
+-- Cleanup
+DROP TABLE #PatientInfo;
+DROP TABLE #ARVInfo;
+DROP TABLE #LatestTests;
+DROP TABLE #XetNghiemGanNhat;`);
+  return result.recordset;
+};
+//
+
+//GET lịch sử khám bệnh của bệnh nhân
 const getExamHistory = async (patientId) => {
   const pool = await poolPromise;
   const result = await pool.request().input("patient_id", patientId)
@@ -168,4 +263,5 @@ module.exports = {
   getDoctorsByDate,
   getAppointmentsByStatus,
   getExamHistory,
+  getCurrentExam,
 };

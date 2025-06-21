@@ -72,6 +72,21 @@ const getExamHistory = async (req, res) => {
   }
 };
 
+const getCurrentExam = async (req, res) => {
+  try {
+    const patientId = req.params.patientId; // Lấy id từ URL
+    console.log("getCurrentExam called with patientId:", patientId);
+    const currentExam = await doctorService.getCurrentExam(patientId);
+    res.status(200).json({
+      success: true,
+      data: currentExam,
+    });
+  } catch (error) {
+    console.error("Error fetching current exam:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // (GET, lấy danh sách bác sĩ - có thể filter theo ngày)
 const getDoctors = async (req, res) => {
   try {
@@ -106,4 +121,5 @@ module.exports = {
   getAppointmentInProgress,
   getAppointmentFinshed,
   getExamHistory,
+  getCurrentExam,
 };
