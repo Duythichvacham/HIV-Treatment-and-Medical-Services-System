@@ -3,27 +3,53 @@ import axios from "axios";
 import CurrentExam from "./CurrentExam";
 import ExamHistory from "./ExamHistory";
 
-const PatientExam = ({ patientId, onBack }) => {
-  const [tab, setTab] = useState("current");
+const PatientExam = ({ patientId, appointmentId, onBack, onFinishExam, mode = "edit" }) => {
+  const [tab, setTab] = useState(mode === "view" ? "history" : "current");
   const [info, setInfo] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  console.log('PatientExam received appointmentId:', appointmentId);
+
+  const handleFinishExam = (examData) => {
+    console.log('PatientExam handleFinishExam called with:', examData);
+    if (onFinishExam) {
+      onFinishExam(examData);
+    } else {
+      console.warn('onFinishExam prop not provided');
+      alert('Hoàn thành khám bệnh thành công!');
+      onBack?.();
+    }
+  };
+
+  const handleSaveTemp = (examData) => {
+    console.log('Saving temporary exam data:', examData);
+    alert('Đã lưu tạm thành công!');
+  };useEffect(() => {
+    console.log('PatientExam useEffect - tab:', tab, 'patientId:', patientId);
     if (tab === "current") {
       setLoading(true);
       axios
-        .get(`/api/v1/doctor/patient/currrent-exam/${patientId}`)
-        .then((res) => {
+        .get(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}`)        .then((res) => {
+          console.log('Current exam API response:', res.data);
           setInfo(res.data.data?.[0] || null);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching current exam:', error);
           setLoading(false);
         });
     } else {
       setLoading(true);
       axios
-        .get(`/api/v1/doctor/patient/exam-history/${patientId}`)
+        .get(`http://localhost:5000/api/v1/doctor/exam-history/${patientId}`)
         .then((res) => {
+          console.log('Exam history API response:', res.data);
           setHistory(res.data.data || []);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error fetching exam history:', error);
           setLoading(false);
         });
     }
@@ -42,7 +68,9 @@ const PatientExam = ({ patientId, onBack }) => {
             ← Quay lại
           </button>
         )}
-        <h2 className="text-2xl font-bold">Phiếu khám bệnh</h2>
+        <h2 className="text-2xl font-bold">
+          {mode === "view" ? "Hồ sơ bệnh nhân" : "Phiếu khám bệnh"}
+        </h2>
       </div>
       <div className="flex gap-2 mb-6">
         <button
@@ -65,9 +93,13 @@ const PatientExam = ({ patientId, onBack }) => {
         >
           ⏳ Lịch sử khám
         </button>
-      </div>
-      {tab === "current" ? (
-        <CurrentExam info={info} />
+      </div>      {tab === "current" ? (
+        <CurrentExam 
+          info={info} 
+          onFinish={handleFinishExam} 
+          onSaveTemp={handleSaveTemp} 
+          mode={mode}
+        />
       ) : (
         <ExamHistory history={history} />
       )}

@@ -1,14 +1,16 @@
 const doctorService = require("../services/doctorService");
 // const doctor_id = 1;
-// GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn
+// GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn theo ngày
 const getAppointmentQueue = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId; // Lấy id từ URL
-    console.log("getAppointmentQueue called with doctor_id:", doctor_id);
-    console.log("req.params: ", req.params);
+    const date = req.query.date; // Lấy ngày từ query parameter (optional)
+    console.log("getAppointmentQueue called with doctor_id:", doctor_id, "date:", date);
+    
     const queue = await doctorService.getAppointmentsByStatus(
       doctor_id,
-      "requested"
+      "requested",
+      date
     );
 
     res.status(200).json({
@@ -21,13 +23,15 @@ const getAppointmentQueue = async (req, res) => {
   }
 };
 
-//GET lấy danh sách bệnh nhân đang khám
+//GET lấy danh sách bệnh nhân đang khám theo ngày
 const getAppointmentInProgress = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId; // Lấy id từ URL
+    const date = req.query.date; // Lấy ngày từ query parameter (optional)
     const in_progress = await doctorService.getAppointmentsByStatus(
       doctor_id,
-      "in_progress"
+      "in_progress",
+      date
     );
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân đang khám thành công",
@@ -39,13 +43,15 @@ const getAppointmentInProgress = async (req, res) => {
   }
 };
 
-//GET lấy danh sách bệnh nhân hoàn thành khám
+//GET lấy danh sách bệnh nhân hoàn thành khám theo ngày
 const getAppointmentFinshed = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId; // Lấy id từ URL
+    const date = req.query.date; // Lấy ngày từ query parameter (optional)
     const finished = await doctorService.getAppointmentsByStatus(
       doctor_id,
-      "completed"
+      "completed",
+      date
     );
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân hoàn thành khám thành công",
@@ -110,8 +116,79 @@ const getDoctors = async (req, res) => {
       data: doctors,
     });
   } catch (error) {
-    console.error("Error fetching doctors:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error fetching doctors:", error);    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST: Lưu dữ liệu khám bệnh (chẩn đoán, kế hoạch điều trị, etc.)
+const saveExamData = async (req, res) => {
+  try {
+    const { 
+      appointment_id,
+      diagnosis,
+      treatment_plan,
+      note,
+      reExamDate,
+      vitals,
+      weight,
+      height,
+      clinical_signs
+    } = req.body;
+    
+    console.log("saveExamData called with body:", req.body);
+    
+    if (!appointment_id || !diagnosis) {
+      console.log("Missing required fields:", { appointment_id, diagnosis });
+      return res.status(400).json({ 
+        success: false, 
+        error: "appointment_id và diagnosis là bắt buộc" 
+      });
+    }
+    
+    const result = await doctorService.saveExamData({
+      appointment_id,
+      diagnosis,
+      treatment_plan,
+      note,
+      reExamDate,
+      vitals,
+      weight,
+      height,
+      clinical_signs
+    });
+    
+    console.log("saveExamData successful:", result);
+    
+    res.status(200).json({
+      success: true,
+      message: "Lưu dữ liệu khám bệnh thành công",
+      data: result
+    });
+  } catch (error) {
+    console.error("Error saving exam data:", error);
+    console.error("Error stack:", error.stack);
+    
+    // Phân loại lỗi chi tiết hơn
+    let errorMessage = "Internal server error";
+    let statusCode = 500;
+    
+    if (error.message.includes('FK')) {
+      errorMessage = "Không tìm thấy cuộc hẹn trong hệ thống";
+      statusCode = 400;
+    } else if (error.message.includes('PRIMARY KEY')) {
+      errorMessage = "Dữ liệu khám bệnh đã tồn tại cho cuộc hẹn này";
+      statusCode = 400;
+    } else if (error.message.includes('Invalid column')) {
+      errorMessage = "Lỗi cấu trúc dữ liệu";
+      statusCode = 400;
+    }
+    
+    res.status(statusCode).json({ 
+      success: false, 
+      error: errorMessage,
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -122,4 +199,5 @@ module.exports = {
   getAppointmentFinshed,
   getExamHistory,
   getCurrentExam,
+  saveExamData,
 };

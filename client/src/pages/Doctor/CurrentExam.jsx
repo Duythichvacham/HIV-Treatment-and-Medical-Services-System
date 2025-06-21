@@ -1,7 +1,10 @@
 import React from "react";
-import ExamForm2 from "./ExamForm2";
+import ExamForm from "./ExamForm";
 
-const CurrentExam = ({ info }) => {
+const CurrentExam = ({ info, onFinish, onSaveTemp, mode = "edit" }) => {
+  console.log('CurrentExam - info:', info);
+  console.log('CurrentExam - mode:', mode);
+  
   if (!info) return <div>Không có dữ liệu</div>;
   return (
     <div>
@@ -36,8 +39,16 @@ const CurrentExam = ({ info }) => {
         <div>Sàng lọc: {info.sang_loc}</div>
         <div>Khẳng định: {info.khang_dinh}</div>
       </div>
-      {/* ExamForm ở đây */}
-      <ExamForm2 patient={info} />
+      {/* Chỉ hiển thị ExamForm khi đang khám (mode = edit) */}
+      {mode === "edit" && (
+        <ExamForm patient={info} onFinish={onFinish} onSaveTemp={onSaveTemp} />
+      )}
+      {mode === "view" && (
+        <div className="bg-gray-50 rounded-xl shadow p-6 mb-6">
+          <h3 className="font-bold mb-2 text-gray-600">Bệnh nhân đã hoàn thành khám</h3>
+          <p className="text-gray-500">Để xem chi tiết lịch sử khám, chuyển sang tab "Lịch sử khám"</p>
+        </div>
+      )}
     </div>
   );
 };

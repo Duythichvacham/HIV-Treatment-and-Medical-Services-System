@@ -6,19 +6,12 @@ const AvatarDropdown = ({ user, onLogout }) => {
   const navigate = useNavigate();
   
   const isStaff = user && ["Lab-Staff", "Registration-staff", "Manager", "Doctor"].includes(user.role);
-  
-  const handleLogout = () => {
+    const handleLogout = () => {
     setOpen(false);
     // Clear all session storage
     sessionStorage.clear();
+    // Let parent component (Header) handle logout and navigation
     onLogout && onLogout();
-    
-    // Navigate to appropriate login page based on user role
-    if (isStaff) {
-      navigate("/login/staff");
-    } else {
-      navigate("/login/patient");
-    }
   };
   return (
     <div className="relative ml-4">

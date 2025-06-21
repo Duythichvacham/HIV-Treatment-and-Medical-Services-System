@@ -9,14 +9,19 @@ exports.login = async (req, res) => {
     const user = await authService.authenticateUser(username, password);
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });
+    }    const tokenPayload = {
+      userId: user.account_id,
+      username: user.username,
+      role: user.role
+    };
+
+    // Thêm doctor_id vào token nếu user là Doctor
+    if (user.role === 'Doctor' && user.doctor_id) {
+      tokenPayload.doctor_id = user.doctor_id;
     }
 
     const token = jwt.sign(
-      {
-        userId: user.account_id,
-        username: user.username,
-        role: user.role
-      },
+      tokenPayload,
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );

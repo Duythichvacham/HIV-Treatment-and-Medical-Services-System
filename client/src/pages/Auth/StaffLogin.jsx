@@ -1,72 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
-const STAFF_ACCOUNTS = [
-  {
-    username: "lab1",
-    password: "lab123",
-    role: "Lab-Staff",
-    name: "Nguyễn Văn Lab",
-    avatar: "https://randomuser.me/api/portraits/men/12.jpg",
-  },
-  {
-    username: "reg1",
-    password: "reg123",
-    role: "Registration-staff",
-    name: "Trần Thị Thu Ngân",
-    avatar: "https://randomuser.me/api/portraits/women/22.jpg",
-  },
-  {
-    username: "manager1",
-    password: "manager123",
-    role: "Manager",
-    name: "Lê Quang Quản Lý",
-    avatar: "https://randomuser.me/api/portraits/men/33.jpg",
-  },
-  {
-    username: "doctor1",
-    password: "doc123",
-    role: "Doctor",
-    name: "BS. Lê Văn C",
-    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-    doctor_id: 1,
-  },
-];
-
-const StaffLogin = ({ onLogin }) => {
+const StaffLogin = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation(); // Lấy thông tin url hiện tại
-  // gồm pathname, search, hash, state,...
-  // location.state chứa dữ liệu truyền khi redirect
+  const location = useLocation();
+  const { login, getDefaultPath } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const found = STAFF_ACCOUNTS.find(
-      (acc) => acc.username === username && acc.password === password
-    );
-    if (found) {
-      setError("");
-      onLogin && onLogin(found);
-      localStorage.setItem("staff", JSON.stringify(found)); // Lưu thông tin đăng nhập
-      // Determine redirect path based on role
-      let defaultPath = "/";
-      if (found.role === "Lab-Staff") {
-        defaultPath = "/lab-staff";
-      } else if (found.role === "Registration-staff") {
-        defaultPath = "/registration-staff";
-      } else if (found.role === "Doctor") {
-        defaultPath = "/doctor";
-      }
-      // user đến trang hiện tại từ đâu ? không có thì về defaultPath
-      // location.state có thể chứa thông tin từ trang trước đó
-      const from = location.state?.from || defaultPath;
+    setLoading(true);
+    setError("");
 
+    try {
+      const result = await login(username, password, 'staff');
+      
+      // Redirect back to original location or staff dashboard
+      const from = location.state?.from || getDefaultPath(result.user.role);
       navigate(from, { replace: true });
-    } else {
-      setError("Sai tài khoản hoặc mật khẩu!");
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,25 +62,28 @@ const StaffLogin = ({ onLogin }) => {
             required
           />
         </div>
-        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}
-        <button
+        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}        <button
           type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded-md font-semibold hover:bg-green-700 transition"
+          disabled={loading}
+          className={`w-full py-2 rounded-md font-semibold transition ${
+            loading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-green-600 hover:bg-green-700'
+          } text-white`}
         >
-          Đăng nhập
-        </button>
-        <div className="mt-4 text-xs text-gray-500">
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </button>        <div className="mt-4 text-xs text-gray-500">
           <div>
-            <b>Lab-Staff</b>: lab1 / lab123
+            <b>Lab-Staff</b>: labstaff01 / hash_lab1_password
           </div>
           <div>
-            <b>Registration-staff</b>: reg1 / reg123
+            <b>Registration-staff</b>: regstaff01 / hash_reg1_password
           </div>
           <div>
-            <b>Manager</b>: manager1 / manager123
+            <b>Manager</b>: admin01 / hash_admin_password
           </div>
           <div>
-            <b>Doctor</b>: doctor1 / doc123
+            <b>Doctor</b>: doctor01 / hash_doctor1_password
           </div>
         </div>
       </form>

@@ -3,12 +3,12 @@ const { poolPromise } = require("../config/db");
 //(PATCH, cập nhật status của TestRequests nếu service_type là "examination")
 exports.updateTestRequestExamStatus = async (request_id, status) => {
   const pool = await poolPromise;
-
   // Kiểm tra service_type là 'examination'
   const check = await pool.request().input("request_id", request_id).query(`
       SELECT s.service_type
       FROM Services s
-      WHERE s.request_id = @request_id
+      JOIN TestRequests tr ON s.service_id = tr.service_id
+      WHERE tr.request_id = @request_id
     `);
 
   if (
@@ -48,12 +48,11 @@ exports.getTestNoteDetail = async (test_note_id) => {
         a.status AS appointment_status,
         tt.name AS test_type_name,
         s.name AS service_name,
-        tr.notes AS test_request_notes
-      FROM TestNotes tn
+        tr.notes AS test_request_notes      FROM TestNotes tn
       LEFT JOIN TestRequests tr ON tn.request_id = tr.request_id
       LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
       LEFT JOIN Patients p ON a.patient_id = p.patient_id
-      LEFT JOIN Services s ON s.request_id = tr.request_id
+      LEFT JOIN Services s ON tr.service_id = s.service_id
       LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
       WHERE tn.test_note_id = @test_note_id
     `);

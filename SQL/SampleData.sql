@@ -2,19 +2,19 @@
 
 -- 1. Accounts (phải đầu tiên)
 INSERT INTO Accounts (username, password_hash, role, status) VALUES
-('admin01', 'hash_admin_password', 'Manager', 'active'),
-('doctor01', 'hash_doctor1_password', 'Doctor', 'active'),
-('doctor02', 'hash_doctor2_password', 'Doctor', 'active'),
-('doctor03', 'hash_doctor3_password', 'Doctor', 'active'),
-('labstaff01', 'hash_lab1_password', 'Lab-Staff', 'active'),
-('labstaff02', 'hash_lab2_password', 'Lab-Staff', 'active'),
-('regstaff01', 'hash_reg1_password', 'Registration-staff', 'active'),
-('regstaff02', 'hash_reg2_password', 'Registration-staff', 'active'),
-('patient01', 'hash_patient1_password', 'Patient', 'active'),
-('patient02', 'hash_patient2_password', 'Patient', 'active'),
-('patient03', 'hash_patient3_password', 'Patient', 'active'),
-('patient04', 'hash_patient4_password', 'Patient', 'active'),
-('patient05', 'hash_patient5_password', 'Patient', 'active');
+('admin01', '$2b$10$5yIXgrKWmsOXurLPFLm6Ku3d0XHZYhsUXvyvMbnD0WefI4WfPlkLO', 'Manager', 'active'),
+('doctor01', '$2b$10$VBQ33AMG1DIE6IyhEG8Rsua8g5zJHtHEtCquHukuhrDPIUwmPWc8C', 'Doctor', 'active'),
+('doctor02', '$2b$10$JLXsFxPDKpbDpfTWLnEawOYtRSrKy5reMFfSwzVp8..A54bqXxkSi', 'Doctor', 'active'),
+('doctor03', '$2b$10$LE6eaI8mKgALEMVvf73oRO6b8HkaT01x1zoKMKIPsCsXrchDXWwIG', 'Doctor', 'active'),
+('labstaff01', '$2b$10$ddLibF8rB0BqfhjP0osnYuKaFqO0WYcenTtLWBa7yA6Sfq9OGT.Zi', 'Lab-Staff', 'active'),
+('labstaff02', '$2b$10$JOzqTAnXzpqMc4UH.kPrY.aD5d2SJNTn.lYIEiPCTfiGbqomAbnp.', 'Lab-Staff', 'active'),
+('regstaff01', '$2b$10$0Le2SIyw4iavY5dy2yhkMOD7bEy6dFrq4vsqTYKTiTwTi/d.IdzEG', 'Registration-staff', 'active'),
+('regstaff02', '$2b$10$Ybza.Z0Bd/CBTHsXuEm3.ewckPUPfrb2nX5Cuj5FirLRcYoVPbo16', 'Registration-staff', 'active'),
+('patient01', '$2b$10$R4GU6QXXC4Yd9A75aPQyP.11OZFQXpBDY9KOGe5QmT79.DPViX6oS', 'Patient', 'active'),
+('patient02', '$2b$10$g//P460qO3BUjjb7AElXL.9SSneTkoGzSwUtgr/ZAPVxQIdWUyyM6', 'Patient', 'active'),
+('patient03', '$2b$10$x.pTUnbdim70JyRNDTmREOYag7O0mwI9OMoHUKZ9Mi6K9Q1wuXFrW', 'Patient', 'active'),
+('patient04', '$2b$10$DMyV/q3.A3sILMGuo1XF3.SWDA2SyjQ9SyS6mXOWWWPqfebyJ7JQ6', 'Patient', 'active'),
+('patient05', '$2b$10$M3pd.j2T2c2nawZEs0m9IeAru3iNRglqaGqGEnzuTL/cykzcnKG/y', 'Patient', 'active');
 
 -- 2. Patients (cần Accounts trước)
 INSERT INTO Patients (account_id, full_name, dob, gender, email, phone, address) VALUES

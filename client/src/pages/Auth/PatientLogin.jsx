@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
-const PATIENT_ACCOUNTS = [
-  { username: 'patient1', password: 'patient123', name: 'Nguyễn Văn A', avatar: 'https://randomuser.me/api/portraits/men/15.jpg' },
-  { username: 'patient2', password: 'patient456', name: 'Trần Thị B', avatar: 'https://randomuser.me/api/portraits/women/25.jpg' },
-];
-
-const PatientLogin = ({ onLogin }) => {
+const PatientLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { login, getDefaultPath } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const found = PATIENT_ACCOUNTS.find(
-      (acc) => acc.username === username.trim() && acc.password === password.trim()
-    );
-    if (found) {
-      setError('');
-      onLogin && onLogin({ ...found, role: 'Patient' });
-      // Redirect back to original location or home
-      const from = location.state?.from || '/';
-      navigate(from, { replace: true });
-    } else {
-      setError('Sai tài khoản hoặc mật khẩu!');
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await login(username, password, 'patient');
+      
+      // Redirect back to original location or patient home
+      const from = location.state?.from || getDefaultPath(result.user.role);
+      navigate(from, { replace: true });      
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,16 +56,20 @@ const PatientLogin = ({ onLogin }) => {
             required
           />
         </div>
-        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}
-        <button
+        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}        <button
           type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded-md font-semibold hover:bg-green-700 transition"
+          disabled={loading}
+          className={`w-full py-2 rounded-md font-semibold transition ${
+            loading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-green-600 hover:bg-green-700'
+          } text-white`}
         >
-          Đăng nhập
-        </button>
-        <div className="mt-4 text-xs text-gray-500">
-          <div><b>Patient</b>: patient1 / patient123</div>
-          <div><b>Patient</b>: patient2 / patient456</div>
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </button>        <div className="mt-4 text-xs text-gray-500">
+          <div><b>Bệnh nhân</b>: patient01 / hash_patient1_password</div>
+          <div><b>Bệnh nhân</b>: patient02 / hash_patient2_password</div>
+          <div><b>Bệnh nhân</b>: patient03 / hash_patient3_password</div>
         </div>
       </form>
     </div>

@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import ServiceCard from "../../../components/common/ServiceCard"; // Import ServiceCard component
 import DoctorCard from "../../../components/common/DoctorCard";
 import { getDoctors, getServices } from "../../../services/api";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const HomePage = () => {
+  const { user, isAuthenticated, isStaff, getDefaultPath } = useAuth();
+  
+  // Redirect staff users to their dashboard
+  if (isAuthenticated() && isStaff()) {
+    return <Navigate to={getDefaultPath(user.role)} replace />;
+  }
+
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [doctorsError, setDoctorsError] = useState(null);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const demoData = {
   summary: [
@@ -84,9 +85,10 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
   </div>
 );
 
-const LabStaff = ({ user }) => {
+const LabStaff = () => {
   const [sections, setSections] = useState(demoData.sections);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleProcess = (card) => {
     navigate('/lab-process', { state: card });

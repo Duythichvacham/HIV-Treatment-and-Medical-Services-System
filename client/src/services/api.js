@@ -19,10 +19,9 @@ const api = axios.create({
 // ===========================================
 // REQUEST INTERCEPTOR
 // ===========================================
-api.interceptors.request.use(
-  (config) => {
+api.interceptors.request.use(  (config) => {
     // Add auth token if available
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -52,8 +51,7 @@ api.interceptors.response.use(
     if (ENV.ENABLE_LOGGING) {
       console.log(`✅ API Response: ${response.status} ${response.config.url}`);
     }
-    return response;
-  },
+    return response;  },
   (error) => {
     if (ENV.ENABLE_LOGGING) {
       console.error(`❌ API Error:`, error.response?.data || error.message);
@@ -61,10 +59,17 @@ api.interceptors.response.use(
 
     // Handle common errors
     if (error.response?.status === 401) {
-      // Clear auth and redirect to login
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      window.location.href = "/login";
+      // Only redirect if it's not a login request (token expired case)
+      const isLoginRequest = error.config?.url?.includes('/login');
+      
+      if (!isLoginRequest) {
+        // Clear auth and redirect to login only for token expiration
+        localStorage.removeItem("token");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        window.location.href = "/login/staff";
+      }
     }
 
     return Promise.reject(error);
@@ -145,6 +150,67 @@ export const getServices = async (type) => {
 export const createAppointment = async (appointmentData) => {
   const response = await api.post("/api/appointments/", appointmentData);
   return response.data;
+};
+
+// ===========================================
+// AUTH ENDPOINTS
+// ===========================================
+
+/**
+ * Login user (both staff and patient)
+ * @param {string} username - Username
+ * @param {string} password - Password
+ */
+export const login = async (username, password) => {
+  console.log("🔄 API Call: login with username:", username);
+
+  try {
+    const response = await api.post("/api/auth/login", {
+      username: username.trim(),
+      password: password.trim(),
+    });
+    
+    console.log("✅ login response:", response.data);
+      // Store token in localStorage
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error("❌ login error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Logout user
+ */
+export const logout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("staff");
+  localStorage.removeItem("patient");
+};
+
+/**
+ * Get current user info from token
+ */
+export const getCurrentUser = async () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("No token found");
+  }
+
+  try {
+    const response = await api.get("/api/auth/me");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getCurrentUser error:", error);
+    throw error;
+  }
 };
 
 /**
