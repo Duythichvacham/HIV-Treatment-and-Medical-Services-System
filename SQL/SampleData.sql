@@ -1,6 +1,6 @@
 ﻿-- Dữ liệu mẫu cho cơ sở dữ liệu HIV_HEALTH_CARE
 
--- 1. Accounts
+-- 1. Accounts (phải đầu tiên)
 INSERT INTO Accounts (username, password_hash, role, status) VALUES
 ('admin01', 'hash_admin_password', 'Manager', 'active'),
 ('doctor01', 'hash_doctor1_password', 'Doctor', 'active'),
@@ -16,7 +16,7 @@ INSERT INTO Accounts (username, password_hash, role, status) VALUES
 ('patient04', 'hash_patient4_password', 'Patient', 'active'),
 ('patient05', 'hash_patient5_password', 'Patient', 'active');
 
--- 2. Patients
+-- 2. Patients (cần Accounts trước)
 INSERT INTO Patients (account_id, full_name, dob, gender, email, phone, address) VALUES
 (9, N'Nguyễn Văn An', '1985-03-15', 'male', 'nva@email.com', '0901234567', N'123 Nguyễn Huệ, Q.1, TP.HCM'),
 (10, N'Trần Thị Bình', '1990-07-22', 'female', 'ttb@email.com', '0902345678', N'456 Lê Lợi, Q.3, TP.HCM'),
@@ -24,13 +24,13 @@ INSERT INTO Patients (account_id, full_name, dob, gender, email, phone, address)
 (12, N'Phạm Thị Dung', '1995-01-30', 'female', 'ptd@email.com', '0904567890', N'321 Võ Văn Tần, Q.3, TP.HCM'),
 (13, N'Hoàng Văn Em', '1988-09-12', 'male', 'hve@email.com', '0905678901', N'654 Pasteur, Q.1, TP.HCM');
 
--- 3. Doctors  
+-- 3. Doctors (cần Accounts trước)
 INSERT INTO Doctors (account_id, full_name, email, phone, image_url, degrees, experience_years) VALUES
 (2, N'BS. Nguyễn Minh Khoa', 'bs.khoa@hospital.com', '0911111111', '/images/doctor1.jpg', N'Bác sĩ chuyên khoa I - Nhiễm khuẩn', 15),
 (3, N'BS. Trần Thị Lan', 'bs.lan@hospital.com', '0922222222', '/images/doctor2.jpg', N'Thạc sĩ Y học - Chuyên khoa HIV/AIDS', 10),
 (4, N'BS. Lê Văn Phúc', 'bs.phuc@hospital.com', '0933333333', '/images/doctor3.jpg', N'Tiến sĩ Y học - Chuyên khoa Nội', 20);
 
--- 4. ARVRegimens
+-- 4. ARVRegimens (độc lập)
 INSERT INTO ARVRegimens (name, for_group, components) VALUES
 (N'TDF/3TC/EFV', N'Người lớn', N'Tenofovir 300mg + Lamivudine 300mg + Efavirenz 600mg'),
 (N'ABC/3TC/DTG', N'Người lớn', N'Abacavir 600mg + Lamivudine 300mg + Dolutegravir 50mg'),
@@ -38,7 +38,7 @@ INSERT INTO ARVRegimens (name, for_group, components) VALUES
 (N'AZT/3TC/LPV/r', N'Trẻ em', N'Zidovudine + Lamivudine + Lopinavir/ritonavir'),
 (N'ABC/3TC/RAL', N'Người cao tuổi', N'Abacavir 600mg + Lamivudine 300mg + Raltegravir 400mg');
 
--- 5. Rooms
+-- 5. Rooms (độc lập)
 INSERT INTO Rooms (room_name, room_type) VALUES
 (N'Phòng khám 101', N'Khám'),
 (N'Phòng khám 102', N'Khám'),
@@ -46,7 +46,7 @@ INSERT INTO Rooms (room_name, room_type) VALUES
 (N'Phòng xét nghiệm', N'Xét nghiệm'),
 (N'Phòng tư vấn', N'Tư vấn');
 
--- 6. Slots
+-- 6. Slots (độc lập)
 INSERT INTO Slots (start_time, end_time) VALUES
 ('08:00', '09:00'),
 ('09:00', '10:00'),
@@ -55,23 +55,23 @@ INSERT INTO Slots (start_time, end_time) VALUES
 ('14:30', '15:30'),
 ('15:30', '16:30');
 
--- 7. TestTypes
+-- 7. TestTypes (độc lập)
 INSERT INTO TestTypes (name, unit, normal_range, result_type) VALUES
 (N'CD4', 'cells/mm³', '500-1500', 'numeric'),
 (N'HIV Viral Load', 'copies/ml', '<50', 'numeric'),
 (N'Sàng lọc', '', 'Negative', 'binary'),
 (N'Khẳng định', '', 'Positive', 'binary');
 
--- 8. Services
+-- 8. Services (cần TestTypes trước)
 INSERT INTO Services (name, service_type, description, price, test_type_id, is_active) VALUES
 (N'Khám tổng quát HIV', 'examination', N'Khám sức khỏe tổng quát cho bệnh nhân HIV', 150000, NULL, 1),
 (N'Tư vấn', 'consultation', N'Tư vấn về cho bệnh nhân HIV qua online', 100000, NULL, 1),
 (N'Xét nghiệm CD4', 'test', N'Đếm tế bào CD4', 200000, 1, 1),
 (N'Xét nghiệm Viral Load', 'test', N'Đo tải lượng virus HIV', 350000, 2, 1),
 (N'Xét nghiệm sàng lọc', 'test', N'abcxyz', 120000, 3, 1),
-(N'Xét nghiệm khẳng định', 'test', N'Tầm soát viêm gan SSR', 80000, 6, 1),
+(N'Xét nghiệm khẳng định', 'test', N'Tầm soát viêm gan SSR', 80000, 4, 1);
 
--- 9. WorkingShifts
+-- 9. WorkingShifts (cần Accounts, Doctors, Rooms trước)
 INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, max_patients_per_slot) VALUES
 (1, 1, '2025-06-23', 1, 'approved', 6),
 (1, 2, '2025-06-23', 2, 'approved', 6),
@@ -79,7 +79,7 @@ INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, m
 (1, 1, '2025-06-24', 1, 'approved', 6),
 (1, 2, '2025-06-24', 2, 'approved', 6);
 
--- 10. Appointments
+-- 10. Appointments (cần Patients, Doctors, Slots, Services, Rooms trước)
 INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, queue_number, room_id, bookingDate) VALUES
 (1, 1, 1, 1, 'completed', 1, 1, '2025-06-21'),
 (2, 2, 2, 1, 'completed', 1, 2, '2025-06-21'),
@@ -87,26 +87,26 @@ INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, qu
 (4, 1, 4, 1, 'requested', 1, 1, '2025-06-23'),
 (5, 2, 5, 1, 'requested', 1, 2, '2025-06-23');
 
--- 11. TestRequests
+-- 11. TestRequests (cần Doctors, Appointments, Services trước)
 INSERT INTO TestRequests (doctor_id, appointment_id, service_id, request_date, approved_by_id, approved_at, status) VALUES
-(1, 1, 3, '2025-06-21 09:30:00', 7, '2025-06-21 10:00:00', 'completed'),
-(1, 1, 4, '2025-06-21 09:30:00', 7, '2025-06-21 10:00:00', 'completed'),
-(2, 2, 3, '2025-06-21 10:30:00', 7, '2025-06-21 11:00:00', 'in_progress'),
-(2, 2, 5, '2025-06-21 10:30:00', 7, '2025-06-21 11:00:00', 'requested');
+(1, 1, 3, '2025-06-21 09:30:00', 5, '2025-06-21 10:00:00', 'completed'),
+(1, 1, 4, '2025-06-21 09:30:00', 5, '2025-06-21 10:00:00', 'completed'),
+(2, 2, 3, '2025-06-21 10:30:00', 5, '2025-06-21 11:00:00', 'in_progress'),
+(2, 2, 5, '2025-06-21 10:30:00', 5, '2025-06-21 11:00:00', 'requested');
 
--- 12. TestNotes
+-- 12. TestNotes (cần TestRequests, Appointments trước)
 INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime) VALUES
 (1, 1, 5, '2025-06-21 14:00:00'),
 (2, 1, 5, '2025-06-21 14:30:00'),
 (3, 2, 6, '2025-06-21 15:00:00');
 
--- 13. TestResults
+-- 13. TestResults (cần TestNotes trước)
 INSERT INTO TestResults (test_note_id, result_value, unit, reference_range, notes) VALUES
 (1, '650', 'cells/mm³', '500-1500', N'Kết quả bình thường'),
 (2, '25', 'copies/ml', '<50', N'Tải lượng virus không phát hiện được'),
 (3, '720', 'cells/mm³', '500-1500', N'CD4 trong giới hạn bình thường');
 
--- 14. MedicalHistory
+-- 14. MedicalHistory (cần Patients trước)
 INSERT INTO MedicalHistory (patient_id, hiv_discovered_at, arv_status, arv_adherence, arv_side_effects, medical_history, allergies) VALUES
 (1, '2020-03-15', N'Đang điều trị', 'good', N'Không có tác dụng phụ', N'Không có bệnh lý đi kèm', N'Không dị ứng thuốc'),
 (2, '2019-11-20', N'Đang điều trị', 'average', N'Buồn nôn nhẹ', N'Tiểu đường type 2', N'Dị ứng Penicillin'),
@@ -114,19 +114,19 @@ INSERT INTO MedicalHistory (patient_id, hiv_discovered_at, arv_status, arv_adher
 (4, '2022-01-05', N'Đang điều trị', 'poor', N'Mệt mỏi, chóng mặt', N'Không có', N'Dị ứng tôm cua'),
 (5, '2020-09-30', N'Đang điều trị', 'good', N'Không có', N'Viêm gan B đã khỏi', N'Không dị ứng thuốc');
 
--- 15. ClinicalExams
+-- 15. ClinicalExams (cần Appointments trước)
 INSERT INTO ClinicalExams (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary) VALUES
 (1, N'Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C', 65.5, 170.0, 22.7, N'Không có dấu hiệu bất thường', N'HIV giai đoạn ổn định', N'Không có'),
 (2, N'Huyết áp: 130/85, Mạch: 78/phút, Nhiệt độ: 36.8°C', 58.2, 162.0, 22.2, N'Hơi mệt mỏi', N'HIV với biến chứng nhẹ', N'Tiểu đường type 2'),
 (3, N'Huyết áp: 140/90, Mạch: 80/phút, Nhiệt độ: 37.0°C', 72.0, 168.0, 25.5, N'Cao huyết áp', N'HIV mới phát hiện', N'Cao huyết áp grade 1');
 
--- 16. Prescriptions
+-- 16. Prescriptions (cần Appointments, ARVRegimens trước)
 INSERT INTO Prescriptions (appointment_id, arv_regimen_id, support_drugs, counseling_notes, follow_up_plan, doctor_notes) VALUES
 (1, 1, N'Vitamin B complex, Calcium', N'Tiếp tục tuân thủ điều trị, ăn uống đầy đủ dinh dưỡng', N'Tái khám sau 3 tháng, xét nghiệm CD4 và Viral Load', N'Bệnh nhân tuân thủ điều trị tốt'),
 (2, 2, N'Metformin 500mg, Vitamin D', N'Kiểm soát đường huyết, tập thể dục nhẹ nhàng', N'Tái khám sau 1 tháng, theo dõi đường huyết', N'Cần theo dõi tương tác thuốc ARV và Metformin'),
 (3, 3, N'Amlodipine 5mg', N'Kiểm soát huyết áp, giảm muối ăn', N'Tái khám sau 2 tuần, đo huyết áp tại nhà', N'Bắt đầu điều trị ARV, cần theo dõi sát');
 
--- 17. PrescriptionDetails
+-- 17. PrescriptionDetails (cần Prescriptions trước)
 INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, duration_days, usage_instructions, notes) VALUES
 (1, N'TDF/3TC/EFV', '1 viên', N'1 lần/ngày', 90, N'Uống vào buổi tối, sau ăn', N'Tránh uống cùng với sữa'),
 (1, N'Vitamin B complex', '1 viên', N'1 lần/ngày', 90, N'Uống sau ăn sáng', N''),
@@ -135,14 +135,14 @@ INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, 
 (3, N'TDF/3TC/DTG', '1 viên', N'1 lần/ngày', 30, N'Uống vào buổi sáng, sau ăn', N'Liều khởi đầu'),
 (3, N'Amlodipine', '5mg', N'1 lần/ngày', 30, N'Uống vào buổi sáng', N'Theo dõi huyết áp');
 
--- 18. BlogPosts
+-- 18. BlogPosts (cần Accounts trước)
 INSERT INTO BlogPosts (title, content, author_id, is_educational, published) VALUES
 (N'Hiểu về HIV và cách phòng tránh', N'HIV là virus gây suy giảm miễn dịch ở người. Bài viết này sẽ giúp bạn hiểu rõ hơn về HIV và các biện pháp phòng tránh hiệu quả...', 2, 1, 1),
 (N'Tầm quan trọng của việc tuân thủ điều trị ARV', N'Việc uống thuốc ARV đúng giờ, đủ liều là vô cùng quan trọng trong điều trị HIV. Bài viết chia sẻ những lưu ý cần thiết...', 3, 1, 1),
 (N'Dinh dưỡng cho người nhiễm HIV', N'Chế độ dinh dưỡng hợp lý giúp tăng cường sức khỏe và hiệu quả điều trị. Hãy cùng tìm hiểu những thực phẩm nên và không nên ăn...', 4, 1, 1),
 (N'Tin tức: Nghiên cứu mới về điều trị HIV', N'Các nhà khoa học vừa công bố kết quả nghiên cứu mới về phương pháp điều trị HIV hiệu quả hơn...', 1, 0, 1);
 
--- 19. Invoices
+-- 19. Invoices (cần Patients, Appointments, TestRequests trước)
 INSERT INTO Invoices (patient_id, appointment_id, request_id, amount, service_type, status, issued_at) VALUES
 (1, 1, NULL, 150000, N'Khám bệnh', 'paid', '2025-06-21 09:00:00'),
 (1, NULL, 1, 200000, N'Xét nghiệm CD4', 'paid', '2025-06-21 14:00:00'),
