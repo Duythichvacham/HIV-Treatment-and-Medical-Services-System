@@ -6,7 +6,7 @@ export const getCurrentDate = () => {
   const today = new Date();
   return today.toISOString().split("T")[0];
 };
-
+//
 /**
  * Format date for Vietnamese display
  * @param {string} dateString - Date string in YYYY-MM-DD format
