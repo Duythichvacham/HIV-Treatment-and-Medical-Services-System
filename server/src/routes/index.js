@@ -10,7 +10,10 @@ const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
-const serviceRouter = require("./service");
+
+
+
+
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 function route(app) {
   //POST, cập nhật status cho appointments
@@ -26,14 +29,14 @@ function route(app) {
   app.use(`${process.env.API_PREFIX}/lab/test-notes`, testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);  //GET, lấy danh sách dịch vụ xét nghiệm
-  app.use(`${process.env.API_PREFIX}/services`, serviceRouter);
+  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);
   //GET, lấy danh sách bác sĩ
   app.use("/api/public/doctors", doctorRouter);
   //GET, lấy danh sách dịch vụ public
   app.use("/api/public/services", serviceRouter);
   //  GET, lấy slots theo lịch làm việc từng bác sĩ
   app.use("/api/public/slots", slotRouter);
+
   
 //     /api/v1/patients/search?name=...&phone=... (GET, tìm kiếm bệnh nhân) - search theo Sdt - tên
 app.use('/api/v1/patients' ,patientRouter );
@@ -61,6 +64,9 @@ app.use('/booking',bookingRouter);
 //PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
 app.use('/booking',bookingRouter);
 
+
+
+  app.use("/api/auth", authRouter);
 
 }
 

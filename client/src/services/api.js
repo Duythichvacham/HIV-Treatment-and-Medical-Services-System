@@ -125,7 +125,7 @@ export const getServices = async (type) => {
   console.log("🔄 API Call: getServices with type:", type);
 
   try {
-    const response = await api.get("/api/v1/services", {
+    const response = await api.get("/api/public/services", {
       params: { type },
     });
     console.log(
