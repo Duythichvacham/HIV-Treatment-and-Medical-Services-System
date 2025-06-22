@@ -73,6 +73,16 @@ CREATE TABLE TestTypes (
     result_type VARCHAR(20) CHECK (result_type IN ('numeric', 'binary')),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
+-- Services
+CREATE TABLE Services (
+    service_id INT PRIMARY KEY IDENTITY(1,1),
+    name NVARCHAR(100) NOT NULL, 
+    service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
+    description NVARCHAR(500),
+    price DECIMAL(10,2),
+    test_type_id INT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id), -- service_type phải là test
+    is_active BIT DEFAULT 1
+);
 -- Appointments
 CREATE TABLE Appointments (
     appointment_id INT PRIMARY KEY IDENTITY(1,1),
@@ -80,9 +90,11 @@ CREATE TABLE Appointments (
     doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id),
 -- phân thành 2 luồng là đặt khám và xn nên mặc định docid = null và chỉ có nếu khám
     slot_id INT NOT NULL FOREIGN KEY REFERENCES Slots(slot_id),
+    service_id INT NULL FOREIGN KEY REFERENCES Services(service_id),
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
     queue_number INT NOT NULL DEFAULT 1,
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
+    bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id)
 );
@@ -92,25 +104,14 @@ CREATE TABLE TestRequests (
     request_id INT PRIMARY KEY IDENTITY(1,1),
     doctor_id INT NOT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- người làm đơn
     appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- phát sinh từ đơn đặt lịch nào khi đang khám
-    notes NVARCHAR(500) NULL,
+    service_id INT NULL FOREIGN KEY REFERENCES Services(service_id), -- nếu là dịch vụ thì sẽ có service_type
     request_date DATETIME DEFAULT GETDATE(),
     approved_by_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- registration-staff
     approved_at DATETIME NULL,
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
 );
 
--- Services
-CREATE TABLE Services (
-    service_id INT PRIMARY KEY IDENTITY(1,1),
-    request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
-	appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id),
-    name NVARCHAR(100) NOT NULL, 
-    service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
-    description NVARCHAR(500),
-    price DECIMAL(10,2),
-    test_type_id INT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id), -- service_type phải là test
-    is_active BIT DEFAULT 1
-);
+
 -- WorkingShifts
 CREATE TABLE WorkingShifts (
     shift_id INT PRIMARY KEY IDENTITY(1,1),
@@ -210,6 +211,7 @@ CREATE TABLE Invoices (
     amount DECIMAL(10,2) NOT NULL,
     service_type NVARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'paid', 'cancelled')),
-    issued_at DATETIME NOT NULL DEFAULT GETDATE(),
-    pdf_url VARCHAR(255)
+    issued_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
+    pdf_url VARCHAR(255) NULL -- lưu đường dẫn file pdf hóa đơn nếu có (có thể không cần vì có thể tạo từ app)
 );

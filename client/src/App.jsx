@@ -20,41 +20,16 @@ import RegistrationStaff from "./pages/Staff/RegistrationStaff";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
-import DoctorDashBoard from "./pages/Doctor/DoctorDashboard";
+<<<<<<< HEAD
+import DoctorDashBoard from "./pages/Doctor/DoctorDashBoard";
+=======
+>>>>>>> fa1f525e92eb1a17c5f892e64e54269c5b43cff3
+
 function App() {
-  // State lưu thông tin user đăng nhập
   const [user, setUser] = useState(null);
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header user={user} setUser={setUser} />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route
-              path="/login/staff"
-              element={<StaffLogin onLogin={setUser} />}
-            />
-            <Route
-              path="/login/patient"
-              element={<PatientLogin onLogin={setUser} />}
-            />
-            <Route path="/lab-staff" element={<LabStaff user={user} />} />
-            <Route path="/lab-process" element={<LabProcess />} />
-            <Route path="/lab-result" element={<LabResult />} />
-            <Route path="/doctor" element={<DoctorDashBoard />} />
-
-            <Route path="/register" element={<RegisterPlaceholder />} />
-            
-            <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
-            <Route path="/doctorpage" element={<DoctorPage />} />
-            <Route path="/appointment" element={<Appointment user={user} />} />
-          </Routes>
-        </main>
-        {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
-        {(!user || user.role === "Patient") && <Footer />}
-      </div>
       <AppContent user={user} setUser={setUser} />
     </Router>
   );
@@ -83,12 +58,12 @@ function AppContent({ user, setUser }) {
           <Route path="/lab-staff" element={<LabStaff user={user} />} />
           <Route path="/lab-process" element={<LabProcess />} />
           <Route path="/lab-result" element={<LabResult />} />
+          <Route path="/doctor" element={<DoctorDashBoard />} />
           <Route
             path="/registration-staff"
             element={<RegistrationStaff user={user} />}
-          />
+          />{" "}
           <Route path="/register" element={<RegisterPlaceholder />} />
-
           <Route
             path="/service/:serviceId"
             element={<MainServiceDetail user={user} />}

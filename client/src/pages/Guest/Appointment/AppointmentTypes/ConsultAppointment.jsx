@@ -5,10 +5,11 @@ import {
   getSlots,
   createAppointment,
 } from "../../../../services/api";
+import { getCurrentDate } from "../../../../utils/dateUtil";
 
 const ConsultAppointment = () => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("2025-06-19");
+  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [selectedTime, setSelectedTime] = useState(null);
   const [consultType, setConsultType] = useState("video");
   const [reason, setReason] = useState("");
