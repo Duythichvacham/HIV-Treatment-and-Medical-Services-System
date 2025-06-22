@@ -1,4 +1,3 @@
-
 const { poolPromise } = require("../config/db");
 
 exports.confirmPayment = async (invoiceId) => {
@@ -143,14 +142,16 @@ exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, servi
 
     roomId = shiftResult.recordset[0].room_id;
   } else {
+    // Random phòng xét nghiệm
     const roomResult = await pool.request().query(`
       SELECT TOP 1 room_id 
       FROM Rooms 
-      WHERE room_type = N'Khám'
+      WHERE room_type = N'Xét nghiệm'
+      ORDER BY NEWID()
     `);
 
     if (roomResult.recordset.length === 0) {
-      throw new Error('Không tìm thấy phòng khám phù hợp');
+      throw new Error('Không tìm thấy phòng xét nghiệm phù hợp');
     }
 
     roomId = roomResult.recordset[0].room_id;
@@ -168,22 +169,55 @@ exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, servi
   const price = serviceResult.recordset[0].price;
 
   // Bước 3: Tính queue_number theo ngày
-  let queueNumberQuery = `
-    SELECT COUNT(*) AS count
-    FROM Appointments
-    WHERE bookingDate = @bookingDate
-  `;
+  let queueNumber;
 
-  if (doctorId) {
-    queueNumberQuery += ` AND doctor_id = @doctorId`;
+  if (doctorId && slotId) {
+    // Lấy tất cả slot_id của bác sĩ trong ngày, theo start_time
+    const slotsResult = await pool.request()
+      .query(`SELECT slot_id FROM Slots ORDER BY start_time`);
+    const slotIds = slotsResult.recordset.map(r => r.slot_id);
+
+    // Tìm vị trí slot hiện tại (index bắt đầu từ 0)
+    const slot_index = slotIds.findIndex(id => id == Number(slotId)) + 1;
+    if (slot_index === 0) {
+      throw new Error('Không tìm thấy slot_id phù hợp!');
+    }
+    // Lấy max_patients_per_slot
+    const maxSlotResult = await pool.request()
+      .input('doctorId', doctorId)
+      .input('bookingDate', bookingDate)
+      .query(`
+        SELECT TOP 1 ws.max_patients_per_slot
+        FROM WorkingShifts ws
+        WHERE ws.doctor_id = @doctorId AND ws.shift_date = @bookingDate AND ws.status = 'approved'
+      `);
+    const maxPatientsPerSlot = maxSlotResult.recordset[0].max_patients_per_slot;
+
+    // Đếm số lượng đã đặt trong slot hiện tại
+    const countResult = await pool.request()
+      .input('doctorId', doctorId)
+      .input('bookingDate', bookingDate)
+      .input('slotId', slotId)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments
+        WHERE doctor_id = @doctorId AND bookingDate = @bookingDate AND slot_id = @slotId
+      `);
+    const current_bookings = countResult.recordset[0].count || 0;
+
+    // Tính số thứ tự cộng dồn
+    queueNumber = (slot_index - 1) * maxPatientsPerSlot + current_bookings + 1;
+  } else {
+    // Đặt xét nghiệm: giữ nguyên logic cũ
+    const queueResult = await pool.request()
+      .input('bookingDate', bookingDate)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments
+        WHERE bookingDate = @bookingDate AND doctor_id IS NULL
+      `);
+    queueNumber = (queueResult.recordset[0].count || 0) + 1;
   }
-
-  const queueResult = await pool.request()
-    .input('bookingDate', bookingDate)
-    .input('doctorId', doctorId || null)
-    .query(queueNumberQuery);
-
-  const queueNumber = (queueResult.recordset[0].count || 0) + 1;
 
   // Bước 4: Tạo appointment
   const appointmentInsert = await pool.request()
@@ -200,7 +234,7 @@ exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, servi
         (patient_id, doctor_id, slot_id, service_id, status, queue_number, room_id, bookingDate)
       OUTPUT INSERTED.appointment_id
       VALUES 
-        (@patientId, @doctorId, @slotId, @serviceId, @status, @queueNumber, @roomId, @bookingDate)
+        (@patientId, @DoctorId, @slotId, @serviceId, @status, @queueNumber, @roomId, @bookingDate)
     `);
 
   const appointmentId = appointmentInsert.recordset[0].appointment_id;

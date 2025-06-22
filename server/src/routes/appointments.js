@@ -18,5 +18,7 @@ router.post("/:appointment_id/status", authenticateToken, appointmentController.
 router.get("/", appointmentController.getAppointments);
 // Đặt lịch khám mới
 router.post("/", authenticateToken, appointmentController.createAppointment);
+// Lấy chi tiết lịch hẹn theo appointment_id
+router.get('/:appointment_id', require('../middleware/authMiddleware'), appointmentController.getAppointmentDetail);
 
 module.exports = router;

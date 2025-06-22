@@ -53,10 +53,8 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       if (serviceType && serviceType.startsWith('doctor_')) {
         doctor_id = serviceType.replace('doctor_', '');
         service_id = 1;
-        // room_id để null
       } else if (serviceType && serviceType.startsWith('service_')) {
         service_id = serviceType.replace('service_', '');
-        // room_id để null, backend sẽ random phòng xét nghiệm
       }
       const res = await createAppointment({
         doctor_id,
@@ -67,17 +65,45 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         reason,
         serviceType: isDoctor ? "doctor" : "service"
       });
-      // Lấy room_id thực tế từ response backend
-      let realRoom = res?.appointment?.room_id || 1;
-      setAppointmentData(prev => ({
-        ...prev,
-        room: realRoom
-      }));
+
+      // Lấy appointment_id từ response
+      const appointment_id = res?.appointment?.appointment_id || res?.appointment_id;
+      // Gọi API lấy chi tiết lịch hẹn từ backend
+      const token = localStorage.getItem('token');
+      console.log('Token gửi lên BE:', token);
+
+      const detailRes = await fetch(`/api/v1/appointments/${appointment_id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const detail = await detailRes.json();
+
+      // Debug dữ liệu trả về từ backend
+      console.log('DEBUG chi tiết lịch hẹn từ BE:', detail);
+
+      // Map lại dữ liệu cho đúng format modal cần
+      const mappedData = {
+        queueNumber: detail.data?.queue_number,
+        serviceName: detail.data?.service_name || serviceName,
+        room: detail.data?.room_id,
+        doctorOrStaff: detail.data?.doctor_name || detail.data?.staff_name || "Nhân viên xét nghiệm",
+        date: detail.data?.bookingDate ? detail.data.bookingDate.slice(0, 10) : '', // chỉ lấy YYYY-MM-DD
+        time: detail.data?.slot_label || "Trong giờ làm việc",
+        fee: price,
+        isDoctor,
+      };
+
+      // Debug dữ liệu truyền vào modal
+      console.log('DEBUG dữ liệu truyền vào modal:', mappedData);
+
+      setAppointmentData(mappedData);
       setIsConfirmOpen(false);
       setIsReceiptOpen(true);
       sessionStorage.removeItem(storageKey);
     } catch (err) {
       setError('Đặt lịch thất bại. Vui lòng thử lại!');
+      console.error('DEBUG lỗi đặt lịch:', err);
     } finally {
       setLoading(false);
     }
@@ -254,7 +280,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           <AppointmentSuccessModal
             isOpen={isReceiptOpen}
             onClose={() => setIsReceiptOpen(false)}
-            appointmentData={{ ...appointmentData, queueNumber: Math.floor(Math.random()*20+1), code: `A${Date.now()}` }}
+            appointmentData={appointmentData}
           />
         </>
       )}

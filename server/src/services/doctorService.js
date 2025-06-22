@@ -1,23 +1,27 @@
 const { poolPromise } = require("../config/db");
 
 //
-const getCurrentExam = async (patientId) => {
+const getCurrentExam = async (patientId, appointmentId = null) => {
   const pool = await poolPromise;
-  const result = await pool.request().input("patient_id", patientId).query(`
-      SELECT 
-    p.full_name AS ho_ten,
-    'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS ma_bn,
-    DATEDIFF(YEAR, p.dob, GETDATE()) AS tuoi,
-    p.gender,
-	s.start_time AS gio_hen,
-	a.appointment_id
-INTO #PatientInfo
-FROM Patients p
-JOIN Appointments a ON p.patient_id = a.patient_id
-JOIN Slots s ON a.slot_id = s.slot_id
-WHERE p.patient_id = @patient_id
-  AND a.status IN ('requested', 'in_progress')  -- Chỉ lấy appointment đang active
-ORDER BY a.created_at DESC;
+  let query = `
+    SELECT 
+      p.full_name AS ho_ten,
+      'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS ma_bn,
+      DATEDIFF(YEAR, p.dob, GETDATE()) AS tuoi,
+      p.gender,
+      s.start_time AS gio_hen,
+      a.appointment_id
+    INTO #PatientInfo
+    FROM Patients p
+    JOIN Appointments a ON p.patient_id = a.patient_id
+    JOIN Slots s ON a.slot_id = s.slot_id
+    WHERE p.patient_id = @patient_id
+      AND a.status IN ('requested', 'in_progress')
+  `;
+  if (appointmentId) {
+    query += ` AND a.appointment_id = @appointment_id`;
+  }
+  query += ` ORDER BY a.created_at DESC; 
 
 -- Lấy thông tin điều trị ARV hiện tại
 SELECT TOP 1
@@ -92,7 +96,12 @@ JOIN #XetNghiemGanNhat xn ON 1 = 1;
 DROP TABLE #PatientInfo;
 DROP TABLE #ARVInfo;
 DROP TABLE #LatestTests;
-DROP TABLE #XetNghiemGanNhat;`);
+DROP TABLE #XetNghiemGanNhat;`;
+
+  const request = pool.request().input("patient_id", patientId);
+  if (appointmentId) request.input("appointment_id", appointmentId);
+
+  const result = await request.query(query);
   return result.recordset;
 };
 //

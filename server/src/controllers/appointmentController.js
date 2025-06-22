@@ -175,3 +175,17 @@ exports.createAppointment = async (req, res, next) => {
   }
 };
 
+// Lấy chi tiết lịch hẹn theo appointment_id
+exports.getAppointmentDetail = async (req, res, next) => {
+  try {
+    const { appointment_id } = req.params;
+    const appointment = await appointmentService.getAppointmentDetail(appointment_id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Không tìm thấy lịch hẹn' });
+    }
+    return res.status(200).json({ message: 'Lấy chi tiết lịch hẹn thành công', data: appointment });
+  } catch (error) {
+    next(error);
+  }
+};
+

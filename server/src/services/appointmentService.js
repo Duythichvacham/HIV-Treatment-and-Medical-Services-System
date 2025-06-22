@@ -143,7 +143,7 @@ exports.getLabTestFinished = async () => {
   return result.recordset;
 };
 
- exports.getAllByUser = async (patientId) => {
+exports.getAllByUser = async (patientId) => {
   const pool = await poolPromise;
   const result = await pool.request()
   .input('patientId', patientId)
@@ -163,5 +163,22 @@ SELECT  [appointment_id]
    `);
 
   return result.recordset;
+};
+
+// Lấy chi tiết lịch hẹn theo appointment_id
+exports.getAppointmentDetail = async (appointment_id) => {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input('appointment_id', appointment_id)
+    .query(`
+      SELECT a.*, p.full_name as patient_name, s.name as service_name, r.room_name, d.full_name as doctor_name
+      FROM Appointments a
+      LEFT JOIN Patients p ON a.patient_id = p.patient_id
+      LEFT JOIN Services s ON a.service_id = s.service_id
+      LEFT JOIN Rooms r ON a.room_id = r.room_id
+      LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+      WHERE a.appointment_id = @appointment_id
+    `);
+  return result.recordset[0];
 };
 

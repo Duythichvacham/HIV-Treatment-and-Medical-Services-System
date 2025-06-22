@@ -26,11 +26,12 @@ const PatientExam = ({ patientId, appointmentId, onBack, onFinishExam, mode = "e
     console.log('Saving temporary exam data:', examData);
     alert('Đã lưu tạm thành công!');
   };useEffect(() => {
-    console.log('PatientExam useEffect - tab:', tab, 'patientId:', patientId);
+    console.log('PatientExam useEffect - tab:', tab, 'patientId:', patientId, 'appointmentId:', appointmentId);
     if (tab === "current") {
       setLoading(true);
       axios
-        .get(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}`)        .then((res) => {
+        .get(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}?appointmentId=${appointmentId}`)
+        .then((res) => {
           console.log('Current exam API response:', res.data);
           setInfo(res.data.data?.[0] || null);
           setLoading(false);
@@ -53,7 +54,7 @@ const PatientExam = ({ patientId, appointmentId, onBack, onFinishExam, mode = "e
           setLoading(false);
         });
     }
-  }, [tab, patientId]);
+  }, [tab, patientId, appointmentId]);
 
   if (loading) return <div>Đang tải...</div>;
 
