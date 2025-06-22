@@ -147,9 +147,20 @@ export const getServices = async (type) => {
  * Create appointment
  * @param {Object} appointmentData - Appointment data
  */
-export const createAppointment = async (appointmentData) => {
-  const response = await api.post("/api/appointments/", appointmentData);
-  return response.data;
+
+/**
+ * Đặt lịch khám mới
+ * @param {object} data - Thông tin đặt lịch
+ * @returns {Promise<object>} - Kết quả đặt lịch
+ */
+export const createAppointment = async (data) => {
+  try {
+    const response = await api.post("/api/v1/appointments", data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createAppointment error:", error);
+    throw error;
+  }
 };
 
 // ===========================================

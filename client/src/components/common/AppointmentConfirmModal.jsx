@@ -2,8 +2,14 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 
 const AppointmentConfirmModal = ({ isOpen, onCancel, onConfirm, data }) => {
-  if (!isOpen) return null;
-  const { serviceName, date, time, fee, isDoctor, doctorOrStaff } = data;
+  if (!isOpen || !data) return null;
+  // Đảm bảo lấy đúng dữ liệu, fallback nếu thiếu
+  const serviceName = data.serviceName || data.service_name || '';
+  const date = data.date || data.bookingDate || '';
+  const time = data.time || data.timeSlot || data.slot_time || '';
+  const fee = data.fee || data.price || '';
+  const isDoctor = typeof data.isDoctor !== 'undefined' ? data.isDoctor : (data.doctorOrStaff ? true : false);
+  const doctorOrStaff = data.doctorOrStaff || data.doctor_name || data.staff_name || '';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PAY_${Date.now()}`;
   return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
