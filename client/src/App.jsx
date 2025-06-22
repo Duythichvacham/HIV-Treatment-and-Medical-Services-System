@@ -20,7 +20,10 @@ import RegistrationStaff from "./pages/Staff/RegistrationStaff";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
+<<<<<<< HEAD
 import DoctorDashBoard from "./pages/Doctor/DoctorDashBoard";
+=======
+>>>>>>> fa1f525e92eb1a17c5f892e64e54269c5b43cff3
 
 function App() {
   const [user, setUser] = useState(null);
@@ -59,7 +62,7 @@ function AppContent({ user, setUser }) {
           <Route
             path="/registration-staff"
             element={<RegistrationStaff user={user} />}
-          />
+          />{" "}
           <Route path="/register" element={<RegisterPlaceholder />} />
           <Route
             path="/service/:serviceId"
