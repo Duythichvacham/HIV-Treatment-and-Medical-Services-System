@@ -10,6 +10,8 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const validateReExamDate = (dateString) => {
     if (!dateString) return true; // Ngày tái khám không bắt buộc
@@ -59,7 +61,12 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         alert('Vui lòng kiểm tra lại ngày hẹn tái khám!');
         return;
       }
-    }    try {
+    }
+
+    setLoading(true);
+    setSaveMessage('');
+
+    try {
       // Kiểm tra appointment_id
       const appointmentId = patient?.appointment_id;
       if (!appointmentId) {
@@ -90,10 +97,11 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         body: JSON.stringify(requestData)
       });
 
-      const result = await response.json();
-        if (!response.ok) {
+      const result = await response.json();      if (!response.ok) {
         throw new Error(result.message || 'Lỗi khi lưu dữ liệu khám bệnh');
       }
+      
+      setSaveMessage('Hoàn thành khám bệnh thành công!');
       
       // Sau khi lưu thành công, gọi onFinish để cập nhật status
       const examData = {
@@ -105,10 +113,11 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
       onFinish?.(examData);
         } catch (error) {
       console.error('Error saving exam data:', error);
-      alert('Có lỗi xảy ra khi lưu dữ liệu khám bệnh: ' + error.message);
+      setSaveMessage('Lỗi: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-  };
-  const handleSaveTemp = async () => {
+  };  const handleSaveTemp = async () => {
     // Validate ngày tái khám nếu có nhập (cả khi lưu tạm)
     if (form.reExamDate) {
       const validation = validateReExamDate(form.reExamDate);
@@ -117,7 +126,12 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         alert('Vui lòng kiểm tra lại ngày hẹn tái khám!');
         return;
       }
-    }    try {
+    }
+
+    setLoading(true);
+    setSaveMessage('');
+
+    try {
       // Kiểm tra appointment_id
       const appointmentId = patient?.appointment_id;
       if (!appointmentId) {
@@ -161,12 +175,13 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
         saved_at: new Date().toISOString()
       };
       
-      onSaveTemp?.(examData);
-        } catch (error) {
+      onSaveTemp?.(examData);        } catch (error) {
       console.error('Error saving temporary exam data:', error);
-      alert('Có lỗi xảy ra khi lưu tạm dữ liệu: ' + error.message);
+      setSaveMessage('Lỗi: ' + error.message);
+    } finally {
+      setLoading(false);
     }
-  };  return (
+  };return (
     <div className="bg-white rounded-xl shadow p-8 max-w-4xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-6">
         Chẩn đoán và kế hoạch điều trị
@@ -212,23 +227,34 @@ const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
           </div>
         )}
         <div className="text-gray-500 text-sm mt-1">
-          Ngày hẹn tái khám phải ít nhất 1 tuần kể từ hôm nay
-        </div>
+          Ngày hẹn tái khám phải ít nhất 1 tuần kể từ hôm nay        </div>
       </div>
+
+      {/* Save Message */}
+      {saveMessage && (
+        <div className={`mb-4 p-3 rounded-lg ${
+          saveMessage.includes('Lỗi') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+        }`}>
+          {saveMessage}
+        </div>
+      )}
+
       <div className="flex gap-4 justify-end mt-8">
         <button
-          className="bg-white border border-gray-300 px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-100"
+          className="bg-white border border-gray-300 px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-100 disabled:opacity-50"
           onClick={handleSaveTemp}
+          disabled={loading}
         >
           <FileText className="w-5 h-5" />
-          Lưu tạm
+          {loading ? 'Đang lưu...' : 'Lưu tạm'}
         </button>
         <button
-          className="bg-gray-900 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-800"
+          className="bg-gray-900 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-800 disabled:opacity-50"
           onClick={handleFinish}
+          disabled={loading}
         >
           <CheckCircle className="w-5 h-5" />
-          Hoàn thành khám
+          {loading ? 'Đang xử lý...' : 'Hoàn thành khám'}
         </button>
       </div>
     </div>
