@@ -106,4 +106,27 @@ exports.getLabTestFinished = async () => {
     `);
   return result.recordset;
 };
+exports.getAllByUser = async (patientId) => {
+  const pool = await poolPromise;
+  const result = await pool.request()
+  .input('patientId', patientId)
+
+  .query(`
+     
+SELECT  [appointment_id]
+      ,[patient_id]
+      ,[doctor_id]
+      ,[slot_id]
+      ,[status]
+      ,[queue_number]
+      ,[room_id]
+      ,[created_at]
+  FROM [HIV_HEATH_CARE].[dbo].[Appointments]
+  WHERE [patient_id] =@patientId
+
+    `);
+
+    return result.recordset;
+      
+};
 

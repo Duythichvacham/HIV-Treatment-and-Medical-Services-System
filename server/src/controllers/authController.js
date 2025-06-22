@@ -26,5 +26,5 @@ exports.login = async (req, res) => {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
-  bcrypt.hash('@1', 10).then(hash => console.log(hash));
+  // bcrypt.hash('@1', 10).then(hash => console.log(hash));
 };

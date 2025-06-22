@@ -47,7 +47,6 @@ function App() {
 
             <Route path="/register" element={<RegisterPlaceholder />} />
             
-            <Route path="/services/pep" element={<PepDetail user={user} />} />
             <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
             <Route path="/doctorpage" element={<DoctorPage />} />
             <Route path="/appointment" element={<Appointment user={user} />} />

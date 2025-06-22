@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const bookingController = require('../controllers/bookingController');
+const authenticateToken = require('../middleware/authMiddleware');
 
 
 router.patch('/pay/:invoiceId', bookingController.confirmPayment);
 //PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
 router.patch('/cancel/:invoiceId', bookingController.cancelBooking);
-router.post('/', bookingController.createBooking);
+//POST tao appointment va invoice
+router.post('/', authenticateToken,bookingController.createBooking);
 
 
 

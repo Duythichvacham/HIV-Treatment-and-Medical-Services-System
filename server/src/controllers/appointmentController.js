@@ -1,4 +1,6 @@
 const appointmentService = require('../services/appointmentService');
+const { poolPromise } = require('../config/db');
+
 
 
 exports.updateStatus = async (req, res, next) => {
@@ -72,3 +74,36 @@ exports.getLabTestFinished = async (req, res, next) => {
     next(error);
   }
 };
+
+
+// Get lấy danh sách hẹn của người dùng
+exports.getAppointments = async (req, res) => {
+
+    try {
+      const accountId = req.user.userId; // lấy từ token đã verify
+      const pool = await poolPromise;
+  
+      const result = await pool.request()
+        .input('accountId', accountId)
+        .query('SELECT patient_id FROM Patients WHERE account_id = @accountId');
+  
+      if (result.recordset.length === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy bệnh nhân cho tài khoản này' });
+      }
+  
+      const patientId = result.recordset[0].patient_id;
+
+      const listAppointment = await appointmentService.getAllByUser(patientId);
+
+
+      return res.status(200).json({ 
+        message : 'lay thanh cong danh sach',
+        patientId,
+        listAppointment
+       });
+    } catch (error) {
+      console.error('Lỗi truy vấn patient_id:', error);
+      return res.status(500).json({ message: 'Lỗi server: ' + error.message });
+    }
+  };
+  

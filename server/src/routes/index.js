@@ -6,12 +6,15 @@ const authRouter = require("./auth");
 const patientRouter = require("./patients");
 const userRouter = require("./users");
 const bookingRouter = require("./booking");
+const authenticateToken = require('../middleware/authMiddleware');
 
 const appointmentRouter = require("./appointments");
 const testRouter = require("./test");
 const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
+
 const serviceRouter = require("./service");
+
 
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
@@ -88,10 +91,13 @@ app.use('/booking',bookingRouter);
 app.use('/booking',bookingRouter);
 
 
-
+//POST login
   app.use("/api/auth", authRouter);
-///booking (POST)
-app.use('/booking' , bookingRouter);
+
+//POST /booking – tạo appointment + invoice
+app.use('/booking' ,bookingRouter);
+//GET /appointments – lấy danh sách lịch hẹn của người dùng
+app.use('/appointments' , authenticateToken,appointmentRouter);
 
 }
 
