@@ -22,15 +22,24 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
-    // Thay vì gọi API, chỉ mở modal xác nhận
+    const slotObj = slots.find(s => String(s.value) === String(timeSlot));
+    const slotLabel = slotObj ? slotObj.label : '';
+    console.log('DEBUG slots:', slots);
+    console.log('DEBUG timeSlot:', timeSlot);
+    console.log('DEBUG slotLabel:', slotLabel);
+    if (isDoctor && !slotLabel) {
+      setError('Vui lòng chọn khung giờ khám!');
+      return;
+    }
     setAppointmentData({
       serviceName,
       date,
-      time: timeSlot,
+      time: isDoctor ? slotLabel : "Trong giờ làm việc",
       fee: price,
       isDoctor,
-      room: 1, // room_id tạm fix cứng
-      doctorOrStaff: user?.name
+      room: 1,
+      doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
+      slotLabel
     });
     setIsConfirmOpen(true);
   };
@@ -40,21 +49,30 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     setLoading(true);
     setError(null);
     try {
-      let doctor_id = null, service_id = null, room_id = 1;
+      let doctor_id = null, service_id = null, room_id = null;
       if (serviceType && serviceType.startsWith('doctor_')) {
         doctor_id = serviceType.replace('doctor_', '');
         service_id = 1;
+        // room_id để null
       } else if (serviceType && serviceType.startsWith('service_')) {
         service_id = serviceType.replace('service_', '');
+        // room_id để null, backend sẽ random phòng xét nghiệm
       }
-      await createAppointment({
+      const res = await createAppointment({
         doctor_id,
-        slot_id: timeSlot,
+        slot_id: isDoctor ? timeSlot : null,
         service_id,
         room_id,
         bookingDate: date,
-        reason
+        reason,
+        serviceType: isDoctor ? "doctor" : "service"
       });
+      // Lấy room_id thực tế từ response backend
+      let realRoom = res?.appointment?.room_id || 1;
+      setAppointmentData(prev => ({
+        ...prev,
+        room: realRoom
+      }));
       setIsConfirmOpen(false);
       setIsReceiptOpen(true);
       sessionStorage.removeItem(storageKey);

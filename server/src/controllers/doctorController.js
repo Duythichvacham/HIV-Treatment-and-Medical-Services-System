@@ -3,22 +3,21 @@ const doctorService = require("../services/doctorService");
 // GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn theo ngày
 const getAppointmentQueue = async (req, res) => {
   try {
-    const doctor_id = req.params.doctorId; // Lấy id từ URL
-    const date = req.query.date; // Lấy ngày từ query parameter (optional)
-    console.log("getAppointmentQueue called with doctor_id:", doctor_id, "date:", date);
-    
+    const doctor_id = req.params.doctorId;
+    const date = req.query.date;
+    console.log("[API] getAppointmentQueue called with doctor_id:", doctor_id, "date:", date);
     const queue = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "requested",
       date
     );
-
+    console.log("[API] getAppointmentQueue result count:", queue?.length, "data:", queue);
     res.status(200).json({
       success: true,
       data: queue,
     });
   } catch (err) {
-    console.error(err);
+    console.error("[API] getAppointmentQueue error:", err);
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
@@ -26,19 +25,21 @@ const getAppointmentQueue = async (req, res) => {
 //GET lấy danh sách bệnh nhân đang khám theo ngày
 const getAppointmentInProgress = async (req, res) => {
   try {
-    const doctor_id = req.params.doctorId; // Lấy id từ URL
-    const date = req.query.date; // Lấy ngày từ query parameter (optional)
+    const doctor_id = req.params.doctorId;
+    const date = req.query.date;
+    console.log("[API] getAppointmentInProgress called with doctor_id:", doctor_id, "date:", date);
     const in_progress = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "in_progress",
       date
     );
+    console.log("[API] getAppointmentInProgress result count:", in_progress?.length, "data:", in_progress);
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân đang khám thành công",
       data: in_progress,
     });
   } catch (err) {
-    console.error(err);
+    console.error("[API] getAppointmentInProgress error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -46,19 +47,21 @@ const getAppointmentInProgress = async (req, res) => {
 //GET lấy danh sách bệnh nhân hoàn thành khám theo ngày
 const getAppointmentFinshed = async (req, res) => {
   try {
-    const doctor_id = req.params.doctorId; // Lấy id từ URL
-    const date = req.query.date; // Lấy ngày từ query parameter (optional)
+    const doctor_id = req.params.doctorId;
+    const date = req.query.date;
+    console.log("[API] getAppointmentFinshed called with doctor_id:", doctor_id, "date:", date);
     const finished = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "completed",
       date
     );
+    console.log("[API] getAppointmentFinshed result count:", finished?.length, "data:", finished);
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân hoàn thành khám thành công",
       data: finished,
     });
   } catch (err) {
-    console.error(err);
+    console.error("[API] getAppointmentFinshed error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -192,6 +195,24 @@ const saveExamData = async (req, res) => {
   }
 };
 
+// GET: Lấy doctor_id theo account_id
+const getDoctorByAccountId = async (req, res) => {
+  try {
+    const account_id = req.params.accountId;
+    const pool = await require("../config/db").poolPromise;
+    const result = await pool.request()
+      .input('account_id', account_id)
+      .query('SELECT doctor_id FROM Doctors WHERE account_id = @account_id');
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy doctor_id' });
+    }
+    res.json({ doctor_id: result.recordset[0].doctor_id });
+  } catch (error) {
+    console.error("getDoctorByAccountId error:", error);
+    res.status(500).json({ message: 'Lỗi server', error: error.message });
+  }
+};
+
 module.exports = {
   getDoctors,
   getAppointmentQueue,
@@ -200,4 +221,5 @@ module.exports = {
   getExamHistory,
   getCurrentExam,
   saveExamData,
+  getDoctorByAccountId,
 };

@@ -14,11 +14,36 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
 // Tạo mới lịch hẹn (appointment)
 exports.createAppointment = async (data) => {
   const pool = await poolPromise;
-  // destructure dữ liệu
   const { patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate } = data;
-  // Tự động lấy queue_number tiếp theo trong ngày, phòng, bác sĩ
-  // (có thể tối ưu sau, tạm để = 1)
-  const queue_number = 1;
+  let queue_number = 1;
+
+  if (doctor_id && slot_id) {
+    // Đặt lịch bác sĩ: queue_number theo slot, mỗi slot 6 số, không trùng trong ngày
+    // Lấy slot_index (thứ tự slot trong ngày)
+    const slotIndexResult = await pool.request()
+      .input('slot_id', slot_id)
+      .query('SELECT slot_id FROM Slots ORDER BY slot_id ASC');
+    let slot_index = 1;
+    if (slotIndexResult.recordset.length > 0) {
+      slot_index = slotIndexResult.recordset.findIndex(s => s.slot_id === slot_id) + 1;
+    }
+    // Đếm số lượng đã đặt trong slot này của ngày này
+    const countResult = await pool.request()
+      .input('slot_id', slot_id)
+      .input('bookingDate', bookingDate)
+      .query('SELECT COUNT(*) AS count FROM Appointments WHERE slot_id = @slot_id AND bookingDate = @bookingDate');
+    const count = countResult.recordset[0].count;
+    // Mỗi slot 6 số, bắt đầu từ (slot_index-1)*6+1
+    queue_number = (slot_index - 1) * 6 + count + 1;
+  } else {
+    // Đặt lịch xét nghiệm: queue_number tăng dần trong ngày
+    const countResult = await pool.request()
+      .input('bookingDate', bookingDate)
+      .query('SELECT COUNT(*) AS count FROM Appointments WHERE slot_id IS NULL AND bookingDate = @bookingDate');
+    const count = countResult.recordset[0].count;
+    queue_number = count + 1;
+  }
+
   const result = await pool.request()
     .input('patient_id', patient_id)
     .input('doctor_id', doctor_id)

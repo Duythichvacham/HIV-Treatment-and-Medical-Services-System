@@ -6,10 +6,17 @@ const AppointmentConfirmModal = ({ isOpen, onCancel, onConfirm, data }) => {
   // Đảm bảo lấy đúng dữ liệu, fallback nếu thiếu
   const serviceName = data.serviceName || data.service_name || '';
   const date = data.date || data.bookingDate || '';
-  const time = data.time || data.timeSlot || data.slot_time || '';
+  // Ưu tiên slotLabel, nhưng loại bỏ số chỗ trống nếu có
+  let time = data.slotLabel || '';
+  if (time) {
+    // Loại bỏ phần (x chỗ trống) nếu có
+    time = time.replace(/\s*\([^)]*chỗ trống[^)]*\)/, '').trim();
+  }
+  if (!time && typeof data.time === 'string' && isNaN(Number(data.time))) time = data.time;
   const fee = data.fee || data.price || '';
   const isDoctor = typeof data.isDoctor !== 'undefined' ? data.isDoctor : (data.doctorOrStaff ? true : false);
-  const doctorOrStaff = data.doctorOrStaff || data.doctor_name || data.staff_name || '';
+  let doctorOrStaff = data.doctorOrStaff || data.doctor_name || data.staff_name || '';
+  if (isDoctor && doctorOrStaff && doctorOrStaff.startsWith('patient')) doctorOrStaff = '';
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PAY_${Date.now()}`;
   return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -27,7 +34,7 @@ const AppointmentConfirmModal = ({ isOpen, onCancel, onConfirm, data }) => {
             <div><strong>Phí:</strong> <span className="text-green-600">{fee}</span></div>
             <div><strong>Ngày:</strong> {date}</div>
             <div><strong>Giờ:</strong> {time}</div>
-            <div><strong>{isDoctor ? 'Bác sĩ' : 'Nhân viên'}:</strong> {doctorOrStaff}</div>
+            
           </div>
           {/* QR Payment */}
           <div className="mb-4 text-center">

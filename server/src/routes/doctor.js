@@ -9,6 +9,7 @@ router.get("/appointments/finished/:doctorId", doctorController.getAppointmentFi
 
 // GET, lấy danh sách bác sĩ
 router.get("/", doctorController.getDoctors);
+router.get('/by-account/:accountId', doctorController.getDoctorByAccountId);
 
 //GET, lấy danh sách lịch sử khám bệnh của bệnh nhân
 router.get("/exam-history/:patientId", doctorController.getExamHistory);

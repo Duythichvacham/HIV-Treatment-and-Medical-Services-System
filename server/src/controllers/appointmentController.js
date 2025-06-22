@@ -123,10 +123,42 @@ exports.createAppointment = async (req, res, next) => {
     const patient_id = result.recordset[0].patient_id;
     // Lấy dữ liệu từ body
     const { doctor_id, slot_id, service_id, room_id, bookingDate } = req.body;
+    const serviceType = req.body.serviceType; // Giả sử serviceType cũng được gửi từ client
+    let finalRoomId = room_id;
+
+    // Nếu là dịch vụ xét nghiệm thì random 1 phòng có room_type = 'Xét nghiệm'
+    if (serviceType === 'service') {
+      const roomResult = await pool.request()
+        .query("SELECT room_id FROM Rooms WHERE room_type = N'Xét nghiệm'");
+      const roomList = roomResult.recordset;
+      if (roomList.length > 0) {
+        const randomIdx = Math.floor(Math.random() * roomList.length);
+        finalRoomId = roomList[randomIdx].room_id;
+      }
+    }
+
+    // Nếu là đặt lịch bác sĩ thì lấy room_id từ WorkingShifts
+    if (serviceType === 'doctor' && doctor_id && bookingDate) {
+      const shiftResult = await pool.request()
+        .input('doctor_id', doctor_id)
+        .input('bookingDate', bookingDate)
+        .query("SELECT TOP 1 room_id FROM WorkingShifts WHERE doctor_id = @doctor_id AND shift_date = @bookingDate AND status = 'approved'");
+      if (shiftResult.recordset.length === 0) {
+        return res.status(400).json({ message: 'Bác sĩ chưa được phân công phòng trong ngày này' });
+      }
+      finalRoomId = shiftResult.recordset[0].room_id;
+    }
+
     // Validate dữ liệu đầu vào (có thể bổ sung thêm)
-    if (!doctor_id || !slot_id || !service_id || !room_id || !bookingDate) {
+    if (
+      !service_id ||
+      !finalRoomId ||
+      !bookingDate ||
+      ((serviceType === 'doctor' || req.body.doctor_id) && (!doctor_id || !slot_id))
+    ) {
       return res.status(400).json({ message: 'Thiếu thông tin đặt lịch' });
     }
+
     // Gọi service để tạo mới
     const appointment = await appointmentService.createAppointment({
       patient_id,
@@ -134,7 +166,7 @@ exports.createAppointment = async (req, res, next) => {
       slot_id,
       service_id,
       status: 'requested',
-      room_id,
+      room_id: finalRoomId,
       bookingDate
     });
     return res.status(201).json({ message: 'Đặt lịch thành công', appointment });

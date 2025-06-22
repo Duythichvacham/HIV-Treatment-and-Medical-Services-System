@@ -16,8 +16,32 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const DoctorDashboard = () => {
   const { user } = useAuth();
-  const doctorId = user?.doctor_id;
+  const [doctorId, setDoctorId] = useState(null);
   const baseURL = "http://localhost:5000/api/v1/doctor/appointments";
+
+  // Đặt đoạn debug này ở đây!
+  useEffect(() => {
+    if (!user?.id) {
+      console.log("[DEBUG] user.id is missing, cannot fetch doctor_id");
+      return;
+    }
+    const fetchDoctorId = async () => {
+      try {
+        console.log(`[DEBUG] Fetching doctor_id for account_id: ${user.id}`);
+        const res = await axios.get(`http://localhost:5000/api/v1/doctor/by-account/${user.id}`);
+        setDoctorId(res.data.doctor_id);
+        console.log("[DEBUG] doctor_id response:", res.data);
+      } catch (err) {
+        setDoctorId(null);
+        if (err.response) {
+          console.error("[DEBUG] Error fetching doctor_id - response:", err.response.status, err.response.data);
+        } else {
+          console.error("[DEBUG] Error fetching doctor_id - error:", err);
+        }
+      }
+    };
+    fetchDoctorId();
+  }, [user]);
 
   console.log("DoctorDashboard - User:", user);
   console.log("DoctorDashboard - Doctor ID:", doctorId);
