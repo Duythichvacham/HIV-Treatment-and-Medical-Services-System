@@ -96,7 +96,7 @@ CREATE TABLE Appointments (
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
     bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id)
+    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id,bookingDate)
 );
 
 -- TestRequests
