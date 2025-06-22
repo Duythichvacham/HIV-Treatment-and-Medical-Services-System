@@ -3,7 +3,9 @@ const bcrypt = require('bcryptjs');
 const users = [
   { username: 'patient01' },
   { username: 'patient02' },
-  { username: 'patient03' }
+  { username: 'patient03' },
+  { username: 'patient04' }
+
  
 ];
 
