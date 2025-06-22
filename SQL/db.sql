@@ -89,7 +89,7 @@ CREATE TABLE Appointments (
     patient_id INT NOT NULL FOREIGN KEY REFERENCES Patients(patient_id),
     doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id),
 -- phân thành 2 luồng là đặt khám và xn nên mặc định docid = null và chỉ có nếu khám
-    slot_id INT NOT NULL FOREIGN KEY REFERENCES Slots(slot_id),
+    slot_id INT NULL FOREIGN KEY REFERENCES Slots(slot_id),
     service_id INT NULL FOREIGN KEY REFERENCES Services(service_id),
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
     queue_number INT NOT NULL DEFAULT 1,
