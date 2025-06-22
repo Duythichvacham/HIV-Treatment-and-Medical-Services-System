@@ -5,10 +5,11 @@ import {
   createAppointment,
   getServices,
 } from "../../../../services/api";
+import { getCurrentDate } from "../../../../utils/dateUtil";
 
 const TestAppointment = () => {
   const [selectedTestType, setSelectedTestType] = useState(null);
-  const [selectedDate, setSelectedDate] = useState("2025-06-19");
+  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [selectedTime, setSelectedTime] = useState(null);
   const [testTypes, setTestTypes] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
