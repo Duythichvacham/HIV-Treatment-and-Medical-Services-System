@@ -167,3 +167,25 @@ exports.getLabDone = async (date) => {
   const result = await request.query(query);
   return result.recordset;
 };
+
+// lấy danh sách tất cả mẫu xét nghiệm
+exports.getAllLabTests = async () => {
+  const pool = await poolPromise;
+  const result = await pool.request().query(`
+    SELECT 
+      a.appointment_id,
+      a.status,
+      a.created_at,
+      a.doctor_id,
+      d.full_name AS doctor_name,
+      p.full_name AS patient_name,
+      s.name AS service_name
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+    WHERE s.service_type = 'test'
+    ORDER BY a.created_at DESC
+  `);
+  return result.recordset;
+};
