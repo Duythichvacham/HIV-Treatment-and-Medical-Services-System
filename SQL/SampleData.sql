@@ -1,5 +1,3 @@
--- Dữ liệu mẫu cho cơ sở dữ liệu HIV_HEALTH_CARE
--- 1. Accounts
 INSERT INTO Accounts (username, password_hash, role, status) VALUES
 ('admin01', 'hash_admin_password', 'Manager', 'active'),
 ('doctor01', 'hash_doctor1_password', 'Doctor', 'active'),
@@ -230,12 +228,4 @@ INSERT INTO Invoices (patient_id, appointment_id, request_id, amount, service_ty
 (7, 7, NULL, 100000, N'Tư vấn', 'pending', NULL),
 (8, 8, NULL, 150000, N'Khám bệnh', 'pending', NULL),
 (10, 10, NULL, 150000, N'Khám bệnh', 'pending', NULL),
-(1, 11, NULL, 150000, N'Khám bệnh', 'pending', NULL),
-(2, 12, NULL, 100000, N'Tư vấn', 'pending', NULL);appointment_id, request_id, amount, service_type, status, issued_at) VALUES
-(1, 1, NULL, 150000, N'Khám bệnh', 'paid', '2025-06-21 09:00:00'),
-(1, NULL, 1, 200000, N'Xét nghiệm CD4', 'paid', '2025-06-21 14:00:00'),
-(1, NULL, 2, 350000, N'Xét nghiệm Viral Load', 'paid', '2025-06-21 14:30:00'),
-(2, 2, NULL, 150000, N'Khám bệnh', 'paid', '2025-06-21 10:00:00'),
-(2, NULL, 3, 200000, N'Xét nghiệm CD4', 'pending', '2025-06-21 15:00:00'),
-(4, 4, NULL, 150000, N'Khám bệnh', 'pending', NULL),
-(5, 5, NULL, 150000, N'Khám bệnh', 'pending', NULL);
+(1, 11, NULL, 150000, N'Khám bệnh', 'pending', NULL);
