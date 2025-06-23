@@ -3,7 +3,7 @@ const { poolPromise } = require("../config/db");
 //(PATCH, cập nhật status của TestRequests nếu service_type là "examination")
 exports.updateTestRequestExamStatus = async (request_id, status) => {
   const pool = await poolPromise;
-  // Kiểm tra service_type là 'examination'
+  // Kiểm tra service_type là 'examination' hoặc 'test'
   const check = await pool.request().input("request_id", request_id).query(`
       SELECT s.service_type
       FROM Services s
@@ -13,9 +13,9 @@ exports.updateTestRequestExamStatus = async (request_id, status) => {
 
   if (
     !check.recordset.length ||
-    check.recordset[0].service_type !== "examination"
+    (check.recordset[0].service_type !== "examination" && check.recordset[0].service_type !== "test")
   ) {
-    return null; // Không phải loại 'exam' hoặc không tồn tại
+    return null; // Không phải loại 'examination' hoặc 'test' hoặc không tồn tại
   }
 
   // Cập nhật status
@@ -96,75 +96,198 @@ exports.createTestResultAndComplete = async ({
   return insertResult.recordset[0];
 };
 
-// Lấy danh sách mẫu CHỜ xét nghiệm
+// Lấy danh sách mẫu CHỜ xét nghiệm (không join slot, chỉ lọc theo ngày và trạng thái)
 exports.getLabQueue = async (date) => {
   const pool = await poolPromise;
+  console.log('[DEBUG][getLabQueue] called with date:', date);
   let query = `
-    SELECT tr.request_id AS id, s.service_type AS type, s.name AS type_name, p.full_name AS patient_name, DATEDIFF(YEAR, p.dob, GETDATE()) AS age, 
-           CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
-           tr.request_date AS bookTime,
-           d.full_name AS doctor, tr.status, a.queue_number AS stt, p.patient_id
+    -- 1. Xét nghiệm do bác sĩ chỉ định (TestRequests)
+    SELECT 
+        'doctor_request' AS source,
+        tr.request_id AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        tr.request_date AS bookTime,
+        d.full_name AS doctor,
+        tr.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        NULL AS appointment_id
     FROM TestRequests tr
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Services s ON tr.service_id = s.service_id
     LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
+    JOIN Invoices i ON tr.request_id = i.request_id AND i.status = 'paid'
     WHERE tr.status = 'requested'`;
   if (date) {
     query += ` AND CONVERT(date, tr.request_date) = @date`;
   }
-  query += ` ORDER BY tr.request_date ASC`;
+  query += `
+    UNION ALL
+    -- 2. Xét nghiệm tự đặt (Appointments)
+    SELECT 
+        'self_booking' AS source,
+        NULL AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        a.created_at AS bookTime,
+        NULL AS doctor,
+        a.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        a.appointment_id
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    JOIN Invoices i ON a.appointment_id = i.appointment_id AND i.status = 'paid'
+    WHERE a.status = 'requested' AND a.doctor_id IS NULL AND s.service_type = 'test'`;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  query += `
+    ORDER BY bookTime ASC`;
+  console.log('[DEBUG][getLabQueue] SQL Query:', query);
   const request = pool.request();
   if (date) request.input('date', date);
   const result = await request.query(query);
+  console.log('[DEBUG][getLabQueue] result:', result.recordset);
   return result.recordset;
 };
 
-// Lấy danh sách mẫu ĐANG xét nghiệm
+// Lấy danh sách mẫu ĐANG xét nghiệm (không join slot, chỉ lọc theo ngày và trạng thái)
 exports.getLabInProgress = async (date) => {
   const pool = await poolPromise;
+  console.log('[DEBUG][getLabInProgress] called with date:', date);
   let query = `
-    SELECT tr.request_id AS id, s.service_type AS type, s.name AS type_name, p.full_name AS patient_name, DATEDIFF(YEAR, p.dob, GETDATE()) AS age, 
-           CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
-           tr.request_date AS bookTime,
-           d.full_name AS doctor, tr.status, a.queue_number AS stt, p.patient_id
+    -- 1. Xét nghiệm do bác sĩ chỉ định (TestRequests)
+    SELECT 
+        'doctor_request' AS source,
+        tr.request_id AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        tr.request_date AS bookTime,
+        d.full_name AS doctor,
+        tr.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        NULL AS appointment_id
     FROM TestRequests tr
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Services s ON tr.service_id = s.service_id
     LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
+    JOIN Invoices i ON tr.request_id = i.request_id AND i.status = 'paid'
     WHERE tr.status = 'in_progress'`;
   if (date) {
     query += ` AND CONVERT(date, tr.request_date) = @date`;
   }
-  query += ` ORDER BY tr.request_date ASC`;
+  query += `
+    UNION ALL
+    -- 2. Xét nghiệm tự đặt (Appointments)
+    SELECT 
+        'self_booking' AS source,
+        NULL AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        a.created_at AS bookTime,
+        NULL AS doctor,
+        a.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        a.appointment_id
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    JOIN Invoices i ON a.appointment_id = i.appointment_id AND i.status = 'paid'
+    WHERE a.status = 'in_progress' AND a.doctor_id IS NULL AND s.service_type = 'test'`;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  query += `
+    ORDER BY bookTime ASC`;
+  console.log('[DEBUG][getLabInProgress] SQL Query:', query);
   const request = pool.request();
   if (date) request.input('date', date);
   const result = await request.query(query);
+  console.log('[DEBUG][getLabInProgress] result:', result.recordset);
   return result.recordset;
 };
 
-// Lấy danh sách mẫu ĐÃ HOÀN THÀNH
+// Lấy danh sách mẫu ĐÃ HOÀN THÀNH (không join slot, chỉ lọc theo ngày và trạng thái)
 exports.getLabDone = async (date) => {
   const pool = await poolPromise;
+  console.log('[DEBUG][getLabDone] called with date:', date);
   let query = `
-    SELECT tr.request_id AS id, s.service_type AS type, s.name AS type_name, p.full_name AS patient_name, DATEDIFF(YEAR, p.dob, GETDATE()) AS age, 
-           CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
-           tr.request_date AS bookTime,
-           d.full_name AS doctor, tr.status, a.queue_number AS stt, p.patient_id
+    -- 1. Xét nghiệm do bác sĩ chỉ định (TestRequests)
+    SELECT 
+        'doctor_request' AS source,
+        tr.request_id AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        tr.request_date AS bookTime,
+        d.full_name AS doctor,
+        tr.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        NULL AS appointment_id
     FROM TestRequests tr
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Services s ON tr.service_id = s.service_id
     LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
+    JOIN Invoices i ON tr.request_id = i.request_id AND i.status = 'paid'
     WHERE tr.status = 'completed'`;
   if (date) {
     query += ` AND CONVERT(date, tr.request_date) = @date`;
   }
-  query += ` ORDER BY tr.request_date DESC`;
+  query += `
+    UNION ALL
+    -- 2. Xét nghiệm tự đặt (Appointments)
+    SELECT 
+        'self_booking' AS source,
+        NULL AS id,
+        s.service_type AS type,
+        s.name AS type_name,
+        p.full_name AS patient_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+        a.created_at AS bookTime,
+        NULL AS doctor,
+        a.status,
+        a.queue_number AS stt,
+        p.patient_id,
+        a.appointment_id
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    JOIN Invoices i ON a.appointment_id = i.appointment_id AND i.status = 'paid'
+    WHERE a.status = 'completed' AND a.doctor_id IS NULL AND s.service_type = 'test'`;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  query += `
+    ORDER BY bookTime ASC`;
+  console.log('[DEBUG][getLabDone] SQL Query:', query);
   const request = pool.request();
   if (date) request.input('date', date);
   const result = await request.query(query);
+  console.log('[DEBUG][getLabDone] result:', result.recordset);
   return result.recordset;
 };
 

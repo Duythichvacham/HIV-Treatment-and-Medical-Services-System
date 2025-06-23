@@ -258,3 +258,63 @@ exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, servi
     appointmentId
   };
 };
+
+/**
+ * Tính số thứ tự (queue_number) cho đặt lịch khám bác sĩ hoặc xét nghiệm
+ * @param {object} params
+ *   - pool: poolPromise instance
+ *   - doctorId: id bác sĩ (nếu có)
+ *   - slotId: id slot (nếu có)
+ *   - bookingDate: ngày đặt
+ *   - useMaxPatientsPerSlot: true nếu muốn lấy max_patients_per_slot động (bác sĩ), false nếu mặc định 6 (dùng cho service cũ)
+ * @returns {Promise<number>} queue_number
+ */
+async function getQueueNumber({ pool, doctorId, slotId, bookingDate, useMaxPatientsPerSlot = true }) {
+  if (doctorId && slotId) {
+    // Lấy tất cả slot_id theo start_time
+    const slotsResult = await pool.request().query(`SELECT slot_id FROM Slots ORDER BY start_time`);
+    const slotIds = slotsResult.recordset.map(r => r.slot_id);
+    const slot_index = slotIds.findIndex(id => id == Number(slotId)) + 1;
+    if (slot_index === 0) {
+      throw new Error('Không tìm thấy slot_id phù hợp!');
+    }
+    let maxPatientsPerSlot = 6;
+    if (useMaxPatientsPerSlot) {
+      const maxSlotResult = await pool.request()
+        .input('doctorId', doctorId)
+        .input('bookingDate', bookingDate)
+        .query(`
+          SELECT TOP 1 ws.max_patients_per_slot
+          FROM WorkingShifts ws
+          WHERE ws.doctor_id = @doctorId AND ws.shift_date = @bookingDate AND ws.status = 'approved'
+        `);
+      if (maxSlotResult.recordset.length > 0) {
+        maxPatientsPerSlot = maxSlotResult.recordset[0].max_patients_per_slot;
+      }
+    }
+    // Đếm số lượng đã đặt trong slot hiện tại
+    const countResult = await pool.request()
+      .input('doctorId', doctorId)
+      .input('bookingDate', bookingDate)
+      .input('slotId', slotId)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments
+        WHERE doctor_id = @doctorId AND bookingDate = @bookingDate AND slot_id = @slotId
+      `);
+    const current_bookings = countResult.recordset[0].count || 0;
+    return (slot_index - 1) * maxPatientsPerSlot + current_bookings + 1;
+  } else {
+    // Đặt xét nghiệm: queue_number tăng dần trong ngày
+    const queueResult = await pool.request()
+      .input('bookingDate', bookingDate)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments
+        WHERE bookingDate = @bookingDate AND doctor_id IS NULL
+      `);
+    return (queueResult.recordset[0].count || 0) + 1;
+  }
+}
+
+exports.getQueueNumber = getQueueNumber;

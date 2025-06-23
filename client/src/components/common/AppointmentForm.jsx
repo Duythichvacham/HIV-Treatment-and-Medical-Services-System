@@ -102,7 +102,14 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       setIsReceiptOpen(true);
       sessionStorage.removeItem(storageKey);
     } catch (err) {
-      setError('Đặt lịch thất bại. Vui lòng thử lại!');
+      let msg = 'Đặt lịch thất bại. Vui lòng thử lại!';
+      if (err?.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      setError(msg);
+      setIsConfirmOpen(false);
       console.error('DEBUG lỗi đặt lịch:', err);
     } finally {
       setLoading(false);
