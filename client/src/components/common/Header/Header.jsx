@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import AvatarDropdown from "./AvatarDropdown";
 import { getServices } from "../../../services/api";
+import { useAuth } from "../../../contexts/AuthContext";
 
-const Header = ({ user, setUser }) => {
+const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isServiceOpen, setIsServiceOpen] = useState(false);
   const [services, setServices] = useState([]);
@@ -11,27 +12,19 @@ const Header = ({ user, setUser }) => {
   const serviceRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isStaff =
-    user &&
-    ["Lab-Staff", "Registration-staff", "Manager", "Doctor"].includes(
-      user.role
-    );
+  const { user, logout, isStaff } = useAuth();
 
   // Debug log
   console.log("Header - User:", user);
-  console.log("Header - isStaff:", isStaff);
-  const handleLogout = () => {
-    setUser(null);
-    // Clear session storage
-    sessionStorage.clear();
-
-    // Navigate to appropriate login page based on user role
-    if (isStaff) {
+  console.log("Header - isStaff:", isStaff());
+    const handleLogout = () => {
+    logout();
+    // Only staff should be redirected to login page after logout
+    // Patients stay on current page
+    if (isStaff()) {
       navigate("/login/staff");
-    } else {
-      navigate("/login/patient");
     }
+    // No redirect for patients - they stay on current page
   };
   useEffect(() => {
     function handleClickOutside(event) {
@@ -70,14 +63,15 @@ const Header = ({ user, setUser }) => {
     <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo as link */}{" "}
-          <button
+          {/* Logo as link */}{" "}          <button
             onClick={() => {
               if (user?.role === "Lab-Staff") navigate("/lab-staff");
               else if (user?.role === "Registration-staff")
                 navigate("/registration-staff");
-              else if (isStaff)
-                navigate("/lab-staff"); // fallback cho Manager, Doctor
+              else if (user?.role === "Doctor")
+                navigate("/doctor-dashboard");
+              else if (isStaff())
+                navigate("/lab-staff"); // fallback cho Manager và roles khác
               else navigate("/");
             }}
             className="flex items-center focus:outline-none"
@@ -86,9 +80,8 @@ const Header = ({ user, setUser }) => {
             <div className="text-gray-800 font-semibold text-lg">
               HIV Care Center
             </div>
-          </button>
-          {/* Desktop Navigation */}
-          {!isStaff && (
+          </button>          {/* Desktop Navigation */}
+          {!isStaff() && (
             <nav className="hidden md:flex items-center space-x-8">
               <Link
                 to="/about"
@@ -244,7 +237,7 @@ const Header = ({ user, setUser }) => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50 rounded-lg mt-2">
-              {!isStaff && (
+              {!isStaff() && (
                 <>
                   <Link
                     to="/about"
@@ -298,9 +291,8 @@ const Header = ({ user, setUser }) => {
                         </div>
                       )}
                     </div>
-                  </div>
-                  <Link
-                    to="/Appointment"
+                  </div>                  <Link
+                    to="/appointment"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
@@ -312,9 +304,8 @@ const Header = ({ user, setUser }) => {
                 {user ? (
                   <AvatarDropdown user={user} onLogout={handleLogout} />
                 ) : (
-                  <>
-                    <Link
-                      to="/Appointment"
+                  <>                    <Link
+                      to="/login/patient"
                       state={{ from: location.pathname }}
                       className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                       onClick={() => setIsMenuOpen(false)}

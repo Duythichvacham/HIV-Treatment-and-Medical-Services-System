@@ -118,8 +118,14 @@ const TestAppointment = () => {
       setSelectedTime(null);
       setReason("");
     } catch (err) {
-      alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!");
-      console.error("Error booking appointment:", err);
+      let msg = 'Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!';
+      if (err?.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      alert(msg);
+      console.error('Error booking appointment:', err);
     } finally {
       setLoading(false);
     }

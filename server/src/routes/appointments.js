@@ -14,5 +14,13 @@ router.get("/finished", authenticateToken, appointmentController.getLabTestFinis
 
 ///api/v1/appointments/{appointment_id}/status (POST, cập nhật status cho appointments)
 router.post("/:appointment_id/status", authenticateToken, appointmentController.updateStatus);
+// GET lấy danh sách lịch hẹn của người dùng 
+router.get("/", appointmentController.getAppointments);
+// Đặt lịch khám mới
+router.post("/", authenticateToken, appointmentController.createAppointment);
+// Lấy chi tiết lịch hẹn theo appointment_id
+router.get('/:appointment_id', require('../middleware/authMiddleware'), appointmentController.getAppointmentDetail);
+
+
 
 module.exports = router;

@@ -10,18 +10,24 @@ const PatientCard = ({
   onViewHistory,
 }) => (
   <div className="bg-white rounded-xl shadow border p-6 flex flex-col gap-3 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg font-bold text-blue-700">
-          {index + 1}
+    <div className="flex items-center justify-between mb-2">      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
+          patient.queue_number === 0 
+            ? 'bg-red-100 text-red-700' 
+            : 'bg-blue-100 text-blue-700'
+        }`}>
+          {patient.queue_number === 0 ? '!' : (patient.queue_number || index + 1)}
         </div>
         <div>
           <div className="flex items-center gap-2">
             <span className="font-bold text-lg text-gray-900">
               {patient.full_name || patient.name}
-            </span>
-            <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">
-              Thường
+            </span>            <span className={`text-xs px-2 py-0.5 rounded-full ${
+              patient.queue_number === 0 
+                ? 'bg-red-100 text-red-600' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {patient.queue_number === 0 ? 'Ưu tiên' : 'Thường'}
             </span>
           </div>
           <div className="text-gray-400 text-sm">
@@ -29,8 +35,7 @@ const PatientCard = ({
               `HIV${String(patient.patient_id).padStart(3, "0")}`}
           </div>
         </div>
-      </div>
-      {patient.status === "urgent" && (
+      </div>      {(patient.status === "urgent" || patient.queue_number === 0) && (
         <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
           Khẩn cấp
         </span>

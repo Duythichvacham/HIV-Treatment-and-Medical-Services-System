@@ -1,4 +1,5 @@
 const { poolPromise } = require('../config/db');
+const { getQueueNumber } = require('./bookingServices');
 
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {
@@ -11,16 +12,47 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
 };
 
 
-//
-// exports.updateTestRequestStatus = async (appointment_id, doctor_id, status) => {
-//   const pool = await poolPromise;
-//   const result = await pool.request()
-//     .input('appointment_id', appointment_id)
-//     .input('doctor_id', doctor_id)
-//     .input('status', status)
-//     .query('UPDATE TestRequests SET status = @status WHERE appointment_id = @appointment_id AND doctor_id = @doctor_id; SELECT * FROM TestRequests WHERE appointment_id = @appointment_id AND doctor_id = @doctor_id');
-//   return result.recordset[0];
-// };
+// Tạo mới lịch hẹn (appointment)
+exports.createAppointment = async (data) => {
+  const pool = await poolPromise;
+  const { patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate } = data;
+
+  // Kiểm tra bệnh nhân đã có lịch khám chưa hoàn thành trong ngày chưa
+  const existResult = await pool.request()
+    .input('patient_id', patient_id)
+    .input('bookingDate', bookingDate)
+    .query(`
+      SELECT COUNT(*) AS count
+      FROM Appointments
+      WHERE patient_id = @patient_id
+        AND bookingDate = @bookingDate
+        AND status IN ('requested', 'in_progress')
+    `);
+  if (existResult.recordset[0].count > 0) {
+    const err = new Error('Bệnh nhân đã có lịch khám chưa hoàn thành trong ngày này. Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Sử dụng logic dùng chung để lấy queue_number
+  const queue_number = await getQueueNumber({ pool, doctorId: doctor_id, slotId: slot_id, bookingDate });
+
+  const result = await pool.request()
+    .input('patient_id', patient_id)
+    .input('doctor_id', doctor_id)
+    .input('slot_id', slot_id)
+    .input('service_id', service_id)
+    .input('status', status || 'requested')
+    .input('queue_number', queue_number)
+    .input('room_id', room_id)
+    .input('bookingDate', bookingDate)
+    .query(`
+      INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, queue_number, room_id, bookingDate)
+      VALUES (@patient_id, @doctor_id, @slot_id, @service_id, @status, @queue_number, @room_id, @bookingDate);
+      SELECT * FROM Appointments WHERE appointment_id = SCOPE_IDENTITY();
+    `);
+  return result.recordset[0];
+};
 
 
 //GET, lấy bệnh nhân chờ xét nghiệm với service_type='test' /api/v1/lab/appointments/queue
@@ -39,10 +71,9 @@ exports.getLabTestQueue = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range
-      FROM Appointments a
+        tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Services s ON a.appointment_id = s.appointment_id
+      JOIN Services s ON a.service_id = s.service_id
       LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'requested'
@@ -67,10 +98,9 @@ exports.getLabTestInProgress = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range
-      FROM Appointments a
+        tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Services s ON a.appointment_id = s.appointment_id
+      JOIN Services s ON a.service_id = s.service_id
       LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'in_progress'
@@ -95,15 +125,53 @@ exports.getLabTestFinished = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range
-      FROM Appointments a
+        tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Services s ON a.appointment_id = s.appointment_id
+      JOIN Services s ON a.service_id = s.service_id
       LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'completed'
       ORDER BY a.created_at ASC
     `);
   return result.recordset;
+};
+
+exports.getAllByUser = async (patientId) => {
+  const pool = await poolPromise;
+  const result = await pool.request()
+  .input('patientId', patientId)
+
+  .query(`
+     
+SELECT  [appointment_id]
+      ,[patient_id]
+      ,[doctor_id]
+      ,[slot_id]
+      ,[status]
+      ,[queue_number]
+      ,[room_id]
+      ,[created_at]
+  FROM [HIV_HEATH_CARE].[dbo].[Appointments]
+  WHERE [patient_id] =@patientId
+   `);
+
+  return result.recordset;
+};
+
+// Lấy chi tiết lịch hẹn theo appointment_id
+exports.getAppointmentDetail = async (appointment_id) => {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input('appointment_id', appointment_id)
+    .query(`
+      SELECT a.*, p.full_name as patient_name, s.name as service_name, r.room_name, d.full_name as doctor_name
+      FROM Appointments a
+      LEFT JOIN Patients p ON a.patient_id = p.patient_id
+      LEFT JOIN Services s ON a.service_id = s.service_id
+      LEFT JOIN Rooms r ON a.room_id = r.room_id
+      LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+      WHERE a.appointment_id = @appointment_id
+    `);
+  return result.recordset[0];
 };
 

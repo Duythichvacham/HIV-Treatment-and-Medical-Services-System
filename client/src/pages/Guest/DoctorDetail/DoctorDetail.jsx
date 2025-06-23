@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import AppointmentForm from '../../../components/common/AppointmentForm';
-import { getDoctorById } from '../../../services/api';
+import { getDoctorById, getServices } from '../../../services/api';
+import { AuthContext } from '../../../contexts/AuthContext';
 
-const DoctorDetail = ({ user }) => {
+const DoctorDetail = () => {
   const { id } = useParams();
+  const { user } = useContext(AuthContext);
+  console.log("User in DoctorDetail:", user);
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('Thông tin');
+  const [serviceExamination, setServiceExamination] = useState(null); // New state for serviceExamination
 
   useEffect(() => {
     const fetchDoctor = async () => {
@@ -24,6 +28,24 @@ const DoctorDetail = ({ user }) => {
     };
     fetchDoctor();
   }, [id]);
+
+  // Đảm bảo chỉ set serviceExamination 1 lần, ưu tiên lấy từ fetchServices (dữ liệu chuẩn)
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const allServices = await getServices();
+        const serviceList = allServices.data || allServices;
+        // Lấy đúng service_id === 1 (Khám tổng quát HIV)
+        const examinationService = serviceList.find(
+          s => s.service_type === 'examination' && s.service_id === 1
+        );
+        setServiceExamination(examinationService);
+      } catch (err) {
+        setError('Không thể tải dịch vụ khám bệnh.');
+      }
+    };
+    fetchServices();
+  }, []);
 
   if (loading) return <div className="p-6 text-center">Đang tải thông tin bác sĩ...</div>;
   if (error || !doctor) return <div className="p-6 text-center text-red-500">{error}</div>;
@@ -68,14 +90,11 @@ const DoctorDetail = ({ user }) => {
               )}
             </div>
           </div>
-        </div>
-        {/* Appointment Form Section */}
-        <div>
+        </div>        {/* Appointment Form Section */}        <div>
           <AppointmentForm
             serviceType={`doctor_${doctor.id}`}
             serviceName={`Khám bác sĩ ${doctor.name}`}
-            duration="Theo lịch"
-            price={doctor.joinedAt} // or default price from API
+            price={serviceExamination ? serviceExamination.price : ''} // Để rỗng nếu chưa có giá, tránh nhảy về 0
             user={user}
           />
         </div>

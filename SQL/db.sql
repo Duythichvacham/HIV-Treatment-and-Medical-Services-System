@@ -96,7 +96,8 @@ CREATE TABLE Appointments (
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
     bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id,bookingDate)
+    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id, bookingDate)
+
 );
 
 -- TestRequests
@@ -116,11 +117,13 @@ CREATE TABLE TestRequests (
 CREATE TABLE WorkingShifts (
     shift_id INT PRIMARY KEY IDENTITY(1,1),
     account_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id),-- check và phân trang ở front để chỉ manager vào được trang này
-    doctor_id INT NOT NULL FOREIGN KEY REFERENCES Doctors(doctor_id),
+    doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id),
+	lab_staff_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id),
+	registration_staff_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     shift_date DATE NOT NULL,-- phân ca cho bs theo ngày (các slots được cố định cho đặt lịch vì vậy làm cả ngày là full slots)
-    room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
+    room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id),-- nếu là regis thì không cần room
     status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'canceled')) DEFAULT 'approved',
-    max_patients_per_slot INT NOT NULL DEFAULT 6 CHECK (max_patients_per_slot > 0),
+    max_patients_per_slot INT NULL DEFAULT 6 CHECK (max_patients_per_slot > 0),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 
