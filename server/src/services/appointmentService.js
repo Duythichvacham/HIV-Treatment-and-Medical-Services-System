@@ -1,4 +1,5 @@
 const { poolPromise } = require('../config/db');
+const { getQueueNumber } = require('./bookingServices');
 
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {
@@ -15,34 +16,26 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
 exports.createAppointment = async (data) => {
   const pool = await poolPromise;
   const { patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate } = data;
-  let queue_number = 1;
 
-  if (doctor_id && slot_id) {
-    // Đặt lịch bác sĩ: queue_number theo slot, mỗi slot 6 số, không trùng trong ngày
-    // Lấy slot_index (thứ tự slot trong ngày)
-    const slotIndexResult = await pool.request()
-      .input('slot_id', slot_id)
-      .query('SELECT slot_id FROM Slots ORDER BY slot_id ASC');
-    let slot_index = 1;
-    if (slotIndexResult.recordset.length > 0) {
-      slot_index = slotIndexResult.recordset.findIndex(s => s.slot_id === slot_id) + 1;
-    }
-    // Đếm số lượng đã đặt trong slot này của ngày này
-    const countResult = await pool.request()
-      .input('slot_id', slot_id)
-      .input('bookingDate', bookingDate)
-      .query('SELECT COUNT(*) AS count FROM Appointments WHERE slot_id = @slot_id AND bookingDate = @bookingDate');
-    const count = countResult.recordset[0].count;
-    // Mỗi slot 6 số, bắt đầu từ (slot_index-1)*6+1
-    queue_number = (slot_index - 1) * 6 + count + 1;
-  } else {
-    // Đặt lịch xét nghiệm: queue_number tăng dần trong ngày
-    const countResult = await pool.request()
-      .input('bookingDate', bookingDate)
-      .query('SELECT COUNT(*) AS count FROM Appointments WHERE slot_id IS NULL AND bookingDate = @bookingDate');
-    const count = countResult.recordset[0].count;
-    queue_number = count + 1;
+  // Kiểm tra bệnh nhân đã có lịch khám chưa hoàn thành trong ngày chưa
+  const existResult = await pool.request()
+    .input('patient_id', patient_id)
+    .input('bookingDate', bookingDate)
+    .query(`
+      SELECT COUNT(*) AS count
+      FROM Appointments
+      WHERE patient_id = @patient_id
+        AND bookingDate = @bookingDate
+        AND status IN ('requested', 'in_progress')
+    `);
+  if (existResult.recordset[0].count > 0) {
+    const err = new Error('Bệnh nhân đã có lịch khám chưa hoàn thành trong ngày này. Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
+    err.statusCode = 400;
+    throw err;
   }
+
+  // Sử dụng logic dùng chung để lấy queue_number
+  const queue_number = await getQueueNumber({ pool, doctorId: doctor_id, slotId: slot_id, bookingDate });
 
   const result = await pool.request()
     .input('patient_id', patient_id)

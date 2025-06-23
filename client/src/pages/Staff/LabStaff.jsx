@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getLabQueue, getLabInProgress, getLabDone } from '../../services/api';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:5000/api/v1';
 
 const demoData = {
   summary: [
@@ -69,14 +72,18 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
       <span className={`px-2 py-1 rounded text-xs ${data.type === 'Sàng lọc' ? 'bg-yellow-100 text-yellow-700' : data.type === 'Khẳng định' ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'}`}>{data.type_name}</span>
     </div>
     <div className="text-xs text-gray-500 mb-1">
-      {data.id ? (
+      {data.source === 'doctor_request' ? (
+        <>Nguồn: <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>{data.doctor ? <> - BS: <b>{data.doctor}</b></> : null}</>
+      ) : data.source === 'self_booking' ? (
+        <><span className="font-semibold text-green-700">Bệnh nhân tự đăng ký</span></>
+      ) : data.id ? (
         <>BS chỉ định: <b>{data.doctor}</b></>
       ) : (
         <b>Đăng kí xét nghiệm</b>
       )}
     </div>
     {section === 'Chờ xét nghiệm' && (
-      <button onClick={() => onStart(data.id)} className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition">Bắt đầu xét nghiệm</button>
+      <button onClick={() => onStart(data)} className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition">Bắt đầu xét nghiệm</button>
     )}
     {section === 'Đang xét nghiệm' && (
       <button onClick={() => onProcess(data)} className="w-full mt-3 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition">Nhập kết quả</button>
@@ -105,45 +112,58 @@ const LabStaff = () => {
   ]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().slice(0, 10);
+    return localStorage.getItem('lab_selected_date') || new Date().toISOString().slice(0, 10);
   });
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch lab queue, in-progress, done
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [queue, inProgress, done] = await Promise.all([
+        getLabQueue(selectedDate),
+        getLabInProgress(selectedDate),
+        getLabDone(selectedDate),
+      ]);
+      console.log('DEBUG queue:', queue);
+      console.log('DEBUG inProgress:', inProgress);
+      console.log('DEBUG done:', done);
+      setSections(prevSections => [
+        { ...prevSections[0], cards: queue || [], count: (queue || []).length },
+        { ...prevSections[1], cards: inProgress || [], count: (inProgress || []).length },
+        { ...prevSections[2], cards: done || [], count: (done || []).length },
+      ]);
+    } catch (err) {
+      console.error('Lỗi tải dữ liệu lab:', err);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [queue, inProgress, done] = await Promise.all([
-          getLabQueue(selectedDate),
-          getLabInProgress(selectedDate),
-          getLabDone(selectedDate),
-        ]);
-        setSections([
-          { ...sections[0], cards: queue || [], count: (queue || []).length },
-          { ...sections[1], cards: inProgress || [], count: (inProgress || []).length },
-          { ...sections[2], cards: done || [], count: (done || []).length },
-        ]);
-      } catch (err) {
-        console.error('Lỗi tải dữ liệu lab:', err);
-      }
-      setLoading(false);
-    };
     fetchData();
     // eslint-disable-next-line
   }, [selectedDate]);
 
-  const handleStart = async (cardId) => {
+  const handleStart = async (card) => {
     try {
+      console.log('DEBUG handleStart card:', card);
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
-      // PATCH trạng thái sang 'in_progress'
-      await axios.patch(`${API_BASE}/test-requests/${cardId}/status`, { status: 'in_progress' }, { headers });
-      // Reload data
-      window.location.reload();
+      if (card.source === 'doctor_request') {
+        const url = `${API_BASE}/test-requests/${card.id}/status`;
+        console.log('DEBUG PATCH:', url, { status: 'in_progress' });
+        await axios.patch(url, { status: 'in_progress' }, { headers });
+      } else if (card.source === 'self_booking') {
+        const url = `${API_BASE}/appointments/${card.appointment_id}/status`;
+        console.log('DEBUG POST:', url, { status: 'in_progress' }, 'appointment_id:', card.appointment_id);
+        await axios.post(url, { status: 'in_progress' }, { headers });
+      } else {
+        alert('Không xác định được loại mẫu xét nghiệm!');
+        return;
+      }
+      await fetchData();
     } catch (err) {
+      console.error('DEBUG handleStart error:', err, err?.response?.data);
       alert('Không thể cập nhật trạng thái!');
     }
   };
@@ -175,6 +195,7 @@ const LabStaff = () => {
     );
   }
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center text-blue-600 font-bold text-xl">Đang tải dữ liệu...</div>;
+  console.log('DEBUG sections:', sections);
   return (
     <div className="bg-blue-50 min-h-screen py-6 px-2 md:px-8">
       <div className="max-w-7xl mx-auto">
@@ -187,7 +208,10 @@ const LabStaff = () => {
             type="date"
             className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
             value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
+            onChange={e => {
+              setSelectedDate(e.target.value);
+              localStorage.setItem('lab_selected_date', e.target.value);
+            }}
           />
         </div>
         {/* Summary */}
