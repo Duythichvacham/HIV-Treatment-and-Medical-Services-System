@@ -12,21 +12,47 @@ import {
 } from "lucide-react";
 import PatientCard from "./PatientCard";
 import PatientExam from "./PatientExam";
+import { useAuth } from "../../contexts/AuthContext";
 
 const DoctorDashboard = () => {
-  const staff = JSON.parse(localStorage.getItem("staff"));
-  const doctorId = staff?.doctor_id;
+  const { user } = useAuth();
+  const [doctorId, setDoctorId] = useState(null);
   const baseURL = "http://localhost:5000/api/v1/doctor/appointments";
+
+  // Đặt đoạn debug này ở đây!
+  useEffect(() => {
+    if (!user?.id) {
+      console.log("[DEBUG] user.id is missing, cannot fetch doctor_id");
+      return;
+    }
+    const fetchDoctorId = async () => {
+      try {
+        console.log(`[DEBUG] Fetching doctor_id for account_id: ${user.id}`);
+        const res = await axios.get(`http://localhost:5000/api/v1/doctor/by-account/${user.id}`);
+        setDoctorId(res.data.doctor_id);
+        console.log("[DEBUG] doctor_id response:", res.data);
+      } catch (err) {
+        setDoctorId(null);
+        if (err.response) {
+          console.error("[DEBUG] Error fetching doctor_id - response:", err.response.status, err.response.data);
+        } else {
+          console.error("[DEBUG] Error fetching doctor_id - error:", err);
+        }
+      }
+    };
+    fetchDoctorId();
+  }, [user]);
+
+  console.log("DoctorDashboard - User:", user);
+  console.log("DoctorDashboard - Doctor ID:", doctorId);
 
   const [queue, setQueue] = useState([]);
   const [inProgress, setInProgress] = useState([]);
-  const [finished, setFinished] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("queue");
-  const [search, setSearch] = useState("");
-  const [viewingPatientId, setViewingPatientId] = useState(null);
-
-  // Dữ liệu mẫu cho tư vấn trực tuyến
+  const [finished, setFinished] = useState([]);  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("queue");  const [search, setSearch] = useState("");  const [viewingPatientId, setViewingPatientId] = useState(null);
+  const [viewingAppointmentId, setViewingAppointmentId] = useState(null);
+  const [viewMode, setViewMode] = useState("edit"); // "edit" or "view"
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD format
   const consultationPatients = [
     {
       id: 1,
@@ -43,17 +69,18 @@ const DoctorDashboard = () => {
       cd4: "500 cells/μL",
       status: "normal",
     },
-  ];
-
-  useEffect(() => {
-    if (tab !== "queue") return;
+  ];  useEffect(() => {
+    // Fetch appointments cho tất cả tab khi có doctorId
+    if (!doctorId) return;
+    
     const fetchAppointments = async () => {
       setLoading(true);
       try {
+        const dateParam = selectedDate ? `?date=${selectedDate}` : '';
         const [queueRes, inProgressRes, finishedRes] = await Promise.all([
-          axios.get(`${baseURL}/queue/${doctorId}`),
-          axios.get(`${baseURL}/in_progress/${doctorId}`),
-          axios.get(`${baseURL}/finished/${doctorId}`),
+          axios.get(`${baseURL}/queue/${doctorId}${dateParam}`),
+          axios.get(`${baseURL}/in_progress/${doctorId}${dateParam}`),
+          axios.get(`${baseURL}/finished/${doctorId}${dateParam}`),
         ]);
         setQueue(queueRes.data.data || []);
         setInProgress(inProgressRes.data.data || []);
@@ -68,7 +95,7 @@ const DoctorDashboard = () => {
       }
     };
     fetchAppointments();
-  }, [doctorId, tab]);
+  }, [doctorId, selectedDate]); // Removed tab dependency to fetch for all tabs
 
   // Lọc theo search
   const filterPatients = (patients) => {
@@ -87,60 +114,126 @@ const DoctorDashboard = () => {
           .toLowerCase()
           .includes(search.toLowerCase())
     );
-  };
-  // Thêm vào trong DoctorDashboard component
+  };  // Thêm vào trong DoctorDashboard component
 
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [mode, setMode] = useState(""); // "exam" hoặc ""
-
-  // const handleStartExam = (patient) => {
-  //   setSelectedPatient(patient);
-  //   setMode("exam");
-  //   // Chuyển sang inProgress
-  //   setQueue((prev) =>
-  //     prev.filter((p) => p.appointment_id !== patient.appointment_id)
-  //   );
-  //   setInProgress((prev) => [...prev, { ...patient, status: "in_progress" }]);
-  // };
-
-  const handleSaveTemp = (updatedPatient) => {
-    // Cập nhật thông tin bệnh nhân đang khám (nếu có)
-    setInProgress((prev) =>
-      prev.map((p) =>
-        p.appointment_id === updatedPatient.appointment_id ? updatedPatient : p
-      )
-    );
-    // Giữ nguyên ở inProgress
-    setMode("");
-    setSelectedPatient(null);
+  const [mode, setMode] = useState(""); // "exam" hoặc ""  // API để cập nhật status appointment
+  const updateAppointmentStatus = async (appointmentId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Updating appointment status:', { appointmentId, status, token: token ? 'exists' : 'missing' });
+      
+      const response = await axios.post(`http://localhost:5000/api/v1/appointments/${appointmentId}/status`, {
+        status: status
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Update appointment status response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating appointment status:', error.response?.data || error.message);
+      throw error;
+    }
+  };  const handleStartExam = async (patient) => {
+    try {
+      console.log('Starting exam for patient:', patient);
+      
+      // Gọi API để cập nhật status thành 'in_progress'
+      await updateAppointmentStatus(patient.appointment_id, 'in_progress');
+      
+      console.log('Status updated successfully, switching to exam view');      // Chuyển sang phiếu khám bệnh đầy đủ (mode = edit)
+      setViewMode("edit");
+      setViewingPatientId(patient.patient_id);
+      setViewingAppointmentId(patient.appointment_id);
+      // Chuyển sang inProgress
+      setQueue((prev) =>
+        prev.filter((p) => p.appointment_id !== patient.appointment_id)
+      );
+      setInProgress((prev) => [...prev, { ...patient, status: "in_progress" }]);
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      alert('Có lỗi xảy ra khi bắt đầu khám bệnh: ' + (error.response?.data?.message || error.message));
+    }
+  };  const handleContinueExam = (patient) => {
+    console.log('Continuing exam for patient:', patient);
+    // Chuyển sang phiếu khám bệnh đầy đủ (mode = edit)
+    setViewMode("edit");
+    setViewingPatientId(patient.patient_id);
+    setViewingAppointmentId(patient.appointment_id);
   };
-
-  const handleFinishExam = (updatedPatient) => {
-    // Chuyển sang finished
-    setInProgress((prev) =>
-      prev.filter((p) => p.appointment_id !== updatedPatient.appointment_id)
-    );
-    setFinished((prev) => [...prev, { ...updatedPatient, status: "finished" }]);
-    setMode("");
-    setSelectedPatient(null);
+  const handleViewHistory = (patient) => {
+    console.log('Viewing history for patient:', patient);
+    // Chuyển sang xem hồ sơ (mode = view)
+    setViewMode("view");
+    setViewingPatientId(patient.patient_id);
+    setViewingAppointmentId(patient.appointment_id);
   };
-  if (viewingPatientId) {
-    return (
+  const handleFinishExam = async (examData) => {
+    try {
+      console.log('handleFinishExam called with examData:', examData);
+      
+      // Tìm patient hiện tại trong inProgress list
+      const currentPatient = inProgress.find(p => p.patient_id === viewingPatientId);
+      if (!currentPatient) {
+        throw new Error('Không tìm thấy thông tin bệnh nhân trong danh sách đang khám');
+      }
+      
+      console.log('Found current patient:', currentPatient);
+      
+      // Gọi API để cập nhật status thành 'completed'
+      await updateAppointmentStatus(currentPatient.appointment_id, 'completed');
+      
+      // Chuyển sang finished
+      setInProgress((prev) =>
+        prev.filter((p) => p.appointment_id !== currentPatient.appointment_id)
+      );
+      setFinished((prev) => [...prev, { ...currentPatient, status: "completed" }]);        // Quay về dashboard
+      setViewingPatientId(null);
+      setViewingAppointmentId(null);
+      setViewMode("edit");
+      
+      alert('Hoàn thành khám bệnh thành công!');
+    } catch (error) {
+      console.error('Error finishing exam:', error);
+      alert('Có lỗi xảy ra khi hoàn thành khám bệnh: ' + (error.message || error.response?.data?.message));
+    }
+  };if (viewingPatientId) {    return (
       <PatientExam
         patientId={viewingPatientId}
-        onBack={() => setViewingPatientId(null)}
+        appointmentId={viewingAppointmentId}
+        onBack={() => {
+          setViewingPatientId(null);
+          setViewingAppointmentId(null);
+          setViewMode("edit");
+        }}
+        onFinishExam={handleFinishExam}
+        mode={viewMode}
       />
     );
   }
   return (
     <div className="min-h-screen bg-blue-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto">        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Dashboard Bác sĩ
           </h1>
-          <p className="text-gray-600">Quản lý bệnh nhân và lịch khám</p>
+          <div className="flex items-center gap-4">
+            <p className="text-gray-600">Quản lý bệnh nhân và lịch khám</p>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Calendar className="w-4 h-4" />
+              <span>Ngày: {new Date(selectedDate).toLocaleDateString('vi-VN', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}</span>
+            </div>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -219,10 +312,26 @@ const DoctorDashboard = () => {
             <MessageCircle className="w-5 h-5" />
             Tư vấn trực tuyến
           </button>
-        </div>
-
-        {/* Search */}
-        <div className="mb-6">
+        </div>        {/* Date Picker and Search */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date Picker */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-gray-400" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Hôm nay
+            </button>
+          </div>
+          
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -233,18 +342,13 @@ const DoctorDashboard = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-        </div>
-
-        {/* Content */}
+        </div>        {/* Content */}
         {tab === "queue" ? (
-          mode === "exam" && selectedPatient ? (
-            <ExamForm
-              patient={selectedPatient}
-              onSaveTemp={handleSaveTemp}
-              onFinish={handleFinishExam}
-            />
-          ) : loading ? (
-            <p>Đang tải dữ liệu...</p>
+          loading ? (
+            <div className="text-center text-gray-500 py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p>Đang tải dữ liệu cho ngày {new Date(selectedDate).toLocaleDateString('vi-VN')}...</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Đang chờ khám */}
@@ -252,23 +356,18 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-orange-700 text-xl font-bold">
                   <Clock className="w-6 h-6" />
                   Đang chờ khám ({queue.length})
-                </div>
-                <div className="space-y-4">
+                </div>                <div className="space-y-4">
                   {filterPatients(queue).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      Không có bệnh nhân nào
+                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân chờ khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
                     </div>
                   ) : (
-                    filterPatients(queue).map((patient, idx) => (
-                      <PatientCard
+                    filterPatients(queue).map((patient, idx) => (                      <PatientCard
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
                         type="waiting"
-                        // onStartExam={() => handleStartExam(patient)}
-                        onStartExam={() =>
-                          setViewingPatientId(patient.patient_id)
-                        }
+                        onStartExam={() => handleStartExam(patient)}
                       />
                     ))
                   )}
@@ -279,22 +378,18 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-blue-700 text-xl font-bold">
                   <FileText className="w-6 h-6" />
                   Đang khám ({inProgress.length})
-                </div>
-                <div className="space-y-4">
+                </div>                <div className="space-y-4">
                   {filterPatients(inProgress).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      Không có bệnh nhân nào
+                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân đang khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
                     </div>
                   ) : (
-                    filterPatients(inProgress).map((patient, idx) => (
-                      <PatientCard
+                    filterPatients(inProgress).map((patient, idx) => (                      <PatientCard
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
                         type="examining" // hoặc "completed"
-                        onContinueExam={() =>
-                          setViewingPatientId(patient.patient_id)
-                        }
+                        onContinueExam={() => handleContinueExam(patient)}
                       />
                     ))
                   )}
@@ -305,11 +400,10 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-green-700 text-xl font-bold">
                   <CheckCircle className="w-6 h-6" />
                   Hoàn thành ({finished.length})
-                </div>
-                <div className="space-y-4">
+                </div>                <div className="space-y-4">
                   {filterPatients(finished).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      Không có bệnh nhân nào
+                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân hoàn thành khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
                     </div>
                   ) : (
                     filterPatients(finished).map((patient, idx) => (
@@ -317,9 +411,8 @@ const DoctorDashboard = () => {
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
-                        type="completed"
-                        onViewHistory={() =>
-                          setViewingPatientId(patient.patient_id)
+                        type="completed"                        onViewHistory={() =>
+                          handleViewHistory(patient)
                         }
                       />
                     ))
@@ -348,8 +441,7 @@ const DoctorDashboard = () => {
                     index={idx}
                     type="waiting"
                   />
-                ))
-              )}
+                ))              )}
             </div>
           </div>
         )}
@@ -357,80 +449,5 @@ const DoctorDashboard = () => {
     </div>
   );
 };
-const ExamForm = ({ patient, onSaveTemp, onFinish }) => {
-  const [form, setForm] = useState({
-    diagnosis: "",
-    treatmentPlan: "",
-    note: "",
-    reExamDate: "",
-  });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow p-8 max-w-4xl mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-6">
-        Chẩn đoán và kế hoạch điều trị
-      </h2>
-      <div className="mb-4">
-        <label className="font-semibold">Chẩn đoán *</label>
-        <textarea
-          className="w-full border rounded p-2 mt-2"
-          name="diagnosis"
-          value={form.diagnosis}
-          onChange={handleChange}
-          placeholder="Chẩn đoán chi tiết..."
-        />
-      </div>
-      <div className="mb-4">
-        <label className="font-semibold">Kế hoạch điều trị</label>
-        <input
-          className="w-full border rounded p-2 mt-2"
-          name="treatmentPlan"
-          value={form.treatmentPlan}
-          onChange={handleChange}
-          placeholder="Tiếp tục phác đồ hiện tại"
-        />
-      </div>
-      <div className="mb-4">
-        <label className="font-semibold">Hướng dẫn khác</label>
-        <textarea
-          className="w-full border rounded p-2 mt-2"
-          name="note"
-          value={form.note}
-          onChange={handleChange}
-          placeholder="Hướng dẫn thêm về chế độ ăn uống, tập thể dục..."
-        />
-      </div>
-      <div className="mb-4">
-        <label className="font-semibold">Ngày hẹn tái khám</label>
-        <input
-          className="w-full border rounded p-2 mt-2"
-          name="reExamDate"
-          value={form.reExamDate}
-          onChange={handleChange}
-          placeholder="dd/mm/yyyy"
-        />
-      </div>
-      <div className="flex gap-4 justify-end mt-8">
-        <button
-          className="bg-white border border-gray-300 px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-100"
-          onClick={() => onSaveTemp({ ...patient, ...form })}
-        >
-          <FileText className="w-5 h-5" />
-          Lưu tạm
-        </button>
-        <button
-          className="bg-gray-900 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-semibold hover:bg-gray-800"
-          onClick={() => onFinish({ ...patient, ...form })}
-        >
-          <CheckCircle className="w-5 h-5" />
-          Hoàn thành khám
-        </button>
-      </div>
-    </div>
-  );
-};
 export default DoctorDashboard;

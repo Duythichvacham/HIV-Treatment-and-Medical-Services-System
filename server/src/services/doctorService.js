@@ -1,22 +1,27 @@
 const { poolPromise } = require("../config/db");
 
 //
-const getCurrentExam = async (patientId) => {
+const getCurrentExam = async (patientId, appointmentId = null) => {
   const pool = await poolPromise;
-  const result = await pool.request().input("patient_id", patientId).query(`
-    
+  let query = `
     SELECT 
-    p.full_name AS ho_ten,
-    'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS ma_bn,
-    DATEDIFF(YEAR, p.dob, GETDATE()) AS tuoi,
-    p.gender,
-	s.start_time AS gio_hen
-INTO #PatientInfo
-FROM Patients p
-JOIN Appointments a ON p.patient_id = a.patient_id
-JOIN Slots s ON a.slot_id = s.slot_id
-WHERE p.patient_id = @patient_id
-ORDER BY a.created_at DESC;
+      p.full_name AS ho_ten,
+      'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS ma_bn,
+      DATEDIFF(YEAR, p.dob, GETDATE()) AS tuoi,
+      p.gender,
+      s.start_time AS gio_hen,
+      a.appointment_id
+    INTO #PatientInfo
+    FROM Patients p
+    JOIN Appointments a ON p.patient_id = a.patient_id
+    JOIN Slots s ON a.slot_id = s.slot_id
+    WHERE p.patient_id = @patient_id
+      AND a.status IN ('requested', 'in_progress')
+  `;
+  if (appointmentId) {
+    query += ` AND a.appointment_id = @appointment_id`;
+  }
+  query += ` ORDER BY a.created_at DESC; 
 
 -- Lấy thông tin điều trị ARV hiện tại
 SELECT TOP 1
@@ -45,7 +50,7 @@ FROM TestResults tr
 JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
 JOIN Appointments a ON tn.appointment_id = a.appointment_id
 JOIN TestRequests r ON tn.request_id = r.request_id
-JOIN Services s ON s.request_id = r.request_id AND s.test_type_id IS NOT NULL
+JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
 JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
 WHERE a.patient_id = @patient_id
 ORDER BY tn.test_datetime DESC;
@@ -61,7 +66,7 @@ FROM TestResults tr
 JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
 JOIN Appointments a ON tn.appointment_id = a.appointment_id
 JOIN TestRequests r ON tn.request_id = r.request_id
-JOIN Services s ON s.request_id = r.request_id AND s.test_type_id IS NOT NULL
+JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
 JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
 WHERE a.patient_id = @patient_id
 GROUP BY tn.test_datetime
@@ -74,6 +79,7 @@ SELECT
     pi.tuoi,
     pi.gender,
     pi.gio_hen,
+    pi.appointment_id,
     ai.phac_do,
     FORMAT(ai.ngay_bat_dau, 'yyyy-MM-dd') AS ngay_bat_dau,
     ai.tuan_thu,
@@ -90,7 +96,12 @@ JOIN #XetNghiemGanNhat xn ON 1 = 1;
 DROP TABLE #PatientInfo;
 DROP TABLE #ARVInfo;
 DROP TABLE #LatestTests;
-DROP TABLE #XetNghiemGanNhat;`);
+DROP TABLE #XetNghiemGanNhat;`;
+
+  const request = pool.request().input("patient_id", patientId);
+  if (appointmentId) request.input("appointment_id", appointmentId);
+
+  const result = await request.query(query);
   return result.recordset;
 };
 //
@@ -124,62 +135,60 @@ const getExamHistory = async (patientId) => {
   return result.recordset;
 };
 
-//Get: lấy danh sách bệnh nhân queued/in_progress/finished cho bác sĩ
-const getAppointmentsByStatus = async (doctor_id, status) => {
+//Get: lấy danh sách bệnh nhân queued/in_progress/finished cho bác sĩ theo ngày
+const getAppointmentsByStatus = async (doctor_id, status, date = null) => {
   const pool = await poolPromise;
-  const result = await pool
-    .request()
-    .input("doctorId", parseInt(doctor_id, 10))
-    .input("status", status).query(`
-      SELECT 
-        a.appointment_id,
-        p.patient_id,
-        p.full_name,
-        p.gender,
-        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
-        p.phone,
-        a.status,
-        a.queue_number,
-        a.created_at AS booking_time,
-        sl.start_time,
-        sl.end_time,
-        r.room_name,
-        r.room_type,
-        ar.name AS arv_regimen,
-        mh.arv_adherence,
-        -- CD4 result
-        (
-          SELECT TOP 1 tr.result_value
-          FROM TestNotes tn
-          JOIN TestResults tr ON tn.test_note_id = tr.test_note_id
-          JOIN Services sv2 ON tn.appointment_id = sv2.appointment_id
-          JOIN TestTypes tt ON sv2.test_type_id = tt.test_type_id
-          WHERE tn.appointment_id = a.appointment_id AND tt.name = N'CD4'
-          ORDER BY tn.test_datetime DESC
-        ) AS cd4,
-        -- Viral Load result
-        (
-          SELECT TOP 1 tr.result_value
-          FROM TestNotes tn
-          JOIN TestResults tr ON tn.test_note_id = tr.test_note_id
-          JOIN Services sv2 ON tn.appointment_id = sv2.appointment_id
-          JOIN TestTypes tt ON sv2.test_type_id = tt.test_type_id
-          WHERE tn.appointment_id = a.appointment_id AND tt.name = N'Tải lượng virus'
-          ORDER BY tn.test_datetime DESC
-        ) AS viral_load
-      FROM Appointments a
-      JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Doctors d ON d.doctor_id = a.doctor_id
-      JOIN Rooms r ON a.room_id = r.room_id
-      JOIN Slots sl ON a.slot_id = sl.slot_id
-      LEFT JOIN Prescriptions pr ON pr.appointment_id = a.appointment_id
-      LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
-      LEFT JOIN MedicalHistory mh ON mh.patient_id = p.patient_id
-      WHERE a.status = @status
-        AND d.doctor_id = @doctorId
-      ORDER BY sl.start_time ASC, a.queue_number ASC
-    `);
-  return result.recordset;
+  console.log('getAppointmentsByStatus called with doctor_id:', doctor_id, 'status:', status, 'date:', date);
+  
+  try {
+    const request = pool
+      .request()
+      .input("doctorId", parseInt(doctor_id, 10))
+      .input("status", status);
+    
+    let dateFilter = '';
+    if (date) {
+      request.input("date", date);
+      dateFilter = 'AND CAST(a.bookingDate AS DATE) = @date';
+    } else {
+      // Mặc định lấy appointments hôm nay
+      dateFilter = 'AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)';
+    }
+    
+    const result = await request.query(`
+        SELECT 
+          a.appointment_id,
+          p.patient_id,
+          p.full_name,
+          p.gender,
+          DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+          p.phone,
+          a.status,
+          a.queue_number,
+          a.created_at AS booking_time,
+          a.bookingDate,
+          sl.start_time,
+          sl.end_time,
+          r.room_name,
+          r.room_type,
+          s.name AS service_name
+        FROM Appointments a
+        JOIN Patients p ON a.patient_id = p.patient_id
+        JOIN Slots sl ON a.slot_id = sl.slot_id
+        JOIN Rooms r ON a.room_id = r.room_id
+        LEFT JOIN Services s ON a.service_id = s.service_id
+        WHERE a.doctor_id = @doctorId 
+        AND a.status = @status
+        ${dateFilter}
+        ORDER BY a.queue_number ASC, a.created_at ASC
+      `);
+    
+    console.log('Query result:', result.recordset?.length || 0, 'appointments found for date:', date || 'today');
+    return result.recordset || [];
+  } catch (error) {
+    console.error('Error in getAppointmentsByStatus:', error);
+    throw error;
+  }
 };
 
 // (GET, lấy danh sách bác sĩ)
@@ -254,8 +263,131 @@ const getDoctorsByDate = async (date) => {
     joinedAt: new Date(doctor.created_at).toLocaleDateString("vi-VN"),
     username: doctor.username,
   }));
-
   return formatted;
+};
+
+// Lưu dữ liệu khám bệnh vào database
+const saveExamData = async (examData) => {
+  const pool = await poolPromise;
+  const transaction = pool.transaction();
+  
+  try {
+    await transaction.begin();
+    
+    const {
+      appointment_id,
+      diagnosis,
+      treatment_plan,
+      note,
+      reExamDate,
+      vitals,
+      weight,
+      height,
+      clinical_signs
+    } = examData;
+    
+    console.log('saveExamData - Input data:', examData);
+    
+    // 1. Kiểm tra và lưu vào ClinicalExams (update nếu đã có, insert nếu chưa có)
+    const existingExamResult = await transaction.request()
+      .input('appointment_id', appointment_id)
+      .query(`SELECT exam_id FROM ClinicalExams WHERE appointment_id = @appointment_id`);
+    
+    let examId;
+    if (existingExamResult.recordset.length > 0) {
+      // Update existing record
+      examId = existingExamResult.recordset[0].exam_id;
+      await transaction.request()
+        .input('appointment_id', appointment_id)
+        .input('vitals', vitals || null)
+        .input('weight', weight || null)
+        .input('height', height || null)
+        .input('bmi', (weight && height) ? (weight / Math.pow(height / 100, 2)).toFixed(2) : null)
+        .input('clinical_signs', clinical_signs || null)
+        .input('diagnosis_primary', diagnosis)
+        .query(`
+          UPDATE ClinicalExams SET
+            vitals = @vitals,
+            weight = @weight,
+            height = @height,
+            bmi = @bmi,
+            clinical_signs = @clinical_signs,
+            diagnosis_primary = @diagnosis_primary
+          WHERE appointment_id = @appointment_id
+        `);
+      console.log('Updated existing ClinicalExam with ID:', examId);
+    } else {
+      // Insert new record
+      const clinicalExamResult = await transaction.request()
+        .input('appointment_id', appointment_id)
+        .input('vitals', vitals || null)
+        .input('weight', weight || null)
+        .input('height', height || null)
+        .input('bmi', (weight && height) ? (weight / Math.pow(height / 100, 2)).toFixed(2) : null)
+        .input('clinical_signs', clinical_signs || null)
+        .input('diagnosis_primary', diagnosis)
+        .query(`
+          INSERT INTO ClinicalExams 
+          (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary)
+          OUTPUT INSERTED.exam_id
+          VALUES (@appointment_id, @vitals, @weight, @height, @bmi, @clinical_signs, @diagnosis_primary)
+        `);
+      examId = clinicalExamResult.recordset[0].exam_id;
+      console.log('Inserted new ClinicalExam with ID:', examId);
+    }
+    
+    // 2. Kiểm tra và lưu vào Prescriptions (update nếu đã có, insert nếu chưa có)
+    const existingPrescriptionResult = await transaction.request()
+      .input('appointment_id', appointment_id)
+      .query(`SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id`);
+    
+    let prescriptionId;
+    if (existingPrescriptionResult.recordset.length > 0) {
+      // Update existing record
+      prescriptionId = existingPrescriptionResult.recordset[0].prescription_id;
+      await transaction.request()
+        .input('appointment_id', appointment_id)
+        .input('doctor_notes', note || null)
+        .input('follow_up_plan', treatment_plan || null)
+        .input('counseling_notes', reExamDate ? `Tái khám ngày: ${reExamDate}` : null)
+        .query(`
+          UPDATE Prescriptions SET
+            doctor_notes = @doctor_notes,
+            follow_up_plan = @follow_up_plan,
+            counseling_notes = @counseling_notes
+          WHERE appointment_id = @appointment_id
+        `);
+      console.log('Updated existing Prescription with ID:', prescriptionId);
+    } else {
+      // Insert new record
+      const prescriptionResult = await transaction.request()
+        .input('appointment_id', appointment_id)
+        .input('doctor_notes', note || null)
+        .input('follow_up_plan', treatment_plan || null)
+        .input('counseling_notes', reExamDate ? `Tái khám ngày: ${reExamDate}` : null)
+        .query(`
+          INSERT INTO Prescriptions 
+          (appointment_id, doctor_notes, follow_up_plan, counseling_notes)
+          OUTPUT INSERTED.prescription_id
+          VALUES (@appointment_id, @doctor_notes, @follow_up_plan, @counseling_notes)
+        `);
+      prescriptionId = prescriptionResult.recordset[0].prescription_id;
+      console.log('Inserted new Prescription with ID:', prescriptionId);
+    }
+    
+    await transaction.commit();
+    
+    return {
+      exam_id: examId,
+      prescription_id: prescriptionId,
+      message: 'Lưu dữ liệu khám bệnh thành công'
+    };
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error in saveExamData:', error);
+    throw error;
+  }
 };
 
 module.exports = {
@@ -264,4 +396,5 @@ module.exports = {
   getAppointmentsByStatus,
   getExamHistory,
   getCurrentExam,
+  saveExamData,
 };

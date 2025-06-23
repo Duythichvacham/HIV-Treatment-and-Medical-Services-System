@@ -1,4 +1,6 @@
 const appointmentService = require('../services/appointmentService');
+const { poolPromise } = require('../config/db');
+
 
 
 exports.updateStatus = async (req, res, next) => {
@@ -72,3 +74,118 @@ exports.getLabTestFinished = async (req, res, next) => {
     next(error);
   }
 };
+
+
+// Get lấy danh sách hẹn của người dùng
+exports.getAppointments = async (req, res) => {
+
+    try {
+      const accountId = req.user.userId; // lấy từ token đã verify
+      const pool = await poolPromise;
+  
+      const result = await pool.request()
+        .input('accountId', accountId)
+        .query('SELECT patient_id FROM Patients WHERE account_id = @accountId');
+  
+      if (result.recordset.length === 0) {
+        return res.status(404).json({ message: 'Không tìm thấy bệnh nhân cho tài khoản này' });
+      }
+  
+      const patientId = result.recordset[0].patient_id;
+
+      const listAppointment = await appointmentService.getAllByUser(patientId);
+
+
+      return res.status(200).json({ 
+        message : 'lay thanh cong danh sach',
+        patientId,
+        listAppointment
+       });
+    } catch (error) {
+      console.error('Lỗi truy vấn patient_id:', error);
+      return res.status(500).json({ message: 'Lỗi server: ' + error.message });
+    }
+  };
+
+// Tạo mới lịch hẹn (appointment)
+exports.createAppointment = async (req, res, next) => {
+  try {
+    // Lấy accountId từ token
+    const accountId = req.user.userId;
+    const pool = await require('../config/db').poolPromise;
+    // Lấy patient_id từ accountId
+    const result = await pool.request()
+      .input('accountId', accountId)
+      .query('SELECT patient_id FROM Patients WHERE account_id = @accountId');
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy bệnh nhân cho tài khoản này' });
+    }
+    const patient_id = result.recordset[0].patient_id;
+    // Lấy dữ liệu từ body
+    const { doctor_id, slot_id, service_id, room_id, bookingDate } = req.body;
+    const serviceType = req.body.serviceType; // Giả sử serviceType cũng được gửi từ client
+    let finalRoomId = room_id;
+
+    // Nếu là dịch vụ xét nghiệm thì random 1 phòng có room_type = 'Xét nghiệm'
+    if (serviceType === 'service') {
+      const roomResult = await pool.request()
+        .query("SELECT room_id FROM Rooms WHERE room_type = N'Xét nghiệm'");
+      const roomList = roomResult.recordset;
+      if (roomList.length > 0) {
+        const randomIdx = Math.floor(Math.random() * roomList.length);
+        finalRoomId = roomList[randomIdx].room_id;
+      }
+    }
+
+    // Nếu là đặt lịch bác sĩ thì lấy room_id từ WorkingShifts
+    if (serviceType === 'doctor' && doctor_id && bookingDate) {
+      const shiftResult = await pool.request()
+        .input('doctor_id', doctor_id)
+        .input('bookingDate', bookingDate)
+        .query("SELECT TOP 1 room_id FROM WorkingShifts WHERE doctor_id = @doctor_id AND shift_date = @bookingDate AND status = 'approved'");
+      if (shiftResult.recordset.length === 0) {
+        return res.status(400).json({ message: 'Bác sĩ chưa được phân công phòng trong ngày này' });
+      }
+      finalRoomId = shiftResult.recordset[0].room_id;
+    }
+
+    // Validate dữ liệu đầu vào (có thể bổ sung thêm)
+    if (
+      !service_id ||
+      !finalRoomId ||
+      !bookingDate ||
+      ((serviceType === 'doctor' || req.body.doctor_id) && (!doctor_id || !slot_id))
+    ) {
+      return res.status(400).json({ message: 'Thiếu thông tin đặt lịch' });
+    }
+
+    // Gọi service để tạo mới
+    const appointment = await appointmentService.createAppointment({
+      patient_id,
+      doctor_id,
+      slot_id,
+      service_id,
+      status: 'requested',
+      room_id: finalRoomId,
+      bookingDate
+    });
+    return res.status(201).json({ message: 'Đặt lịch thành công', appointment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Lấy chi tiết lịch hẹn theo appointment_id
+exports.getAppointmentDetail = async (req, res, next) => {
+  try {
+    const { appointment_id } = req.params;
+    const appointment = await appointmentService.getAppointmentDetail(appointment_id);
+    if (!appointment) {
+      return res.status(404).json({ message: 'Không tìm thấy lịch hẹn' });
+    }
+    return res.status(200).json({ message: 'Lấy chi tiết lịch hẹn thành công', data: appointment });
+  } catch (error) {
+    next(error);
+  }
+};
+

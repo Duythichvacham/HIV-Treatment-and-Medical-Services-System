@@ -1,13 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import AppointmentForm from "../../../components/common/AppointmentForm";
 import { getServices } from "../../../services/api";
+import { AuthContext } from "../../../contexts/AuthContext";
 
-const MainServiceDetail = ({ user }) => {
+const MainServiceDetail = () => {
   const { serviceId } = useParams(); // Only support /service/:serviceId
   const [service, setService] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useContext(AuthContext);
+
   useEffect(() => {
     const fetchService = async () => {
       try {
@@ -266,15 +269,15 @@ const MainServiceDetail = ({ user }) => {
               Đặt lịch ngay
             </h2>{" "}
             <AppointmentForm
-              serviceType={service.service_type}
-              serviceName={service.name}
-              price={
-                service.price === 0 || service.price === null
-                  ? "Miễn phí"
-                  : `${Number(service.price).toLocaleString()}đ`
-              }
-              user={user}
-            />
+  serviceType={`service_${service.service_id}`}
+  serviceName={service.name}
+  price={
+    service.price === 0 || service.price === null
+      ? "Miễn phí"
+      : `${Number(service.price).toLocaleString()}đ`
+  }
+  user={user}
+/>
           </div>
         </div>
       </div>

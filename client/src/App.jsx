@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,60 +13,87 @@ import {
   PatientLogin,
   DoctorDetail,
 } from "./index";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/common/ProtectedRoute";
 import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
 import RegistrationStaff from "./pages/Staff/RegistrationStaff";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
 
 function App() {
-  // State lưu thông tin user đăng nhập
-  const [user, setUser] = useState(null);
-
   return (
-    <Router>
-      <AppContent user={user} setUser={setUser} />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 
-function AppContent({ user, setUser }) {
+function AppContent() {
   const location = useLocation();
-
-  // Ẩn header ở trang login staff
+  const { user } = useAuth();
+  // Chỉ ẩn header ở trang login staff, trang login patient vẫn có header
   const hideHeader = location.pathname === "/login/staff";
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {!hideHeader && <Header user={user} setUser={setUser} />}
+      {!hideHeader && <Header />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route
-            path="/login/staff"
-            element={<StaffLogin onLogin={setUser} />}
+          <Route path="/login/staff" element={<StaffLogin />} />
+          <Route path="/login/patient" element={<PatientLogin />} />
+          
+          {/* Protected Staff Routes */}
+          <Route 
+            path="/lab-staff" 
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
+                <LabStaff />
+              </ProtectedRoute>
+            } 
           />
-          <Route
-            path="/login/patient"
-            element={<PatientLogin onLogin={setUser} />}
+          <Route 
+            path="/lab-process" 
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
+                <LabProcess />
+              </ProtectedRoute>
+            } 
           />
-          <Route path="/lab-staff" element={<LabStaff user={user} />} />
-          <Route path="/lab-process" element={<LabProcess />} />
-          <Route path="/lab-result" element={<LabResult />} />
-          <Route
-            path="/registration-staff"
-            element={<RegistrationStaff user={user} />}
-          />{" "}
-          <Route path="/register" element={<RegisterPlaceholder />} />
-          <Route
-            path="/service/:serviceId"
-            element={<MainServiceDetail user={user} />}
+          <Route 
+            path="/lab-result" 
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
+                <LabResult />
+              </ProtectedRoute>
+            } 
+          />          <Route 
+            path="/registration-staff" 
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Registration-staff">
+                <RegistrationStaff />
+              </ProtectedRoute>
+            } 
           />
-          <Route path="/doctors/:id" element={<DoctorDetail user={user} />} />
+          <Route 
+            path="/doctor-dashboard" 
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Doctor">
+                <DoctorDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Guest/Patient Routes */}          <Route path="/register" element={<RegisterPlaceholder />} />
+          <Route path="/service/:serviceId" element={<MainServiceDetail />} />
+          <Route path="/doctors/:id" element={<DoctorDetail />} />
           <Route path="/doctorpage" element={<DoctorPage />} />
-          <Route path="/appointment" element={<Appointment user={user} />} />
+          <Route path="/appointment" element={<Appointment />} />
         </Routes>
       </main>
       {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}

@@ -149,3 +149,63 @@ exports.createTestResultAndComplete = async (req, res, next) => {
     next(error);
   }
 };
+
+/// GET /api/v1/lab/queue
+exports.getLabQueue = async (req, res, next) => {
+  try {
+    const { date } = req.query;
+    const queue = await testService.getLabQueue(date);
+    res.json({
+      message: 'Lấy danh sách mẫu chờ xét nghiệm thành công',
+      data: queue
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/// GET /api/v1/lab/in-progress
+exports.getLabInProgress = async (req, res, next) => {
+  try {
+    const { date } = req.query;
+    const inProgress = await testService.getLabInProgress(date);
+    res.json({
+      message: 'Lấy danh sách mẫu đang xét nghiệm thành công',
+      data: inProgress
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/// GET /api/v1/lab/done
+exports.getLabDone = async (req, res, next) => {
+  try {
+    const { date } = req.query;
+    const done = await testService.getLabDone(date);
+    res.json({
+      message: 'Lấy danh sách mẫu đã hoàn thành thành công',
+      data: done
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/v1/lab/lab-tests
+exports.getAllLabTests = async (req, res, next) => {
+  try {
+    const tests = await appointmentService.getAllLabTests();
+    // Gắn trường assigned_by
+    const data = tests.map(item => ({
+      ...item,
+      assigned_by: item.doctor_id ? `Bác sĩ ${item.doctor_name} chỉ định` : 'Đăng ký xét nghiệm'
+    }));
+    res.json({
+      message: 'Lấy danh sách xét nghiệm thành công',
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};

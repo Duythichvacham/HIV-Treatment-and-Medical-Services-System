@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:5000/api/v1';
 
 const LabProcess = () => {
   const location = useLocation();
@@ -12,16 +15,40 @@ const LabProcess = () => {
   const [cd4Value, setCd4Value] = useState('');
   const [review, setReview] = useState('');
   const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleDraft = () => {
     // TODO: lưu tạm kết quả
     alert('Lưu tạm thành công!');
   };
 
-  const handleSubmit = () => {
-    // TODO: gửi kết quả
-    alert('Gửi kết quả thành công!');
-    navigate('/lab-staff');
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      // Chuẩn bị dữ liệu gửi lên BE
+      let payload = {
+        test_note_id: data.test_note_id || data.id,
+        notes: note,
+      };
+      if (data.type === 'Sàng lọc') {
+        payload.result_value = screeningResult === 'positive' ? 'Dương tính' : 'Âm tính';
+        payload.unit = '';
+        payload.reference_range = '';
+      } else {
+        payload.result_value = `Viral: ${viralResult}, CD4: ${cd4Result}`;
+        payload.unit = 'copies/mL';
+        payload.reference_range = '';
+      }
+      // Gọi API nhập kết quả xét nghiệm
+      await axios.post(`${API_BASE}/lab/test-results`, payload, { headers });
+      alert('Gửi kết quả thành công!');
+      navigate('/lab-staff');
+    } catch (err) {
+      alert('Không thể gửi kết quả!');
+    }
+    setSubmitting(false);
   };
 
   return (
@@ -160,8 +187,9 @@ const LabProcess = () => {
                 <button
                   className="px-6 py-2 bg-blue-900 text-white rounded font-semibold hover:bg-blue-800"
                   onClick={handleSubmit}
+                  disabled={submitting}
                 >
-                  Gửi kết quả
+                  {submitting ? 'Đang gửi...' : 'Gửi kết quả'}
                 </button>
               </div>
             </div>
