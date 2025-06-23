@@ -34,7 +34,7 @@ function route(app) {
   app.use("/api/v1/lab/test-notes", testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use("/api/v1/lab/test-results", testRouter);
+  app.use("/api/v1/lab", testRouter);
 
   ///api/v1/doctor/appointments/finished||in-progress||queue
   app.use("/api/v1/doctor/appointments", doctorRouter);
@@ -98,11 +98,11 @@ app.use('/booking',bookingRouter);
 app.use('/booking' ,bookingRouter);
 //GET /appointments – lấy danh sách lịch hẹn của người dùng
 app.use('/appointments' , authenticateToken,appointmentRouter);
-app.use("/api/v1/lab/queue", testRouter);
-app.use("/api/v1/lab/in-progress", testRouter);
-app.use("/api/v1/lab/done", testRouter);
+app.use("/api/v1/lab", testRouter);
+// app.use("/api/v1/lab", testRouter);
+// app.use("/api/v1/lab", testRouter);
 
-app.use('/api/v1/lab', testRouter);
+app.use('/api/v1/lab/appointments/test', testRouter);
 }
 
 

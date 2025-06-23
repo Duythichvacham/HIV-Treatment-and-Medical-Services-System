@@ -194,8 +194,9 @@ exports.getLabDone = async (req, res, next) => {
 
 // GET /api/v1/lab/lab-tests
 exports.getAllLabTests = async (req, res, next) => {
+  console.log("getAllLabTests called");
   try {
-    const tests = await appointmentService.getAllLabTests();
+    const tests = await testService.getAllLabTests();
     // Gắn trường assigned_by
     const data = tests.map(item => ({
       ...item,
