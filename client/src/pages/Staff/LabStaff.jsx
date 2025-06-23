@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { getLabQueue, getLabInProgress, getLabDone } from '../../services/api';
 
 const demoData = {
   summary: [
@@ -51,18 +52,29 @@ const demoData = {
 const Card = ({ data, section, onStart, onProcess, onResult }) => (
   <div className="bg-white rounded-xl p-5 shadow border mb-4">
     <div className="flex items-center mb-2">
-      <div className="bg-blue-600 text-white rounded-full w-7 h-7 flex items-center justify-center font-bold mr-2">{data.id}</div>
-      <div className="font-semibold text-lg">{data.name}</div>
+      {/* Bỏ avatar tròn, chỉ hiển thị STT/id/code dạng text */}
+      <div className="font-bold text-blue-700 mr-2">
+        {data.stt !== undefined && data.stt !== null
+          ? `STT: ${data.stt}`
+          : (data.id || data.code)}
+      </div>
+      <div className="font-semibold text-lg">{data.patient_name || data.name}</div>
     </div>
     <div className="text-xs text-gray-500 mb-1">{data.code}</div>
     <div className="text-sm text-gray-700 mb-1">{data.age} tuổi - {data.gender}</div>
-    <div className="text-sm text-gray-700 mb-1">Hẹn lúc: {data.time}</div>
+    {/* Không hiển thị time vì đăng ký xét nghiệm không có khung giờ */}
     <div className="text-xs text-gray-400 mb-1">Đặt lúc: {data.bookTime}</div>
     {data.phone && <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>}
     <div className="flex flex-wrap gap-2 my-2">
-      <span className={`px-2 py-1 rounded text-xs ${data.type === 'Sàng lọc' ? 'bg-yellow-100 text-yellow-700' : data.type === 'Khẳng định' ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'}`}>{data.type}</span>
+      <span className={`px-2 py-1 rounded text-xs ${data.type === 'Sàng lọc' ? 'bg-yellow-100 text-yellow-700' : data.type === 'Khẳng định' ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'}`}>{data.type_name}</span>
     </div>
-    <div className="text-xs text-gray-500 mb-1">BS chỉ định: <b>{data.doctor}</b></div>
+    <div className="text-xs text-gray-500 mb-1">
+      {data.id ? (
+        <>BS chỉ định: <b>{data.doctor}</b></>
+      ) : (
+        <b>Đăng kí xét nghiệm</b>
+      )}
+    </div>
     {section === 'Chờ xét nghiệm' && (
       <button onClick={() => onStart(data.id)} className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition">Bắt đầu xét nghiệm</button>
     )}
@@ -86,53 +98,75 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
 );
 
 const LabStaff = () => {
-  const [sections, setSections] = useState(demoData.sections);
+  const [sections, setSections] = useState([
+    { title: 'Chờ xét nghiệm', color: 'border-yellow-400', icon: '🕒', count: 0, cards: [] },
+    { title: 'Đang xét nghiệm', color: 'border-blue-500', icon: '🔬', count: 0, cards: [] },
+    { title: 'Hoàn thành', color: 'border-green-500', icon: '✅', count: 0, cards: [] },
+  ]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  });
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Fetch lab queue, in-progress, done
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [queue, inProgress, done] = await Promise.all([
+          getLabQueue(selectedDate),
+          getLabInProgress(selectedDate),
+          getLabDone(selectedDate),
+        ]);
+        setSections([
+          { ...sections[0], cards: queue || [], count: (queue || []).length },
+          { ...sections[1], cards: inProgress || [], count: (inProgress || []).length },
+          { ...sections[2], cards: done || [], count: (done || []).length },
+        ]);
+      } catch (err) {
+        console.error('Lỗi tải dữ liệu lab:', err);
+      }
+      setLoading(false);
+    };
+    fetchData();
+    // eslint-disable-next-line
+  }, [selectedDate]);
+
+  const handleStart = async (cardId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      // PATCH trạng thái sang 'in_progress'
+      await axios.patch(`${API_BASE}/test-requests/${cardId}/status`, { status: 'in_progress' }, { headers });
+      // Reload data
+      window.location.reload();
+    } catch (err) {
+      alert('Không thể cập nhật trạng thái!');
+    }
+  };
 
   const handleProcess = (card) => {
     navigate('/lab-process', { state: card });
   };
 
-  const handleStart = (cardId) => {
-    setSections(prev => {
-      const pendingIndex = prev.findIndex(s => s.title === 'Chờ xét nghiệm');
-      const inProgressIndex = prev.findIndex(s => s.title === 'Đang xét nghiệm');
-      const pending = { ...prev[pendingIndex] };
-      const inProg = { ...prev[inProgressIndex] };
-      const card = pending.cards.find(c => c.id === cardId);
-      if (!card) return prev;
-      pending.cards = pending.cards.filter(c => c.id !== cardId);
-      pending.count = pending.cards.length;
-      inProg.cards = [...inProg.cards, card];
-      inProg.count = inProg.cards.length;
-      return prev.map((sec, idx) => idx === pendingIndex ? pending : idx === inProgressIndex ? inProg : sec);
-    });
+  const handleViewResult = async (card) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      // Lấy chi tiết phiếu xét nghiệm
+      const noteRes = await axios.get(`${API_BASE}/lab/test-notes/${card.test_note_id || card.id}`, { headers });
+      // Lấy kết quả xét nghiệm (giả định trả về trong noteRes.data.data.results hoặc cần gọi API khác)
+      const note = noteRes.data.data;
+      const results = note?.results || [];
+      navigate('/lab-result', { state: { note, results } });
+    } catch (err) {
+      alert('Không thể lấy chi tiết kết quả!');
+    }
   };
 
-  // View result: navigate to LabResult page with note & results
-  const handleViewResult = (card) => {
-    const note = {
-      test_note_id: card.id,
-      request_id: card.id,
-      appointment_id: card.id,
-      created_by_id: user.name || 'Lab-Staff',
-      test_datetime: new Date().toISOString(),
-    };
-    const results = [
-      {
-        result_id: card.id,
-        test_note_id: card.id,
-        result_value: card.result,
-        unit: card.type === 'Sàng lọc' ? '' : 'copies/mL',
-        reference_range: '',
-        notes: '',
-        created_at: new Date().toISOString(),
-      },
-    ];
-    navigate('/lab-result', { state: { note, results } });
-  };
-  
   if (!user || user.role !== 'Lab-Staff') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-red-600 font-bold text-xl">
@@ -140,11 +174,22 @@ const LabStaff = () => {
       </div>
     );
   }
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center text-blue-600 font-bold text-xl">Đang tải dữ liệu...</div>;
   return (
     <div className="bg-blue-50 min-h-screen py-6 px-2 md:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Dashboard Nhân viên Xét nghiệm</h1>
         <div className="text-gray-600 mb-6">Quản lý mẫu xét nghiệm từ bác sĩ chỉ định và đăng ký xét nghiệm</div>
+        {/* Chọn ngày */}
+        <div className="mb-6 flex items-center gap-3">
+          <label className="font-medium">Chọn ngày:</label>
+          <input
+            type="date"
+            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+            value={selectedDate}
+            onChange={e => setSelectedDate(e.target.value)}
+          />
+        </div>
         {/* Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {demoData.summary.map((s, i) => (
