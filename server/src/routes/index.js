@@ -102,7 +102,7 @@ app.use("/api/v1/lab/queue", testRouter);
 app.use("/api/v1/lab/in-progress", testRouter);
 app.use("/api/v1/lab/done", testRouter);
 
-app.use('/api/v1/lab/', testRouter);
+app.use('/api/v1/lab', testRouter);
 }
 
 

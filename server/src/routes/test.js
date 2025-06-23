@@ -28,4 +28,5 @@ router.get("/", authenticateToken, testController.getLabQueue);
 
 // GET /api/v1/lab/lab-tests(LẤY DANH SÁCH XÉT NGHIỆM)
 router.get('/lab-tests', authenticateToken, testController.getAllLabTests);
+
 module.exports = router;
