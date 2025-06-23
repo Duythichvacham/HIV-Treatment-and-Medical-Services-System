@@ -3,6 +3,10 @@ const router = express.Router();
 const authenticateToken = require("../middleware/authMiddleware");
 
 const testController = require("../controllers/testController");
+// Thêm các route cho lab queue, in-progress, done
+router.get("/lab/queue", authenticateToken, testController.getLabQueue);
+router.get("/lab/in-progress", authenticateToken, testController.getLabInProgress);
+router.get("/lab/done", authenticateToken, testController.getLabDone);
 
 // PATCH /api/v1/test-requests/:id/status
 router.patch(
@@ -20,4 +24,6 @@ router.get(
 
 // POST /api/v1/lab/test-results (nhập kết quả xét nghiệm và hoàn thành);
 router.post("/", authenticateToken, testController.createTestResultAndComplete);
+router.get("/", authenticateToken, testController.getLabQueue);
+
 module.exports = router;

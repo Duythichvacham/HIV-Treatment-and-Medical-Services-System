@@ -237,5 +237,25 @@ export const getDoctorById = async (id) => {
     throw error;
   }
 };
+export const getLabQueue = async (date) => {
+  const params = {};
+  if (date) params.date = date;
+  const response = await api.get("/api/v1/lab/queue", { params });
+  return response.data.data;
+};
+
+export const getLabInProgress = async (date) => {
+  const params = {};
+  if (date) params.date = date;
+  const response = await api.get("/api/v1/lab/in-progress", { params });
+  return response.data.data;
+};
+
+export const getLabDone = async (date) => {
+  const params = {};
+  if (date) params.date = date;
+  const response = await api.get("/api/v1/lab/done", { params });
+  return response.data.data;
+};
 
 export default api;

@@ -98,7 +98,9 @@ app.use('/booking',bookingRouter);
 app.use('/booking' ,bookingRouter);
 //GET /appointments – lấy danh sách lịch hẹn của người dùng
 app.use('/appointments' , authenticateToken,appointmentRouter);
-
+app.use("/api/v1/lab/queue", testRouter);
+app.use("/api/v1/lab/in-progress", testRouter);
+app.use("/api/v1/lab/done", testRouter);
 }
 
 
