@@ -1,4 +1,6 @@
-﻿-- 1. Accounts (phải đầu tiên)
+
+-- 1. Accounts (phải đầu tiên)
+
 INSERT INTO Accounts (username, password_hash, role, status) VALUES
 ('admin01', '$2b$10$5yIXgrKWmsOXurLPFLm6Ku3d0XHZYhsUXvyvMbnD0WefI4WfPlkLO', 'Manager', 'active'),
 ('doctor01', '$2b$10$VBQ33AMG1DIE6IyhEG8Rsua8g5zJHtHEtCquHukuhrDPIUwmPWc8C', 'Doctor', 'active'),
@@ -83,10 +85,12 @@ INSERT INTO WorkingShifts (account_id, doctor_id, shift_date, room_id, status, m
 (1, 1, '2025-06-23', 1, 'approved', 6),
 (1, 2, '2025-06-23', 2, 'approved', 6),
 (1, 3, '2025-06-23', 3, 'approved', 6),
+
 (1, 4, '2025-06-24', 4, 'approved', 6),
 (1, 5, '2025-06-24', 5, 'approved', 6);
 
 -- 10. Appointments (cần Patients, Doctors, Slots, Services, Rooms trước)
+
 INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, queue_number, room_id, bookingDate) VALUES
 (1, 1, 1, 1, 'completed', 1, 1, '2025-06-23'),
 (2, 2, 2, 1, 'completed', 1, 2, '2025-06-23'),
@@ -161,6 +165,7 @@ INSERT INTO BlogPosts (title, content, author_id, is_educational, published) VAL
 
 -- 19. Invoices (cần Patients, Appointments, TestRequests trước)
 INSERT INTO Invoices (patient_id, appointment_id, request_id, amount, service_type, status, issued_at) VALUES
+
 (1, 1, NULL, 150000, N'Khám bệnh', 'paid', '2025-06-23 09:00:00'),
 (1, NULL, 1, 200000, N'Xét nghiệm CD4', 'paid', '2025-06-23 14:00:00'),
 (1, NULL, 2, 350000, N'Xét nghiệm Viral Load', 'paid', '2025-06-23 14:30:00'),
@@ -169,3 +174,4 @@ INSERT INTO Invoices (patient_id, appointment_id, request_id, amount, service_ty
 (3, 3, NULL, 100000, N'Tư vấn', 'paid', '2025-06-23 11:00:00'),
 (3, NULL, 4, 120000, N'Xét nghiệm sàng lọc', 'paid', '2025-06-23 15:30:00'),
 (4, 4, NULL, 150000, N'Khám bệnh', 'pending', '2025-06-24 09:00:00');
+
