@@ -143,31 +143,31 @@ INSERT INTO TestRequests (doctor_id, appointment_id, service_id, request_date, a
 (2, 12, 5, '2025-06-24 14:30:00', 8, '2025-06-24 15:00:00', 'completed');
 
 -- 13. TestNotes
-INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime) VALUES
-(1, 1, 5, '2025-06-23 14:00:00'),
-(2, 1, 5, '2025-06-23 14:30:00'),
-(3, 2, 6, '2025-06-23 15:00:00'),
-(4, 3, 6, '2025-06-23 15:30:00'),
-(5, 6, 5, '2025-06-23 16:00:00'),
-(6, 4, 5, '2025-06-24 09:30:00'),
-(7, 11, 6, '2025-06-24 15:00:00'),
-(8, 8, 5, '2025-06-24 08:30:00'),
-(9, 9, 6, '2025-06-24 09:00:00'),
-(10, 12, 5, '2025-06-24 15:30:00');
+INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime, notes) VALUES
+(1, 1, 5, '2025-06-23 14:00:00', N'Kết quả bình thường'),
+(2, 1, 5, '2025-06-23 14:30:00', N'Tải lượng virus không phát hiện được'),
+(3, 2, 6, '2025-06-23 15:00:00', N'Xác nhận dương tính'),
+(4, 3, 6, '2025-06-23 15:30:00', N'CD4 trong giới hạn bình thường'),
+(5, 6, 5, '2025-06-23 16:00:00', N'Sàng lọc âm tính'),
+(6, 4, 5, '2025-06-24 09:30:00', N'Kết quả dương tính cần theo dõi'),
+(7, 11, 6, '2025-06-24 15:00:00', N'CD4 ổn định'),
+(8, 8, 5, '2025-06-24 08:30:00', N'Tải lượng virus thấp'),
+(9, 9, 6, '2025-06-24 09:00:00', N'Kết quả tốt'),
+(10, 12, 5, '2025-06-24 15:30:00', N'Sàng lọc âm tính');
 
 -- 14. TestResults
-INSERT INTO TestResults (test_note_id, result_value, unit, reference_range, notes) VALUES
-(1, '650', 'cells/mm³', '500-1500', N'Kết quả bình thường'),
-(1, '25', 'copies/ml', '<50', N'Tải lượng virus không phát hiện được'),
-(2, 'Positive', '', 'Positive', N'Xác nhận dương tính'),
-(3, '720', 'cells/mm³', '500-1500', N'CD4 trong giới hạn bình thường'),
-(4, 'Negative', '', 'Negative', N'Sàng lọc âm tính'),
-(5, 'Positive', '', 'Positive', N'Kết quả dương tính cần theo dõi'),
-(6, '580', 'cells/mm³', '500-1500', N'CD4 ổn định'),
-(7, '45', 'copies/ml', '<50', N'Tải lượng virus thấp'),
-(8, '680', 'cells/mm³', '500-1500', N'Kết quả tốt'),
-(9, 'Negative', '', 'Negative', N'Sàng lọc âm tính'),
-(10, 'Positive', '', 'Positive', N'Xác nhận dương tính, cần xét nghiệm thêm');
+INSERT INTO TestResults (test_note_id, result_value, unit, reference_range) VALUES
+(1, '650', 'cells/mm³', '500-1500'),
+(1, '25', 'copies/ml', '<50'),
+(2, 'Positive', '', 'Positive'),
+(3, '720', 'cells/mm³', '500-1500'),
+(4, 'Negative', '', 'Negative'),
+(5, 'Positive', '', 'Positive'),
+(6, '580', 'cells/mm³', '500-1500'),
+(7, '45', 'copies/ml', '<50'),
+(8, '680', 'cells/mm³', '500-1500'),
+(9, 'Negative', '', 'Negative'),
+(10, 'Positive', '', 'Positive');
 
 -- 15. MedicalHistory
 INSERT INTO MedicalHistory (patient_id, hiv_discovered_at, arv_status, arv_adherence, arv_side_effects, medical_history, allergies) VALUES
