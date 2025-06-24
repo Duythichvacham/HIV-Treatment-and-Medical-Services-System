@@ -1,19 +1,18 @@
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 
 const users = [
-  { username: 'patient1' },
-  { username: 'patient2' },
-  { username: 'labstaff1' },
-  { username: 'regstaff1' },
-  { username: 'doctor1' },
-  { username: 'manager1' },
+  { username: "patient1" },
+  { username: "patient2" },
+  { username: "labstaff1" },
+  { username: "regstaff1" },
+  { username: "doctor05" },
+  { username: "manager1" },
 ];
 
 const saltRounds = 10;
 
 async function hashPasswords() {
   for (let user of users) {
-    
     const password = user.username;
 
     try {
