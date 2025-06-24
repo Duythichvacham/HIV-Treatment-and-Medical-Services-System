@@ -76,7 +76,7 @@ CREATE TABLE Services (
 -- TestTypes
 CREATE TABLE TestTypes (
     test_type_id INT PRIMARY KEY IDENTITY(1,1),
-    service_id INT NOT NULL FOREIGN KEY REFERENCES Services(service_id), -- service_type phải là test
+     -- service_type phải là test
     service_type NVARCHAR(30) NOT NULL DEFAULT 'test', -- mặc định là test -- double check để chắc chắn là dvxn
     name NVARCHAR(50) UNIQUE NOT NULL,
     unit VARCHAR(50),  -- VD: 'cells/mm³', có thể NULL cho binary
