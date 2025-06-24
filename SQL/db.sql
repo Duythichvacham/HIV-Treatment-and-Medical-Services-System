@@ -137,10 +137,11 @@ CREATE TABLE WorkingShifts (
 -- TestNotes
 CREATE TABLE TestNotes(
    test_note_id INT PRIMARY KEY IDENTITY(1,1),
-   request_id INT NOT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
+   request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- có thể phát sinh không thông qua testrequest
    created_by_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- người xn và tạo phiếu này
    test_datetime DATETIME NOT NULL,
+   notes NVARCHAR(500) NULL, -- ghi chú của người làm xét nghiệm
    );
 -- TestResults
 CREATE TABLE TestResults (
