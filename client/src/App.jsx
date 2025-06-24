@@ -23,6 +23,7 @@ import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
+import AppointmentHistory from "./pages/Patient/AppointmentHistory";
 
 function App() {
   return (
@@ -47,49 +48,60 @@ function AppContent() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login/staff" element={<StaffLogin />} />
           <Route path="/login/patient" element={<PatientLogin />} />
-          
           {/* Protected Staff Routes */}
-          <Route 
-            path="/lab-staff" 
+          <Route
+            path="/lab-staff"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabStaff />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/lab-process" 
+          <Route
+            path="/lab-process"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabProcess />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/lab-result" 
+          <Route
+            path="/lab-result"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabResult />
               </ProtectedRoute>
-            } 
-          />          <Route 
-            path="/registration-staff" 
+            }
+          />{" "}
+          <Route
+            path="/registration-staff"
             element={
-              <ProtectedRoute staffOnly={true} requiredRole="Registration-staff">
+              <ProtectedRoute
+                staffOnly={true}
+                requiredRole="Registration-staff"
+              >
                 <RegistrationStaff />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/doctor-dashboard" 
+          <Route
+            path="/doctor-dashboard"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Doctor">
                 <DoctorDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          
-          {/* Guest/Patient Routes */}          <Route path="/register" element={<RegisterPlaceholder />} />
+          {/* Guest/Patient Routes */}
+          <Route
+            path="/appointment-history"
+            element={
+              <ProtectedRoute>
+                <AppointmentHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/register" element={<RegisterPlaceholder />} />
           <Route path="/service/:serviceId" element={<MainServiceDetail />} />
           <Route path="/doctors/:id" element={<DoctorDetail />} />
           <Route path="/doctorpage" element={<DoctorPage />} />
