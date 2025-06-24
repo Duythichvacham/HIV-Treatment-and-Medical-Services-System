@@ -13,8 +13,8 @@ const AppointmentHistory = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await getUserAppointments();
-      setAppointments(response.data || []);
+      const allAppointments = await getUserAppointments();
+      setAppointments(allAppointments.data || allAppointments || []);
     } catch (err) {
       console.error("Error fetching appointments:", err);
       setError("Không thể tải danh sách lịch hẹn");
