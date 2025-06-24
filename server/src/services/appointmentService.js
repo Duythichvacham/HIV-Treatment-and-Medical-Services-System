@@ -161,7 +161,6 @@ SELECT  a.appointment_id
       ,sv.service_type
       ,a.status
       ,a.queue_number
-      ,r.room_name
       ,a.bookingDate
       ,a.created_at
       ,d.full_name as doctor_name

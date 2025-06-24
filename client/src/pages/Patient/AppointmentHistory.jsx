@@ -16,6 +16,7 @@ const AppointmentHistory = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
+
       console.log("🔄 Fetching appointments...");
 
       // Kiểm tra authentication trước

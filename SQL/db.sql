@@ -67,7 +67,7 @@ CREATE TABLE Slots (
 -- Services
 CREATE TABLE Services (
     service_id INT PRIMARY KEY IDENTITY(1,1),
-    name NVARCHAR(100) NOT NULL, 
+    name NVARCHAR(100) UNIQUE NOT NULL, 
     service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
     description NVARCHAR(500),
     price DECIMAL(10,2), 
@@ -84,7 +84,12 @@ CREATE TABLE TestTypes (
     result_type VARCHAR(20) CHECK (result_type IN ('numeric', 'binary')),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
-
+-- ServicesTestTypes - trung g gian giữa Services và TestTypes
+CREATE TABLE ServicesTestTypes (
+    service_id INT NOT NULL FOREIGN KEY REFERENCES Services(service_id),
+    test_type_id INT NOT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id),
+    PRIMARY KEY (service_id, test_type_id)
+);
 -- Appointments
 CREATE TABLE Appointments (
     appointment_id INT PRIMARY KEY IDENTITY(1,1),
