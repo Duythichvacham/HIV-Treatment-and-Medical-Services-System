@@ -20,6 +20,10 @@ const serviceRouter = require("./service");
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 
 function route(app) {
+
+   // GET /api/v1/lab/appointments/test/lab-tests (Lấy danh sách xét nghiệm)
+  //  app.use("/api/v1/lab/appointments/test", testRouter);
+   
   //các thao tác liên quan đến appointments gắn với patient
   app.use("/api/v1/appointments", appointmentRouter);
 
@@ -33,7 +37,7 @@ function route(app) {
   app.use("/api/v1/lab/test-notes", testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use("/api/v1/lab/test-results", testRouter);
+  app.use("/api/v1/lab", testRouter);
 
   ///api/v1/doctor/appointments/finished||in-progress||queue
   app.use("/api/v1/doctor/appointments", doctorRouter);
@@ -54,7 +58,7 @@ function route(app) {
   app.use(`${process.env.API_PREFIX}/lab/test-notes`, testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);
+  app.use(`${process.env.API_PREFIX}/lab`, testRouter);
   //GET, lấy danh sách bác sĩ
   app.use("/api/public/doctors", doctorRouter);
   //GET, lấy danh sách dịch vụ public
@@ -94,11 +98,11 @@ function route(app) {
   app.use("/booking", bookingRouter);
   //GET /appointments – lấy danh sách lịch hẹn của người dùng
   app.use("/appointments", authenticateToken, appointmentRouter);
-  app.use("/api/v1/lab/queue", testRouter);
-  app.use("/api/v1/lab/in-progress", testRouter);
-  app.use("/api/v1/lab/done", testRouter);
+  // app.use("/api/v1/lab", testRouter);
+  // app.use("/api/v1/lab", testRouter);
+  // app.use("/api/v1/lab", testRouter);
 
-  app.use("/api/v1/lab", testRouter);
+ 
 }
 
 module.exports = route;

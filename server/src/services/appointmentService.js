@@ -89,7 +89,8 @@ exports.getLabTestQueue = async () => {
         tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'requested'
       ORDER BY a.created_at ASC
@@ -115,7 +116,8 @@ exports.getLabTestInProgress = async () => {
         tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'in_progress'
       ORDER BY a.created_at ASC
@@ -141,7 +143,8 @@ exports.getLabTestFinished = async () => {
         tt.normal_range      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'completed'
       ORDER BY a.created_at ASC

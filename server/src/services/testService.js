@@ -38,23 +38,22 @@ exports.getTestNoteDetail = async (test_note_id) => {
   const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
       SELECT 
-        tn.test_note_id,
-        tn.request_id,
-        tn.appointment_id,
-        tn.created_by_id,
-        tn.test_datetime,
-        tr.status AS test_request_status,
-        p.full_name AS patient_name,
-        a.status AS appointment_status,
-        tt.name AS test_type_name,
-        s.name AS service_name,
-        tr.notes AS test_request_notes      FROM TestNotes tn
-      LEFT JOIN TestRequests tr ON tn.request_id = tr.request_id
-      LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
-      LEFT JOIN Patients p ON a.patient_id = p.patient_id
-      LEFT JOIN Services s ON tr.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
-      WHERE tn.test_note_id = @test_note_id
+  tn.test_note_id,
+  tn.request_id,
+  tn.appointment_id,
+  tn.created_by_id,
+  tn.test_datetime,
+  tn.notes, -- Lấy notes từ TestNotes
+  tr.status AS test_request_status,
+  p.full_name AS patient_name,
+  a.status AS appointment_status,
+  s.name AS service_name
+FROM TestNotes tn
+LEFT JOIN TestRequests tr ON tn.request_id = tr.request_id
+LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
+LEFT JOIN Patients p ON a.patient_id = p.patient_id
+LEFT JOIN Services s ON tr.service_id = s.service_id
+WHERE tn.test_note_id = @test_note_id
     `);
 
   return result.recordset[0];
@@ -65,26 +64,24 @@ exports.createTestResultAndComplete = async ({
   test_note_id,
   result_value,
   unit,
-  reference_range,
-  notes,
+  reference_range
 }) => {
   const pool = await poolPromise;
 
-  // 1. Thêm kết quả xét nghiệm mới
+  // 1. Thêm kết quả xét nghiệm mới (không insert notes)
   const insertResult = await pool
     .request()
     .input("test_note_id", test_note_id)
     .input("result_value", result_value)
     .input("unit", unit)
     .input("reference_range", reference_range)
-    .input("notes", notes).query(`
-      INSERT INTO TestResults (test_note_id, result_value, unit, reference_range, notes)
-      VALUES (@test_note_id, @result_value, @unit, @reference_range, @notes);
+    .query(`
+      INSERT INTO TestResults (test_note_id, result_value, unit, reference_range)
+      VALUES (@test_note_id, @result_value, @unit, @reference_range);
       SELECT * FROM TestResults WHERE result_id = SCOPE_IDENTITY();
     `);
 
   // 2. Cập nhật trạng thái phiếu xét nghiệm (nếu muốn)
-  // Ví dụ: cập nhật status của TestRequests liên quan thành 'completed'
   await pool.request().input("test_note_id", test_note_id).query(`
       UPDATE tr
       SET tr.status = 'completed'
@@ -93,7 +90,15 @@ exports.createTestResultAndComplete = async ({
       WHERE tn.test_note_id = @test_note_id
     `);
 
-  return insertResult.recordset[0];
+  // 3. Lấy notes từ TestNotes
+  const testNote = await pool.request()
+    .input("test_note_id", test_note_id)
+    .query("SELECT notes FROM TestNotes WHERE test_note_id = @test_note_id");
+
+  return {
+    ...insertResult.recordset[0],
+    notes: testNote.recordset[0]?.notes || null
+  };
 };
 
 // Lấy danh sách mẫu CHỜ xét nghiệm (không join slot, chỉ lọc theo ngày và trạng thái)
