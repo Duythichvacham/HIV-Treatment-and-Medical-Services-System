@@ -269,13 +269,24 @@ export const checkExistingAppointment = async (
   doctorId = null
 ) => {
   try {
+    // Tạm thời disable check existing để tránh lỗi route conflict
+    console.warn("checkExistingAppointment temporarily disabled for:", {
+      date,
+      serviceType,
+      doctorId,
+    });
+    return { hasExisting: false };
+
+    /* TODO: Cần tạo route mới trong server
     const params = { date, serviceType };
     if (doctorId) params.doctorId = doctorId;
-    const response = await api.get("/api/v1/appointments/check", { params });
+    const response = await api.get("/api/v1/appointments/check-existing", { params });
     return response.data;
+    */
   } catch (error) {
     console.error("Error checking existing appointment:", error);
-    throw error;
+    // Return false để cho phép đặt lịch tiếp tục
+    return { hasExisting: false };
   }
 };
 

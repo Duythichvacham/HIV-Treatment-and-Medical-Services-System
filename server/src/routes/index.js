@@ -83,9 +83,9 @@ function route(app) {
   app.use("/api/v1/doctor/prescriptions", doctorRouter);
 
   //PATCH /booking/pay/:invoiceId – xác nhận thanh toán
-  app.use("/booking", bookingRouter);
+  // app.use("/booking", bookingRouter);
   //PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
-  app.use("/booking", bookingRouter);
+  // app.use("/booking", bookingRouter);
 
   //POST login
   app.use("/api/auth", authRouter);

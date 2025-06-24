@@ -154,16 +154,15 @@ exports.getAllByUser = async (patientId) => {
   const result = await pool.request().input("patientId", patientId).query(`
      
 SELECT  a.appointment_id
-      ,a.patient_id   
+      ,a.patient_id
+      ,s.start_time
+      ,s.end_time
+      ,sv.name as service_name
+      ,sv.service_type
       ,a.status
       ,a.queue_number
       ,a.bookingDate
       ,a.created_at
-      ,s.start_time
-      ,s.end_time
-      ,sv.name as service_name
-      ,sv.service_type    
-      ,r.room_name  
       ,d.full_name as doctor_name
   FROM Appointments as a 
   LEFT JOIN Slots as s ON a.slot_id = s.slot_id
