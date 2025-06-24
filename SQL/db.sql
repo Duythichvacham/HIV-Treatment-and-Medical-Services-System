@@ -147,6 +147,7 @@ CREATE TABLE TestNotes(
 CREATE TABLE TestResults (
     result_id INT PRIMARY KEY IDENTITY(1,1),
     test_note_id INT NOT NULL FOREIGN KEY REFERENCES TestNotes(test_note_id),
+    test_type_id INT NOT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id),
     result_value VARCHAR(100) NULL,
     unit VARCHAR(20) NULL,
     reference_range VARCHAR(100) NULL, -- khoảng tham chiếu
