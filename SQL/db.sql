@@ -150,7 +150,6 @@ CREATE TABLE TestResults (
     result_value VARCHAR(100) NULL,
     unit VARCHAR(20) NULL,
     reference_range VARCHAR(100) NULL, -- khoảng tham chiếu
-    notes NVARCHAR(500),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 
