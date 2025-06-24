@@ -1,4 +1,4 @@
-﻿﻿USE master
+﻿﻿﻿USE master
 GO
 DROP DATABASE HIV_HEATH_CARE
 GO
@@ -64,24 +64,31 @@ CREATE TABLE Slots (
     end_time TIME NOT NULL,
     UNIQUE (start_time, end_time)
 );
+-- Services
+CREATE TABLE Services (
+    service_id INT PRIMARY KEY IDENTITY(1,1),
+    name NVARCHAR(100) UNIQUE NOT NULL, 
+    service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
+    description NVARCHAR(500),
+    price DECIMAL(10,2), 
+    is_active BIT DEFAULT 1
+);
 -- TestTypes
 CREATE TABLE TestTypes (
     test_type_id INT PRIMARY KEY IDENTITY(1,1),
+     -- service_type phải là test
+    service_type NVARCHAR(30) NOT NULL DEFAULT 'test', -- mặc định là test -- double check để chắc chắn là dvxn
     name NVARCHAR(50) UNIQUE NOT NULL,
     unit VARCHAR(50),  -- VD: 'cells/mm³', có thể NULL cho binary
     normal_range VARCHAR(100), -- VD: '500 - 1500'
     result_type VARCHAR(20) CHECK (result_type IN ('numeric', 'binary')),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
--- Services
-CREATE TABLE Services (
-    service_id INT PRIMARY KEY IDENTITY(1,1),
-    name NVARCHAR(100) NOT NULL, 
-    service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
-    description NVARCHAR(500),
-    price DECIMAL(10,2),
-    test_type_id INT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id), -- service_type phải là test
-    is_active BIT DEFAULT 1
+-- ServicesTestTypes - trung g gian giữa Services và TestTypes
+CREATE TABLE ServicesTestTypes (
+    service_id INT NOT NULL FOREIGN KEY REFERENCES Services(service_id),
+    test_type_id INT NOT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id),
+    PRIMARY KEY (service_id, test_type_id)
 );
 -- Appointments
 CREATE TABLE Appointments (
@@ -130,19 +137,20 @@ CREATE TABLE WorkingShifts (
 -- TestNotes
 CREATE TABLE TestNotes(
    test_note_id INT PRIMARY KEY IDENTITY(1,1),
-   request_id INT NOT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
+   request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- có thể phát sinh không thông qua testrequest
    created_by_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- người xn và tạo phiếu này
    test_datetime DATETIME NOT NULL,
+   notes NVARCHAR(500) NULL, -- ghi chú của người làm xét nghiệm
    );
 -- TestResults
 CREATE TABLE TestResults (
     result_id INT PRIMARY KEY IDENTITY(1,1),
     test_note_id INT NOT NULL FOREIGN KEY REFERENCES TestNotes(test_note_id),
+    test_type_id INT NOT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id),
     result_value VARCHAR(100) NULL,
     unit VARCHAR(20) NULL,
     reference_range VARCHAR(100) NULL, -- khoảng tham chiếu
-    notes NVARCHAR(500),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 

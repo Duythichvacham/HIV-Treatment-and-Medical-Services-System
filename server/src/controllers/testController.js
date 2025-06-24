@@ -153,8 +153,8 @@ exports.createTestResultAndComplete = async (req, res, next) => {
 /// GET /api/v1/lab/queue
 exports.getLabQueue = async (req, res, next) => {
   try {
-    const { date } = req.query;
-    const queue = await testService.getLabQueue(date);
+    const { date, lab_staff_id, room_id } = req.query;
+    const queue = await testService.getAllLabTests('requested', date, lab_staff_id, room_id);
     res.json({
       message: 'Lấy danh sách mẫu chờ xét nghiệm thành công',
       data: queue
@@ -167,8 +167,8 @@ exports.getLabQueue = async (req, res, next) => {
 /// GET /api/v1/lab/in-progress
 exports.getLabInProgress = async (req, res, next) => {
   try {
-    const { date } = req.query;
-    const inProgress = await testService.getLabInProgress(date);
+    const { date, lab_staff_id, room_id } = req.query;
+    const inProgress = await testService.getAllLabTests('in_progress', date, lab_staff_id, room_id);
     res.json({
       message: 'Lấy danh sách mẫu đang xét nghiệm thành công',
       data: inProgress
@@ -181,8 +181,8 @@ exports.getLabInProgress = async (req, res, next) => {
 /// GET /api/v1/lab/done
 exports.getLabDone = async (req, res, next) => {
   try {
-    const { date } = req.query;
-    const done = await testService.getLabDone(date);
+    const { date, lab_staff_id, room_id } = req.query;
+    const done = await testService.getAllLabTests('completed', date, lab_staff_id, room_id);
     res.json({
       message: 'Lấy danh sách mẫu đã hoàn thành thành công',
       data: done
@@ -196,16 +196,94 @@ exports.getLabDone = async (req, res, next) => {
 exports.getAllLabTests = async (req, res, next) => {
   console.log("getAllLabTests called");
   try {
-    const tests = await testService.getAllLabTests();
+    const { status, date, lab_staff_id, room_id } = req.query;
+    const tests = await testService.getAllLabTests(status, date, lab_staff_id, room_id);
+    
     // Gắn trường assigned_by
     const data = tests.map(item => ({
       ...item,
-      assigned_by: item.doctor_id ? `Bác sĩ ${item.doctor_name} chỉ định` : 'Đăng ký xét nghiệm'
+      assigned_by: item.doctor ? `Bác sĩ ${item.doctor} chỉ định` : 'Đăng ký xét nghiệm'
     }));
+    
     res.json({
       message: 'Lấy danh sách xét nghiệm thành công',
       data
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/v1/lab/rooms
+exports.getLabRooms = async (req, res, next) => {
+  try {
+    const rooms = await testService.getLabRooms();
+    res.json({
+      message: 'Lấy danh sách phòng xét nghiệm thành công',
+      data: rooms
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/v1/lab/shifts
+exports.getLabStaffShifts = async (req, res, next) => {
+  try {
+    const { date, lab_staff_id } = req.query;
+    const shifts = await testService.getLabStaffShifts(date, lab_staff_id);
+    res.json({
+      message: 'Lấy danh sách ca làm việc thành công',
+      data: shifts
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/v1/lab/current-shift
+exports.getCurrentLabStaffShift = async (req, res, next) => {
+  try {
+    const { lab_staff_id, date } = req.query;
+    if (!lab_staff_id) {
+      const err = new Error('lab_staff_id là bắt buộc');
+      err.statusCode = 400;
+      throw err;
+    }
+    
+    const shift = await testService.getCurrentLabStaffShift(parseInt(lab_staff_id, 10), date);
+    res.json({
+      message: 'Lấy thông tin ca làm việc hiện tại thành công',
+      data: shift
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.createTestNote = async (req, res, next) => {
+  try {
+    const { test_request_id, appointment_id, created_by_id } = req.body;
+    if (!test_request_id && !appointment_id) {
+      return res.status(400).json({ message: "Thiếu test_request_id hoặc appointment_id" });
+    }
+    const note = await testService.createTestNote({
+      test_request_id,
+      appointment_id,
+      created_by_id,
+      test_datetime: new Date()
+    });
+    res.json({ message: "Tạo phiếu xét nghiệm thành công", data: note });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTestResultsByTestNoteId = async (req, res, next) => {
+  try {
+    const { test_note_id } = req.params;
+    const results = await testService.getTestResultsByTestNoteId(test_note_id);
+    res.json({ message: "Lấy kết quả xét nghiệm thành công", data: results });
   } catch (error) {
     next(error);
   }

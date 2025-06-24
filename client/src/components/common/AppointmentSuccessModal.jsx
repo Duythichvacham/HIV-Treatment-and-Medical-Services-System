@@ -34,7 +34,7 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
              <div><strong className="font-medium">Phòng:</strong> {_room}</div>
              <div><strong className="font-medium">{_isDoctor ? 'Bác sĩ' : 'Nhân viên'}:</strong> {_doctorOrStaff}</div>
              <div><strong className="font-medium">Ngày:</strong> {_date}</div>
-             <div><strong className="font-medium">Giờ:</strong> {cleanTime}</div>
+             <div><strong className="font-medium">Giờ:</strong> {_isDoctor ? cleanTime : 'Trong giờ làm việc'}</div>
              <div className="col-span-full sm:col-span-2"><strong className="font-medium">Phí khám:</strong> <span className="text-green-600">{_fee}</span></div>
            </div>
           <div className="bg-yellow-50 p-4 rounded-lg text-sm text-gray-700">

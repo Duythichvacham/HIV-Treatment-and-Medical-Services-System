@@ -127,6 +127,26 @@ export const AuthProvider = ({ children }) => {
         userData.doctor_id = tokenPayload.doctor_id;
       }
 
+      // Thêm lab_staff_id nếu user là Lab-Staff
+      if (tokenPayload.role === 'Lab-Staff' && tokenPayload.lab_staff_id) {
+        userData.lab_staff_id = tokenPayload.lab_staff_id;
+      }
+
+      // Thêm registration_staff_id nếu user là Registration-staff
+      if (tokenPayload.role === 'Registration-staff' && tokenPayload.registration_staff_id) {
+        userData.registration_staff_id = tokenPayload.registration_staff_id;
+      }
+
+      // Thêm manager_id nếu user là Manager
+      if (tokenPayload.role === 'Manager' && tokenPayload.manager_id) {
+        userData.manager_id = tokenPayload.manager_id;
+      }
+
+      // Thêm patient_id nếu user là Patient
+      if (tokenPayload.role === 'Patient' && tokenPayload.patient_id) {
+        userData.patient_id = tokenPayload.patient_id;
+      }
+
       // Store in state and localStorage
       setToken(response.token);
       setUser(userData);

@@ -44,6 +44,7 @@ const poolPromise = new sql.ConnectionPool(config)
 module.exports = {
   sql,
   poolPromise,
+  config,
 };
 //poolPromise xử lý kết nối bất đồng bộ
 // poolPromise là một Promise, khi kết nối thành công sẽ trả về pool kết nối

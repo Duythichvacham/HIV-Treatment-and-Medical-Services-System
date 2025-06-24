@@ -31,6 +31,19 @@ async function authenticateUser(username, password) {
     }
   }
 
+  // Nếu user là Patient, thêm thông tin từ bảng Patients
+  if (user.role === 'Patient') {
+    const patientResult = await pool.request()
+      .input('account_id', sql.Int, user.account_id)
+      .query('SELECT patient_id FROM Patients WHERE account_id = @account_id');
+    
+    if (patientResult.recordset && patientResult.recordset.length > 0) {
+      user.patient_id = patientResult.recordset[0].patient_id;
+    }
+  }
+
+  // Các role khác (Lab-Staff, Registration-staff, Manager) chỉ lấy từ Accounts, không join thêm bảng nào!
+
   return user; // Trả về user nếu hợp lệ
 }
 
