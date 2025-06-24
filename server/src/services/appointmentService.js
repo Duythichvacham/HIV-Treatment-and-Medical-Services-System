@@ -155,7 +155,6 @@ exports.getAllByUser = async (patientId) => {
      
 SELECT  a.appointment_id
       ,a.patient_id
-      ,a.doctor_id
       ,s.start_time
       ,s.end_time
       ,sv.name as service_name
@@ -165,15 +164,36 @@ SELECT  a.appointment_id
       ,r.room_name
       ,a.bookingDate
       ,a.created_at
+      ,d.full_name as doctor_name
   FROM Appointments as a 
   LEFT JOIN Slots as s ON a.slot_id = s.slot_id
   LEFT JOIN Services as sv ON a.service_id = sv.service_id
   LEFT JOIN Rooms as r ON a.room_id = r.room_id
-  LEFT 
+  LEFT JOIN Doctors as d ON a.doctor_id = d.doctor_id
   WHERE a.patient_id =@patientId
    `);
 
-  return result.recordset;
+  return result.recordset.map((appointment) => {
+    return {
+      appointment_id: appointment.appointment_id,
+      patient_id: appointment.patient_id,
+      status: appointment.status,
+      queue_number: appointment.queue_number,
+      service_name: appointment.service_name,
+      service_type: appointment.service_type,
+      room: appointment.room_name,
+      bookingDate: appointment.bookingDate.toISOString(),
+      created_at: appointment.created_at.toISOString(),
+      // spread operator để lấy các trường từ slot or doctor nếu có
+      ...(appointment.service_type === "examination"
+        ? {
+            doctor_name: appointment.doctor_name,
+            start_time: appointment.start_time.toISOString(),
+            end_time: appointment.end_time.toISOString(),
+          }
+        : {}),
+    };
+  });
 };
 // chưa check - thằng này cho manager để quản lý lịch hẹn của tất cả bệnh nhân
 exports.getAllAppointments = async () => {

@@ -1,90 +1,98 @@
 import React, { useState, useEffect } from "react";
 import { getUserAppointments } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 const AppointmentHistory = () => {
+  const { isAuthenticated } = useAuth();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState("all"); // all, upcoming, completed, cancelled
+  const [filter, setFilter] = useState("all"); // all, requested, in_progress, completed, cancelled
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const response = await getUserAppointments();
-      setAppointments(response.data || []);
-    } catch (err) {
-      console.error("Error fetching appointments:", err);
-      setError("Không thể tải danh sách lịch hẹn");
+      console.log("🔄 Fetching appointments...");
 
-      // Fallback to sample data for demo
-      setAppointments([
-        {
-          id: "APT001",
-          appointment_code: "APT001",
-          queue_number: 15,
-          service_name: "Khám bác sĩ",
-          booking_date: "2024-06-25",
-          time_slot: "09:00",
-          room: "Phòng 101",
-          status: "upcoming",
-        },
-        {
-          id: "APT002",
-          appointment_code: "APT002",
-          queue_number: 8,
-          service_name: "Xét nghiệm",
-          booking_date: "2024-06-15",
-          time_slot: "08:30",
-          room: "Phòng XN02",
-          status: "completed",
-        },
-        {
-          id: "APT003",
-          appointment_code: "APT003",
-          queue_number: 3,
-          service_name: "Tư vấn trực tuyến",
-          booking_date: "2024-06-10",
-          time_slot: "14:00",
-          room: "Online",
-          status: "completed",
-        },
-      ]);
+      // Kiểm tra authentication trước
+      if (!isAuthenticated()) {
+        alert("Vui lòng đăng nhập để đặt lịch khám!");
+        window.location.href = "/login/patient";
+        return;
+      }
+
+      const response = await getUserAppointments();
+      console.log("✅ API Response received:", response);
+      console.log("🔍 Response type:", typeof response);
+      console.log("🔍 Response keys:", Object.keys(response || {}));
+
+      // Handle different response structures
+      const appointmentsData =
+        response.listAppointments ||
+        response.listAppointment ||
+        response.appointments ||
+        response.data ||
+        response ||
+        [];
+
+      console.log("📋 Appointments data:", appointmentsData);
+      console.log("📊 Data is array:", Array.isArray(appointmentsData));
+      console.log("📊 Data length:", appointmentsData?.length);
+
+      setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
       setError(null);
+    } catch (err) {
+      console.error("❌ Error fetching appointments:", err);
+      console.error("❌ Error details:", {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+
+      if (err.response?.status === 401) {
+        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      } else {
+        setError(
+          `Không thể tải danh sách lịch hẹn. ${
+            err.response?.data?.message || err.message
+          }`
+        );
+      }
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
   };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case "completed":
-      case "hoàn thành":
         return "bg-green-100 text-green-800";
-      case "upcoming":
-      case "sắp tới":
+      case "requested":
         return "bg-blue-100 text-blue-800";
-      case "cancelled":
-      case "đã hủy":
-        return "bg-red-100 text-red-800";
-      case "pending":
-      case "chờ xác nhận":
+      case "in_progress":
         return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
   const getStatusText = (status) => {
     switch (status?.toLowerCase()) {
       case "completed":
         return "Hoàn thành";
-      case "upcoming":
-        return "Sắp tới";
+      case "requested":
+        return "Đã đặt lịch";
+      case "in_progress":
+        return "Đang tiến hành";
       case "cancelled":
         return "Đã hủy";
-      case "pending":
-        return "Chờ xác nhận";
       default:
         return status || "Chưa xác định";
     }
@@ -98,14 +106,6 @@ const AppointmentHistory = () => {
     } catch {
       return dateString;
     }
-  };
-
-  const formatTime = (timeString) => {
-    if (!timeString) return "Chưa xác định";
-    if (timeString.includes(":")) {
-      return timeString;
-    }
-    return timeString;
   };
 
   const filteredAppointments = appointments.filter((apt) => {
@@ -184,7 +184,8 @@ const AppointmentHistory = () => {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="all">Tất cả</option>
-                <option value="upcoming">Sắp tới</option>
+                <option value="requested">Đã đặt lịch</option>
+                <option value="in_progress">Đang tiến hành</option>
                 <option value="completed">Hoàn thành</option>
                 <option value="cancelled">Đã hủy</option>
               </select>
@@ -284,7 +285,7 @@ const AppointmentHistory = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredAppointments.map((appointment, index) => (
                       <tr
-                        key={appointment.id || index}
+                        key={appointment.appointment_id || index}
                         className="hover:bg-gray-50"
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -294,39 +295,59 @@ const AppointmentHistory = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-gray-900">
-                            {appointment.appointment_code ||
-                              appointment.id ||
-                              `APT${String(index + 1).padStart(3, "0")}`}
+                            {appointment.appointment_id
+                              ? `APT${String(
+                                  appointment.appointment_id
+                                ).padStart(3, "0")}`
+                              : `APT${String(index + 1).padStart(3, "0")}`}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">
                             {appointment.service_name ||
                               appointment.serviceName ||
-                              "Chưa xác định"}
+                              (appointment.service_id
+                                ? `Dịch vụ ID: ${appointment.service_id}`
+                                : "Chưa xác định")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">
                             {formatDate(
-                              appointment.booking_date || appointment.date
+                              appointment.bookingDate ||
+                                appointment.booking_date ||
+                                appointment.created_at
                             )}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">
-                            {formatTime(
-                              appointment.time_slot ||
+                            {appointment.service_type === "examination" &&
+                            appointment.start_time
+                              ? `${new Date(
+                                  appointment.start_time
+                                ).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })} - ${new Date(
+                                  appointment.end_time
+                                ).toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}`
+                              : appointment.time_slot ||
                                 appointment.time ||
-                                "09:00"
-                            )}
+                                (appointment.slot_id
+                                  ? `Slot ${appointment.slot_id}`
+                                  : "Trong giờ làm việc")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm text-gray-900">
                             {appointment.room ||
-                              appointment.location ||
-                              "Online"}
+                              (appointment.room_id
+                                ? `Phòng ${appointment.room_id}`
+                                : "Chưa xác định")}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

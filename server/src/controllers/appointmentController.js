@@ -101,12 +101,12 @@ exports.getAppointmentsByPatientId = async (req, res) => {
 
     const patientId = result.recordset[0].patient_id;
 
-    const listAppointment = await appointmentService.getAllByUser(patientId);
+    const listAppointments = await appointmentService.getAllByUser(patientId);
 
     return res.status(200).json({
       message: "lay thanh cong danh sach",
       patientId,
-      listAppointment,
+      listAppointments,
     });
   } catch (error) {
     console.error("Lỗi truy vấn patient_id:", error);
