@@ -26,7 +26,7 @@ router.post(
   authenticateToken,
   appointmentController.updateStatus
 );
-// GET lấy danh sách lịch hẹn của tất cả patients
+// GET lấy danh sách lịch hẹn của tất cả patients - chưa làm
 router.get("/", appointmentController.getAppointments);
 // GET lấy danh sách lịch hẹn của một patient theo patient_id
 router.get(
