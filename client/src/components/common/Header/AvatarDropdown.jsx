@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const AvatarDropdown = ({ user, onLogout }) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  
-  const isStaff = user && ["Lab-Staff", "Registration-staff", "Manager", "Doctor"].includes(user.role);
-    const handleLogout = () => {
+
+  const isStaff =
+    user &&
+    ["Lab-Staff", "Registration-staff", "Manager", "Doctor"].includes(
+      user.role
+    );
+  const handleLogout = () => {
     setOpen(false);
     // Clear all session storage
     sessionStorage.clear();
@@ -24,8 +28,10 @@ const AvatarDropdown = ({ user, onLogout }) => {
           alt="avatar"
           className="w-9 h-9 rounded-full border-2 border-green-500 shadow"
         />
-        <span className="ml-2 font-medium text-gray-700 hidden sm:inline">{user.name}</span>
-      </button>
+        <span className="ml-2 font-medium text-gray-700 hidden sm:inline">
+          {user.name}
+        </span>
+      </button>{" "}
       {open && (
         <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg py-2 z-50 border">
           <Link
@@ -34,7 +40,15 @@ const AvatarDropdown = ({ user, onLogout }) => {
             onClick={() => setOpen(false)}
           >
             Hồ Sơ
-          </Link>          <button
+          </Link>
+          <Link
+            to="/appointment-history"
+            className="block px-4 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700"
+            onClick={() => setOpen(false)}
+          >
+            Lịch hẹn
+          </Link>
+          <button
             className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-700"
             onClick={handleLogout}
           >

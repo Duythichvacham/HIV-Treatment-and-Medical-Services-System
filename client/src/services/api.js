@@ -19,7 +19,8 @@ const api = axios.create({
 // ===========================================
 // REQUEST INTERCEPTOR
 // ===========================================
-api.interceptors.request.use(  (config) => {
+api.interceptors.request.use(
+  (config) => {
     // Add auth token if available
     const token = localStorage.getItem("token");
     if (token) {
@@ -51,7 +52,8 @@ api.interceptors.response.use(
     if (ENV.ENABLE_LOGGING) {
       console.log(`✅ API Response: ${response.status} ${response.config.url}`);
     }
-    return response;  },
+    return response;
+  },
   (error) => {
     if (ENV.ENABLE_LOGGING) {
       console.error(`❌ API Error:`, error.response?.data || error.message);
@@ -60,8 +62,8 @@ api.interceptors.response.use(
     // Handle common errors
     if (error.response?.status === 401) {
       // Only redirect if it's not a login request (token expired case)
-      const isLoginRequest = error.config?.url?.includes('/login');
-      
+      const isLoginRequest = error.config?.url?.includes("/login");
+
       if (!isLoginRequest) {
         // Clear auth and redirect to login only for token expiration
         localStorage.removeItem("token");
@@ -180,13 +182,13 @@ export const login = async (username, password) => {
       username: username.trim(),
       password: password.trim(),
     });
-    
+
     console.log("✅ login response:", response.data);
-      // Store token in localStorage
+    // Store token in localStorage
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
     }
-    
+
     return response.data;
   } catch (error) {
     console.error("❌ login error:", error);
@@ -256,6 +258,38 @@ export const getLabDone = async (date) => {
   if (date) params.date = date;
   const response = await api.get("/api/v1/lab/done", { params });
   return response.data.data;
+};
+
+// ===========================================
+// CHECK EXISTING APPOINTMENTS
+// ===========================================
+export const checkExistingAppointment = async (
+  date,
+  serviceType,
+  doctorId = null
+) => {
+  try {
+    const params = { date, serviceType };
+    if (doctorId) params.doctorId = doctorId;
+    const response = await api.get("/api/v1/appointments/check", { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error checking existing appointment:", error);
+    throw error;
+  }
+};
+
+// ===========================================
+// GET USER APPOINTMENTS HISTORY
+// ===========================================
+export const getUserAppointments = async () => {
+  try {
+    const response = await api.get("/api/v1/appointments/patient");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user appointments:", error);
+    throw error;
+  }
 };
 
 export default api;

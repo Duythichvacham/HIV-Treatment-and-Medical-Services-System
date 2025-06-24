@@ -64,25 +64,27 @@ CREATE TABLE Slots (
     end_time TIME NOT NULL,
     UNIQUE (start_time, end_time)
 );
--- TestTypes
-CREATE TABLE TestTypes (
-    test_type_id INT PRIMARY KEY IDENTITY(1,1),
-    name NVARCHAR(50) UNIQUE NOT NULL,
-    unit VARCHAR(50),  -- VD: 'cells/mm³', có thể NULL cho binary
-    normal_range VARCHAR(100), -- VD: '500 - 1500'
-    result_type VARCHAR(20) CHECK (result_type IN ('numeric', 'binary')),
-    created_at DATETIME NOT NULL DEFAULT GETDATE()
-);
 -- Services
 CREATE TABLE Services (
     service_id INT PRIMARY KEY IDENTITY(1,1),
     name NVARCHAR(100) NOT NULL, 
     service_type NVARCHAR(30) NOT NULL CHECK (service_type IN ('test', 'examination', 'consultation')), -- cần mở rộng thì tách bảng vì nó 1-M
     description NVARCHAR(500),
-    price DECIMAL(10,2),
-    test_type_id INT NULL FOREIGN KEY REFERENCES TestTypes(test_type_id), -- service_type phải là test
+    price DECIMAL(10,2), 
     is_active BIT DEFAULT 1
 );
+-- TestTypes
+CREATE TABLE TestTypes (
+    test_type_id INT PRIMARY KEY IDENTITY(1,1),
+    service_id INT NOT NULL FOREIGN KEY REFERENCES Services(service_id), -- service_type phải là test
+    service_type NVARCHAR(30) NOT NULL DEFAULT 'test', -- mặc định là test -- double check để chắc chắn là dvxn
+    name NVARCHAR(50) UNIQUE NOT NULL,
+    unit VARCHAR(50),  -- VD: 'cells/mm³', có thể NULL cho binary
+    normal_range VARCHAR(100), -- VD: '500 - 1500'
+    result_type VARCHAR(20) CHECK (result_type IN ('numeric', 'binary')),
+    created_at DATETIME NOT NULL DEFAULT GETDATE()
+);
+
 -- Appointments
 CREATE TABLE Appointments (
     appointment_id INT PRIMARY KEY IDENTITY(1,1),
