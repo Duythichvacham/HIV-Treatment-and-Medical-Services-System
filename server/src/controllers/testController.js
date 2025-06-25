@@ -209,3 +209,13 @@ exports.getAllLabTests = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.getTestResultsByTestNoteId = async (req, res, next) => {
+  try {
+    const { test_note_id } = req.params;
+    const results = await testService.getTestResultsByTestNoteId(test_note_id);
+    res.json({ message: "Lấy kết quả xét nghiệm thành công", data: results });
+  } catch (error) {
+    next(error);
+  }
+};

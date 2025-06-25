@@ -27,6 +27,9 @@ router.get(
   testController.getTestNoteDetail
 );
 
+// GET tất cả kết quả xét nghiệm theo test_note_id
+router.get('/test-results/:test_note_id', authenticateToken, testController.getTestResultsByTestNoteId);
+
 
 
 
