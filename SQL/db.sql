@@ -1,4 +1,5 @@
-﻿USE master
+use master
+GO
 GO
 DROP DATABASE HIV_HEATH_CARE
 GO

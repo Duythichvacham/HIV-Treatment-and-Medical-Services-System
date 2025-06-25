@@ -54,9 +54,14 @@ exports.createAppointment = async (data) => {
         AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
         AND status IN ('requested', 'in_progress')
     `);
-  
-  if (duplicateCheck.recordset[0].count > 0) {
-    throw new Error('Bạn đã có lịch hẹn tương tự trong ngày này. Vui lòng kiểm tra lại.');
+
+  if (existResult.recordset[0].count > 0) {
+
+    const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
+
+    err.statusCode = 400;
+    throw err;
+
   }
 
   // Sử dụng logic dùng chung để lấy queue_number
