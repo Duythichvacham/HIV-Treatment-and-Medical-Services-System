@@ -68,20 +68,43 @@ exports.createTestResultAndComplete = async ({
 }) => {
   const pool = await poolPromise;
 
-  // 1. Thêm kết quả xét nghiệm mới (không insert notes)
+  // 1. Lấy test_type_id và thông tin test type từ service liên quan
+  const testTypeResult = await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .query(`
+      SELECT TOP 1 stt.test_type_id, tt.name as test_type_name, tt.unit as test_type_unit, tt.normal_range as test_type_normal_range
+      FROM TestNotes tn
+      LEFT JOIN TestRequests tr ON tn.request_id = tr.request_id
+      LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
+      LEFT JOIN Services s ON (tr.service_id = s.service_id OR a.service_id = s.service_id)
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
+      WHERE tn.test_note_id = @test_note_id
+      AND stt.test_type_id IS NOT NULL
+    `);
+
+  const testTypeInfo = testTypeResult.recordset[0];
+  
+  if (!testTypeInfo?.test_type_id) {
+    throw new Error('Không thể xác định loại xét nghiệm cho kết quả này');
+  }
+
+  // 2. Thêm kết quả xét nghiệm mới với test_type_id
   const insertResult = await pool
     .request()
     .input("test_note_id", test_note_id)
+    .input("test_type_id", testTypeInfo.test_type_id)
     .input("result_value", result_value)
     .input("unit", unit)
     .input("reference_range", reference_range)
     .query(`
-      INSERT INTO TestResults (test_note_id, result_value, unit, reference_range)
-      VALUES (@test_note_id, @result_value, @unit, @reference_range);
+      INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range)
+      VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range);
       SELECT * FROM TestResults WHERE result_id = SCOPE_IDENTITY();
     `);
 
-  // 2. Cập nhật trạng thái phiếu xét nghiệm (nếu muốn)
+  // 3. Cập nhật trạng thái phiếu xét nghiệm (nếu muốn)
   await pool.request().input("test_note_id", test_note_id).query(`
       UPDATE tr
       SET tr.status = 'completed'
@@ -90,13 +113,16 @@ exports.createTestResultAndComplete = async ({
       WHERE tn.test_note_id = @test_note_id
     `);
 
-  // 3. Lấy notes từ TestNotes
+  // 4. Lấy notes từ TestNotes
   const testNote = await pool.request()
     .input("test_note_id", test_note_id)
     .query("SELECT notes FROM TestNotes WHERE test_note_id = @test_note_id");
 
   return {
     ...insertResult.recordset[0],
+    test_type_name: testTypeInfo.test_type_name,
+    test_type_unit: testTypeInfo.test_type_unit,
+    test_type_normal_range: testTypeInfo.test_type_normal_range,
     notes: testNote.recordset[0]?.notes || null
   };
 };
