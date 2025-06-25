@@ -37,47 +37,16 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
         <div className="p-8 space-y-8">
           {" "}
           <div className="text-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-6 text-lg">
-            {_queueNumber && (
-              <div>
-                <strong className="font-medium">Số thứ tự:</strong>{" "}
-                {_queueNumber}
-              </div>
-            )}
-            {_serviceName && (
-              <div>
-                <strong className="font-medium">Dịch vụ:</strong> {_serviceName}
-              </div>
-            )}
-            {_room && (
-              <div>
-                <strong className="font-medium">Phòng:</strong> {_room}
-              </div>
-            )}
-            {_doctorOrStaff && (
-              <div>
-                <strong className="font-medium">
-                  {_isDoctor ? "Bác sĩ" : "Nhân viên"}:
-                </strong>{" "}
-                {_doctorOrStaff}
-              </div>
-            )}
-            {_date && (
-              <div>
-                <strong className="font-medium">Ngày:</strong> {_date}
-              </div>
-            )}
-            {cleanTime && (
-              <div>
-                <strong className="font-medium">Giờ:</strong> {cleanTime}
-              </div>
-            )}
-            {_fee && (
-              <div className="col-span-full sm:col-span-2">
-                <strong className="font-medium">Phí khám:</strong>{" "}
-                <span className="text-green-600">{_fee}</span>
-              </div>
-            )}
-          </div>
+
+             <div><strong className="font-medium">Số thứ tự:</strong> {_queueNumber}</div>
+             <div><strong className="font-medium">Dịch vụ:</strong> {_serviceName}</div>
+             <div><strong className="font-medium">Phòng:</strong> {_room}</div>
+             <div><strong className="font-medium">{_isDoctor ? 'Bác sĩ' : 'Nhân viên'}:</strong> {_doctorOrStaff}</div>
+             <div><strong className="font-medium">Ngày:</strong> {_date}</div>
+             <div><strong className="font-medium">Giờ:</strong> {_isDoctor ? cleanTime : 'Trong giờ làm việc'}</div>
+             <div className="col-span-full sm:col-span-2"><strong className="font-medium">Phí khám:</strong> <span className="text-green-600">{_fee}</span></div>
+           </div>
+
           <div className="bg-yellow-50 p-4 rounded-lg text-sm text-gray-700">
             <ul className="list-disc list-inside space-y-1">
               <li>Đến trước giờ hẹn ít nhất 15 phút.</li>

@@ -27,21 +27,30 @@ exports.createAppointment = async (data) => {
     bookingDate,
   } = data;
 
-  // Kiểm tra bệnh nhân đã có lịch khám chưa hoàn thành trong ngày chưa
-  const existResult = await pool
-    .request()
-    .input("patient_id", patient_id)
-    .input("bookingDate", bookingDate).query(`
+
+  // Xác định nguồn phiếu: self_booking (tự đặt) hay doctor_request (bác sĩ chỉ định)
+  // Giả sử: nếu doctor_id có giá trị => doctor_request, ngược lại self_booking
+  const source = doctor_id ? 'doctor_request' : 'self_booking';
+
+  // Kiểm tra bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày và cùng nguồn chưa
+  const existResult = await pool.request()
+    .input('patient_id', patient_id)
+    .input('bookingDate', bookingDate)
+    .input('service_id', service_id)
+    .input('doctor_id', doctor_id)
+    .query(`
+
       SELECT COUNT(*) AS count
       FROM Appointments
       WHERE patient_id = @patient_id
         AND bookingDate = @bookingDate
+        AND service_id = @service_id
         AND status IN ('requested', 'in_progress')
+        AND ((@doctor_id IS NOT NULL AND doctor_id IS NOT NULL) OR (@doctor_id IS NULL AND doctor_id IS NULL))
     `);
   if (existResult.recordset[0].count > 0) {
-    const err = new Error(
-      "Bệnh nhân đã có lịch khám chưa hoàn thành trong ngày này. Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới."
-    );
+    const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
+
     err.statusCode = 400;
     throw err;
   }
@@ -68,7 +77,28 @@ exports.createAppointment = async (data) => {
       VALUES (@patient_id, @doctor_id, @slot_id, @service_id, @status, @queue_number, @room_id, @bookingDate);
       SELECT * FROM Appointments WHERE appointment_id = SCOPE_IDENTITY();
     `);
-  return result.recordset[0];
+  const appointment = result.recordset[0];
+
+  // Bổ sung: Tạo hóa đơn cho dịch vụ xét nghiệm (service_type = 'test')
+  // Lấy service_type và giá dịch vụ
+  const serviceResult = await pool.request()
+    .input('serviceId', service_id)
+    .query('SELECT price, service_type FROM Services WHERE service_id = @serviceId');
+  const service = serviceResult.recordset[0];
+  if (service && service.service_type === 'test') {
+    await pool.request()
+      .input('patientId', patient_id)
+      .input('appointmentId', appointment.appointment_id)
+      .input('amount', service.price || 0)
+      .input('serviceType', 'test')
+      .input('status', 'paid')
+      .query(`
+        INSERT INTO Invoices (patient_id, appointment_id, amount, service_type, status)
+        VALUES (@patientId, @appointmentId, @amount, @serviceType, @status)
+      `);
+  }
+
+  return appointment;
 };
 
 //GET, lấy bệnh nhân chờ xét nghiệm với service_type='test' /api/v1/lab/appointments/queue
@@ -86,10 +116,12 @@ exports.getLabTestQueue = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range      FROM Appointments a
+        tt.normal_range
+      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'requested'
       ORDER BY a.created_at ASC
@@ -112,10 +144,12 @@ exports.getLabTestInProgress = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range      FROM Appointments a
+        tt.normal_range
+      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'in_progress'
       ORDER BY a.created_at ASC
@@ -138,10 +172,12 @@ exports.getLabTestFinished = async () => {
         s.service_type,
         tt.name as test_type_name,
         tt.unit,
-        tt.normal_range      FROM Appointments a
+        tt.normal_range
+      FROM Appointments a
       JOIN Patients p ON a.patient_id = p.patient_id
       JOIN Services s ON a.service_id = s.service_id
-      LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+      LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+      LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       WHERE s.service_type = 'test'
       AND a.status = 'completed'
       ORDER BY a.created_at ASC
@@ -213,12 +249,14 @@ exports.getAppointmentDetail = async (appointment_id) => {
   const pool = await poolPromise;
   const result = await pool.request().input("appointment_id", appointment_id)
     .query(`
-      SELECT a.*, p.full_name as patient_name, s.name as service_name, r.room_name, d.full_name as doctor_name
+      SELECT a.*, p.full_name as patient_name, s.name as service_name, r.room_name, d.full_name as doctor_name,
+             sl.start_time, sl.end_time
       FROM Appointments a
       LEFT JOIN Patients p ON a.patient_id = p.patient_id
       LEFT JOIN Services s ON a.service_id = s.service_id
       LEFT JOIN Rooms r ON a.room_id = r.room_id
       LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+      LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
       WHERE a.appointment_id = @appointment_id
     `);
   return result.recordset[0];

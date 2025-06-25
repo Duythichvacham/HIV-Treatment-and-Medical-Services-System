@@ -1,11 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE = 'http://localhost:5000/api/v1';
 
 const LabResult = () => {
   const { state } = useLocation();
-  const { note, results, patient, testType, room } = state || {};
+  const { note, patient, testType, room } = state || {};
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!note || !results) {
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!note?.test_note_id) return setLoading(false);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE}/lab/test-results/${note.test_note_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setResults(res.data.data || []);
+      } catch (err) {
+        setResults([]);
+      }
+      setLoading(false);
+    };
+    fetchResults();
+  }, [note?.test_note_id]);
+
+  if (!note || (!results && !loading)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-red-600 font-bold">
         Không có dữ liệu kết quả.
@@ -13,11 +35,24 @@ const LabResult = () => {
     );
   }
 
-  // Tính tuổi và thời gian trả kết quả
-  const age = patient?.dob ? new Date().getFullYear() - new Date(patient.dob).getFullYear() : '-';
-  const birthYear = patient?.dob ? new Date(patient.dob).getFullYear() : '-';
-  const resultTime = results.length > 0 ? new Date(results[results.length - 1].created_at).toLocaleString() : '-';
-  const sampleTime = note.sample_datetime ? new Date(note.sample_datetime).toLocaleString() : new Date(note.test_datetime).toLocaleString();
+  // Lấy thông tin từ note (ưu tiên backend mới)
+  const age = note?.dob ? new Date().getFullYear() - new Date(note.dob).getFullYear() : '-';
+  const birthYear = note?.dob ? new Date(note.dob).getFullYear() : '-';
+  const sampleTime = note?.test_datetime ? new Date(note.test_datetime).toLocaleString() : '-';
+  const resultTime = note?.created_at ? new Date(note.created_at).toLocaleString() : '-';
+
+  // Xác định loại phiếu
+  const type = (note?.test_type_name || note?.service_name || '').toLowerCase();
+  const isScreening = type.includes('sàng lọc');
+  const isConfirm = type.includes('khẳng định');
+  const isCD4 = type.includes('cd4');
+  const isViral = type.includes('viral');
+
+  // Lọc kết quả
+  const cd4Result = results.find(r => (r.test_type_name || '').toLowerCase().includes('cd4'));
+  const viralResult = results.find(r => (r.test_type_name || '').toLowerCase().includes('viral'));
+  // Kết luận (nếu có)
+  const conclusion = note?.review || note?.result_value || results[0]?.result_value || '-';
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">
@@ -29,50 +64,76 @@ const LabResult = () => {
         <div className="mb-6">
           <h2 className="text-xl font-medium mb-2">Thông tin Bệnh nhân</h2>
           <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-            <div><b>Tên:</b> {patient?.name || '-'}</div>
+            <div><b>Tên:</b> {note?.patient_name || '-'}</div>
             <div><b>Tuổi:</b> {age}</div>
             <div><b>Năm sinh:</b> {birthYear}</div>
-            <div><b>Địa chỉ:</b> {patient?.address || '-'}</div>
-            <div><b>Phòng:</b> {room || note.room || '-'}</div>
-            <div><b>Bác sĩ chỉ định:</b> {note?.ordered_by || '-'}</div>
+            <div><b>Địa chỉ:</b> {note?.address || '-'}</div>
+            <div><b>Phòng:</b> {note?.room_name || '-'}</div>
+            <div><b>Bác sĩ chỉ định:</b> {note?.source === 'self_booking' ? 'Bệnh nhân tự đăng ký' : (note?.doctor_name || '-')}</div>
             <div><b>Người thực hiện:</b> {note?.created_by_id || '-'}</div>
             <div><b>Thời gian nhận mẫu:</b> {sampleTime}</div>
             <div><b>Thời gian trả kết quả:</b> {resultTime}</div>
           </div>
         </div>
 
-        {/* Bảng Chi tiết Kết quả */}
-         <div>
-            <h2 className="text-xl font-medium mb-2">Chi tiết Kết quả</h2>
-          <table className="w-full border-collapse text-sm text-gray-700">
-             <thead>
-               <tr className="bg-gray-100">
-                <th className="border px-3 py-2 text-left">STT</th>
-                <th className="border px-3 py-2 text-left">Loại Xét nghiệm</th>
-                <th className="border px-3 py-2 text-left">Giá trị Tham chiếu</th>
-                <th className="border px-3 py-2 text-left">Kết quả</th>
-                <th className="border px-3 py-2 text-left">Đơn vị</th>
-               </tr>
-             </thead>
-             <tbody>
-               {results.map((r, idx) => (
-                 <tr key={r.result_id} className="odd:bg-white even:bg-gray-50">
-                  <td className="border px-3 py-2">{idx + 1}</td>
-                  <td className="border px-3 py-2">{r.test_name || testType || '-'}</td>
-                  <td className="border px-3 py-2">{r.reference_range || '-'}</td>
-                  <td className="border px-3 py-2">{r.result_value || '-'}</td>
-                  <td className="border px-3 py-2">{r.unit || '-'}</td>
-                 </tr>
-               ))}
-             </tbody>
-           </table>
+        {/* Kết quả xét nghiệm */}
+        <div>
+          <h2 className="text-xl font-medium mb-2">Chi tiết Kết quả</h2>
+          {/* Sàng lọc: chỉ hiện kết luận, ẩn bảng */}
+          {isScreening ? (
+            <div className="mt-6 text-lg font-bold text-center">
+              Kết luận: <span className={conclusion === 'Dương tính' ? 'text-red-600' : 'text-green-600'}>{conclusion}</span>
+            </div>
+          ) : (
+            <>
+              {/* Khẳng định hoặc CD4/Viral Load */}
+              {(isConfirm || isCD4 || isViral) && (
+                <table className="w-full border-collapse text-sm text-gray-700">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border px-3 py-2 text-left">Chỉ số</th>
+                      <th className="border px-3 py-2 text-left">Kết quả</th>
+                      <th className="border px-3 py-2 text-left">Đơn vị</th>
+                      <th className="border px-3 py-2 text-left">Giá trị Tham chiếu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cd4Result && (
+                      <tr>
+                        <td className="border px-3 py-2">CD4</td>
+                        <td className="border px-3 py-2">{cd4Result.result_value || '-'}</td>
+                        <td className="border px-3 py-2">{cd4Result.unit || '-'}</td>
+                        <td className="border px-3 py-2">{cd4Result.reference_range || '-'}</td>
+                      </tr>
+                    )}
+                    {viralResult && (
+                      <tr>
+                        <td className="border px-3 py-2">Viral Load</td>
+                        <td className="border px-3 py-2">{viralResult.result_value || '-'}</td>
+                        <td className="border px-3 py-2">{viralResult.unit || '-'}</td>
+                        <td className="border px-3 py-2">{viralResult.reference_range || '-'}</td>
+                      </tr>
+                    )}
+                    {/* Nếu là khẳng định, thêm dòng kết luận */}
+                    {isConfirm && (
+                      <tr>
+                        <td colSpan={4} className="font-bold text-center bg-gray-50">
+                          Kết luận: <span className={conclusion === 'Dương tính' ? 'text-red-600' : 'text-green-600'}>{conclusion}</span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
           {/* Ghi chú chung dưới bảng */}
           {note.notes && (
             <div className="mt-4 text-sm text-gray-600"><b>Ghi chú:</b> {note.notes}</div>
           )}
-         </div>
-       </div>
-     </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

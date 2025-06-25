@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getLabQueue, getLabInProgress, getLabDone } from '../../services/api';
+import { getAllLabTests, getCurrentLabStaffShift } from '../../services/api';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api/v1';
@@ -52,6 +52,19 @@ const demoData = {
   ]
 };
 
+// Hàm format thời gian đẹp
+function formatDateTime(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return isoString;
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const hour = d.getHours().toString().padStart(2, '0');
+  const min = d.getMinutes().toString().padStart(2, '0');
+  return `${day}/${month}/${year} ${hour}:${min}`;
+}
+
 const Card = ({ data, section, onStart, onProcess, onResult }) => (
   <div className="bg-white rounded-xl p-5 shadow border mb-4">
     <div className="flex items-center mb-2">
@@ -65,11 +78,15 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
     </div>
     <div className="text-xs text-gray-500 mb-1">{data.code}</div>
     <div className="text-sm text-gray-700 mb-1">{data.age} tuổi - {data.gender}</div>
-    {/* Không hiển thị time vì đăng ký xét nghiệm không có khung giờ */}
-    <div className="text-xs text-gray-400 mb-1">Đặt lúc: {data.bookTime}</div>
+    <div className="text-xs text-gray-400 mb-1">Đặt lúc: {formatDateTime(data.bookTime)}</div>
     {data.phone && <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>}
     <div className="flex flex-wrap gap-2 my-2">
       <span className={`px-2 py-1 rounded text-xs ${data.type === 'Sàng lọc' ? 'bg-yellow-100 text-yellow-700' : data.type === 'Khẳng định' ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'}`}>{data.type_name}</span>
+    </div>
+    {/* Hiển thị tải lượng CD4 và Viral Load gần nhất */}
+    <div className="text-xs text-gray-600 mb-1">
+      CD4 gần nhất: <b>{data.latest_cd4 !== undefined && data.latest_cd4 !== null ? data.latest_cd4 : 'Chưa có'}</b> | 
+      Viral Load gần nhất: <b>{data.latest_viral_load !== undefined && data.latest_viral_load !== null ? data.latest_viral_load : 'Chưa có'}</b>
     </div>
     <div className="text-xs text-gray-500 mb-1">
       {data.source === 'doctor_request' ? (
@@ -116,18 +133,26 @@ const LabStaff = () => {
   });
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [hasShift, setHasShift] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [queue, inProgress, done] = await Promise.all([
-        getLabQueue(selectedDate),
-        getLabInProgress(selectedDate),
-        getLabDone(selectedDate),
-      ]);
+      // Sử dụng API mới để lấy tất cả dữ liệu một lần
+      // Thêm lab_staff_id filter nếu user có lab_staff_id
+      const lab_staff_id = user?.id;
+      const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
+      console.log('DEBUG allTests:', allTests);
+      
+      // Phân loại dữ liệu theo status
+      const queue = allTests.filter(test => test.status === 'requested');
+      const inProgress = allTests.filter(test => test.status === 'in_progress');
+      const done = allTests.filter(test => test.status === 'completed');
+      
       console.log('DEBUG queue:', queue);
       console.log('DEBUG inProgress:', inProgress);
       console.log('DEBUG done:', done);
+      
       setSections(prevSections => [
         { ...prevSections[0], cards: queue || [], count: (queue || []).length },
         { ...prevSections[1], cards: inProgress || [], count: (inProgress || []).length },
@@ -141,21 +166,33 @@ const LabStaff = () => {
 
   useEffect(() => {
     fetchData();
+    const fetchShift = async () => {
+      if (user?.id && selectedDate) {
+        try {
+          const shift = await getCurrentLabStaffShift(user.id, selectedDate);
+          setHasShift(!!shift);
+        } catch (e) {
+          setHasShift(false);
+        }
+      }
+    };
+    fetchShift();
     // eslint-disable-next-line
   }, [selectedDate]);
 
   const handleStart = async (card) => {
+    if (!hasShift) {
+      alert('Bạn không được phân công ca làm việc trong ngày này!');
+      return;
+    }
     try {
-      console.log('DEBUG handleStart card:', card);
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       if (card.source === 'doctor_request') {
         const url = `${API_BASE}/test-requests/${card.id}/status`;
-        console.log('DEBUG PATCH:', url, { status: 'in_progress' });
         await axios.patch(url, { status: 'in_progress' }, { headers });
       } else if (card.source === 'self_booking') {
         const url = `${API_BASE}/appointments/${card.appointment_id}/status`;
-        console.log('DEBUG POST:', url, { status: 'in_progress' }, 'appointment_id:', card.appointment_id);
         await axios.post(url, { status: 'in_progress' }, { headers });
       } else {
         alert('Không xác định được loại mẫu xét nghiệm!');
@@ -163,21 +200,51 @@ const LabStaff = () => {
       }
       await fetchData();
     } catch (err) {
-      console.error('DEBUG handleStart error:', err, err?.response?.data);
-      alert('Không thể cập nhật trạng thái!');
+      alert('Không thể bắt đầu xét nghiệm! ' + (err?.response?.data?.message || ''));
     }
   };
 
-  const handleProcess = (card) => {
-    navigate('/lab-process', { state: card });
+  const handleProcess = async (card) => {
+    if (!hasShift) {
+      alert('Bạn không được phân công ca làm việc trong ngày này!');
+      return;
+    }
+    try {
+      let test_note_id = card.test_note_id;
+      if (!test_note_id) {
+        const token = localStorage.getItem('token');
+        const headers = { Authorization: `Bearer ${token}` };
+        const payload = { created_by_id: user.id };
+        if (card.source === 'doctor_request') {
+          payload.test_request_id = card.id;
+          if (card.appointment_id) payload.appointment_id = card.appointment_id;
+        } else if (card.source === 'self_booking') {
+          payload.appointment_id = card.appointment_id;
+        }
+        const testNoteRes = await axios.post(
+          `${API_BASE}/lab/test-notes`,
+          payload,
+          { headers }
+        );
+        test_note_id = testNoteRes.data.data.test_note_id;
+      }
+      navigate('/lab-process', { state: { ...card, test_note_id } });
+    } catch (err) {
+      alert('Không thể tạo phiếu xét nghiệm! ' + (err?.response?.data?.message || ''));
+    }
   };
 
   const handleViewResult = async (card) => {
+    const test_note_id = card.test_note_id || card.id;
+    if (!test_note_id) {
+      alert('Không tìm thấy mã phiếu xét nghiệm!');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       // Lấy chi tiết phiếu xét nghiệm
-      const noteRes = await axios.get(`${API_BASE}/lab/test-notes/${card.test_note_id || card.id}`, { headers });
+      const noteRes = await axios.get(`${API_BASE}/lab/test-notes/${test_note_id}`, { headers });
       // Lấy kết quả xét nghiệm (giả định trả về trong noteRes.data.data.results hoặc cần gọi API khác)
       const note = noteRes.data.data;
       const results = note?.results || [];
@@ -197,9 +264,15 @@ const LabStaff = () => {
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center text-blue-600 font-bold text-xl">Đang tải dữ liệu...</div>;
   console.log('DEBUG sections:', sections);
   return (
-    <div className="bg-blue-50 min-h-screen py-6 px-2 md:px-8">
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-4">Quản lý xét nghiệm</h1>
+      {/* Nếu không có ca làm việc và có lab_staff_id thì báo */}
+      {user?.id && !hasShift && !loading && (
+        <div className="text-center text-red-600 font-semibold text-lg my-8">
+          Bạn không được phân công ca làm việc trong ngày này. Chỉ xem được danh sách bệnh nhân.
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Dashboard Nhân viên Xét nghiệm</h1>
         <div className="text-gray-600 mb-6">Quản lý mẫu xét nghiệm từ bác sĩ chỉ định và đăng ký xét nghiệm</div>
         {/* Chọn ngày */}
         <div className="mb-6 flex items-center gap-3">
@@ -245,7 +318,15 @@ const LabStaff = () => {
                   : section.cards
                 ).map(card => (
                   <Card
-                    key={card.id}
+                    key={
+                      (card.test_note_id !== undefined && card.test_note_id !== null)
+                        ? `note-${card.test_note_id}`
+                        : (card.appointment_id !== undefined && card.appointment_id !== null)
+                          ? `app-${card.appointment_id}`
+                          : (card.id !== undefined && card.id !== null)
+                            ? `id-${card.id}`
+                            : Math.random()
+                    }
                     data={card}
                     section={section.title}
                     onStart={handleStart}
