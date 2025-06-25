@@ -141,28 +141,67 @@ exports.createTestResultAndComplete = async ({
         ref = typeof reference_range === 'object' ? reference_range.confirm : reference_range;
       }
       if (value !== undefined && value !== null) {
-        console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id, result_value: value, unit: u, reference_range: ref});
-        const insert = await pool.request()
+        // Kiểm tra xem đã có kết quả cho test_type_id này chưa
+        const existingResult = await pool.request()
           .input('test_note_id', test_note_id)
           .input('test_type_id', test_type_id)
-          .input('result_value', value)
-          .input('unit', u)
-          .input('reference_range', ref)
-          .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
-        results.push(insert.recordset[0]);
+          .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+        
+        if (existingResult.recordset.length > 0) {
+          // UPDATE nếu đã có
+          console.log('[DEBUG][UPDATE TestResults]', {test_note_id, test_type_id, result_value: value, unit: u, reference_range: ref});
+          const update = await pool.request()
+            .input('test_note_id', test_note_id)
+            .input('test_type_id', test_type_id)
+            .input('result_value', value)
+            .input('unit', u)
+            .input('reference_range', ref)
+            .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+          results.push(update.recordset[0]);
+        } else {
+          // INSERT nếu chưa có
+          console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id, result_value: value, unit: u, reference_range: ref});
+          const insert = await pool.request()
+            .input('test_note_id', test_note_id)
+            .input('test_type_id', test_type_id)
+            .input('result_value', value)
+            .input('unit', u)
+            .input('reference_range', ref)
+            .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+          results.push(insert.recordset[0]);
+        }
       }
     }
   } else {
-    // Nếu chỉ có 1 test_type_id, lưu như cũ
-    console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id: testTypeIds[0], result_value, unit, reference_range});
-    const insert = await pool.request()
+    // Nếu chỉ có 1 test_type_id, kiểm tra và UPDATE/INSERT
+    const existingResult = await pool.request()
       .input('test_note_id', test_note_id)
       .input('test_type_id', testTypeIds[0])
-      .input('result_value', result_value)
-      .input('unit', unit)
-      .input('reference_range', reference_range)
-      .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
-    results.push(insert.recordset[0]);
+      .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+    
+    if (existingResult.recordset.length > 0) {
+      // UPDATE nếu đã có
+      console.log('[DEBUG][UPDATE TestResults]', {test_note_id, test_type_id: testTypeIds[0], result_value, unit, reference_range});
+      const update = await pool.request()
+        .input('test_note_id', test_note_id)
+        .input('test_type_id', testTypeIds[0])
+        .input('result_value', result_value)
+        .input('unit', unit)
+        .input('reference_range', reference_range)
+        .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+      results.push(update.recordset[0]);
+    } else {
+      // INSERT nếu chưa có
+      console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id: testTypeIds[0], result_value, unit, reference_range});
+      const insert = await pool.request()
+        .input('test_note_id', test_note_id)
+        .input('test_type_id', testTypeIds[0])
+        .input('result_value', result_value)
+        .input('unit', unit)
+        .input('reference_range', reference_range)
+        .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+      results.push(insert.recordset[0]);
+    }
   }
 
   // Nếu có notes, cập nhật vào TestNotes
@@ -174,17 +213,7 @@ exports.createTestResultAndComplete = async ({
       .query('UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id');
   }
 
-  // Cập nhật thời gian trả kết quả (test_datetime)
-  await pool.request()
-    .input('test_note_id', test_note_id)
-    .query('UPDATE TestNotes SET test_datetime = GETDATE() WHERE test_note_id = @test_note_id');
-
-  // Cập nhật thời gian hoàn thành (created_at)
-  await pool.request()
-    .input('test_note_id', test_note_id)
-    .query('UPDATE TestNotes SET created_at = GETDATE() WHERE test_note_id = @test_note_id');
-
-  // 5. Cập nhật trạng thái phiếu xét nghiệm như cũ
+  // Cập nhật trạng thái phiếu xét nghiệm như cũ
   await pool.request().input('test_note_id', test_note_id).query(`
       UPDATE tr
       SET tr.status = 'completed'
@@ -459,6 +488,5 @@ exports.updateTestNoteStatus = async (test_note_id, status) => {
       .input('test_note_id', test_note_id)
       .query('UPDATE TestNotes SET test_datetime = GETDATE() WHERE test_note_id = @test_note_id');
   }
-  // Cập nhật status như cũ (nếu có logic cũ)
-  // ... (bạn có thể thêm logic cập nhật status ở đây nếu cần)
+  // KHÔNG update status nếu không có cột status trong TestNotes
 };

@@ -1,6 +1,9 @@
 const { poolPromise } = require("../config/db");
 const { getQueueNumber } = require("./bookingServices");
 
+// Import validation function từ bookingServices
+const { validateAppointmentRules } = require("./bookingServices");
+
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {
   const pool = await poolPromise;
@@ -27,32 +30,33 @@ exports.createAppointment = async (data) => {
     bookingDate,
   } = data;
 
-
   // Xác định nguồn phiếu: self_booking (tự đặt) hay doctor_request (bác sĩ chỉ định)
   // Giả sử: nếu doctor_id có giá trị => doctor_request, ngược lại self_booking
   const source = doctor_id ? 'doctor_request' : 'self_booking';
 
-  // Kiểm tra bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày và cùng nguồn chưa
-  const existResult = await pool.request()
-    .input('patient_id', patient_id)
-    .input('bookingDate', bookingDate)
-    .input('service_id', service_id)
-    .input('doctor_id', doctor_id)
-    .query(`
+  // Áp dụng validation rules mới
+  await validateAppointmentRules(pool, patient_id, service_id, bookingDate, doctor_id);
 
+  // Kiểm tra duplicate booking (thêm validation cuối cùng)
+  const duplicateCheck = await pool.request()
+    .input('patientId', patient_id)
+    .input('serviceId', service_id)
+    .input('bookingDate', bookingDate)
+    .input('doctorId', doctor_id || null)
+    .input('slotId', slot_id || null)
+    .query(`
       SELECT COUNT(*) AS count
       FROM Appointments
-      WHERE patient_id = @patient_id
+      WHERE patient_id = @patientId
+        AND service_id = @serviceId
         AND bookingDate = @bookingDate
-        AND service_id = @service_id
+        AND doctor_id = @doctorId
+        AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
         AND status IN ('requested', 'in_progress')
-        AND ((@doctor_id IS NOT NULL AND doctor_id IS NOT NULL) OR (@doctor_id IS NULL AND doctor_id IS NULL))
     `);
-  if (existResult.recordset[0].count > 0) {
-    const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
-
-    err.statusCode = 400;
-    throw err;
+  
+  if (duplicateCheck.recordset[0].count > 0) {
+    throw new Error('Bạn đã có lịch hẹn tương tự trong ngày này. Vui lòng kiểm tra lại.');
   }
 
   // Sử dụng logic dùng chung để lấy queue_number
@@ -85,13 +89,15 @@ exports.createAppointment = async (data) => {
     .input('serviceId', service_id)
     .query('SELECT price, service_type FROM Services WHERE service_id = @serviceId');
   const service = serviceResult.recordset[0];
-  if (service && service.service_type === 'test') {
+  
+  // Tạo hóa đơn cho cả test và examination
+  if (service && (service.service_type === 'test' || service.service_type === 'examination')) {
     await pool.request()
       .input('patientId', patient_id)
       .input('appointmentId', appointment.appointment_id)
       .input('amount', service.price || 0)
-      .input('serviceType', 'test')
-      .input('status', 'paid')
+      .input('serviceType', service.service_type)
+      .input('status', service.service_type === 'test' ? 'paid' : 'pending')
       .query(`
         INSERT INTO Invoices (patient_id, appointment_id, amount, service_type, status)
         VALUES (@patientId, @appointmentId, @amount, @serviceType, @status)
@@ -200,6 +206,7 @@ SELECT  a.appointment_id
       ,a.bookingDate
       ,a.created_at
       ,d.full_name as doctor_name
+      ,r.room_name
   FROM Appointments as a 
   LEFT JOIN Slots as s ON a.slot_id = s.slot_id
   LEFT JOIN Services as sv ON a.service_id = sv.service_id
@@ -217,14 +224,14 @@ SELECT  a.appointment_id
       service_name: appointment.service_name,
       service_type: appointment.service_type,
       room: appointment.room_name,
-      bookingDate: appointment.bookingDate.toISOString(),
-      created_at: appointment.created_at.toISOString(),
+      bookingDate: appointment.bookingDate ? appointment.bookingDate.toISOString() : null,
+      created_at: appointment.created_at ? appointment.created_at.toISOString() : null,
       // spread operator để lấy các trường từ slot or doctor nếu có
       ...(appointment.service_type === "examination"
         ? {
             doctor_name: appointment.doctor_name,
-            start_time: appointment.start_time.toISOString(),
-            end_time: appointment.end_time.toISOString(),
+            start_time: appointment.start_time ? appointment.start_time.toISOString() : null,
+            end_time: appointment.end_time ? appointment.end_time.toISOString() : null,
           }
         : {}),
     };

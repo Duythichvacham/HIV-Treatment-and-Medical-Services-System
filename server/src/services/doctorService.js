@@ -16,87 +16,115 @@ const getCurrentExam = async (patientId, appointmentId = null) => {
     JOIN Appointments a ON p.patient_id = a.patient_id
     JOIN Slots s ON a.slot_id = s.slot_id
     WHERE p.patient_id = @patient_id
-      AND a.status IN ('requested', 'in_progress')
-  `;
-  if (appointmentId) {
-    query += ` AND a.appointment_id = @appointment_id`;
-  }
-  query += ` ORDER BY a.created_at DESC; 
+      ${appointmentId ? 'AND a.appointment_id = @appointment_id' : ''}
+    ORDER BY a.created_at DESC;
 
--- Lấy thông tin điều trị ARV hiện tại
-SELECT TOP 1
-    ar.name AS phac_do,
-    a.created_at AS ngay_bat_dau,
-    mh.arv_adherence AS tuan_thu,
-    mh.arv_side_effects AS tac_dung_phu
-INTO #ARVInfo
-FROM Prescriptions pr
-JOIN Appointments a ON pr.appointment_id = a.appointment_id
-JOIN Patients p ON a.patient_id = p.patient_id
-LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
-LEFT JOIN MedicalHistory mh ON p.patient_id = mh.patient_id
-WHERE p.patient_id = @patient_id
-ORDER BY a.created_at DESC;
+    -- Lấy thông tin điều trị ARV hiện tại (có thể không có)
+    SELECT TOP 1
+        ar.name AS phac_do,
+        a.created_at AS ngay_bat_dau,
+        mh.arv_adherence AS tuan_thu,
+        mh.arv_side_effects AS tac_dung_phu
+    INTO #ARVInfo
+    FROM Appointments a
+    LEFT JOIN Prescriptions pr ON pr.appointment_id = a.appointment_id
+    LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
+    LEFT JOIN Patients p ON a.patient_id = p.patient_id
+    LEFT JOIN MedicalHistory mh ON p.patient_id = mh.patient_id
+    WHERE p.patient_id = @patient_id
+    ORDER BY a.created_at DESC;
+    IF NOT EXISTS (SELECT 1 FROM #ARVInfo)
+    BEGIN
+      SELECT 
+        CAST(NULL AS NVARCHAR(255)) AS phac_do,
+        CAST(NULL AS DATETIME) AS ngay_bat_dau,
+        CAST(NULL AS NVARCHAR(255)) AS tuan_thu,
+        CAST(NULL AS NVARCHAR(255)) AS tac_dung_phu
+      INTO #ARVInfo
+      WHERE 1=0
+    END
 
--- Lấy kết quả xét nghiệm gần nhất
-SELECT TOP 1
-    tr.test_note_id,
-    tn.test_datetime,
-    tr.result_value,
-    tr.notes,
-    tt.name AS test_type
-INTO #LatestTests
-FROM TestResults tr
-JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
-JOIN Appointments a ON tn.appointment_id = a.appointment_id
-JOIN TestRequests r ON tn.request_id = r.request_id
-JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
-JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
-WHERE a.patient_id = @patient_id
-ORDER BY tn.test_datetime DESC;
+    -- Lấy kết quả xét nghiệm gần nhất (có thể không có)
+    SELECT TOP 1
+        tr.test_note_id,
+        tn.test_datetime,
+        tr.result_value,
+        tr.notes,
+        tt.name AS test_type
+    INTO #LatestTests
+    FROM TestResults tr
+    LEFT JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+    LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
+    LEFT JOIN TestRequests r ON tn.request_id = r.request_id
+    LEFT JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
+    LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+    WHERE a.patient_id = @patient_id
+    ORDER BY tn.test_datetime DESC;
+    IF NOT EXISTS (SELECT 1 FROM #LatestTests)
+    BEGIN
+      SELECT 
+        CAST(NULL AS INT) AS test_note_id,
+        CAST(NULL AS DATETIME) AS test_datetime,
+        CAST(NULL AS NVARCHAR(255)) AS result_value,
+        CAST(NULL AS NVARCHAR(255)) AS notes,
+        CAST(NULL AS NVARCHAR(255)) AS test_type
+      INTO #LatestTests
+      WHERE 1=0
+    END
 
--- Pivot kết quả xét nghiệm (viral load, CD4, sàng lọc, khẳng định)
-SELECT 
-    MAX(CASE WHEN tt.name = N'Tải lượng virus' THEN result_value + ' ' + ISNULL(tr.unit, '') END) AS viral_load,
-    MAX(CASE WHEN tt.name = 'CD4' THEN result_value + ' ' + ISNULL(tr.unit, '') END) AS cd4,
-    MAX(CASE WHEN tt.name = N'Sàng lọc' THEN tr.notes END) AS sang_loc,
-    MAX(CASE WHEN tt.name = N'Khẳng định' THEN tr.notes END) AS khang_dinh
-INTO #XetNghiemGanNhat
-FROM TestResults tr
-JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
-JOIN Appointments a ON tn.appointment_id = a.appointment_id
-JOIN TestRequests r ON tn.request_id = r.request_id
-JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
-JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
-WHERE a.patient_id = @patient_id
-GROUP BY tn.test_datetime
-ORDER BY tn.test_datetime DESC;
+    -- Pivot kết quả xét nghiệm (có thể không có)
+    SELECT 
+        MAX(CASE WHEN tt.name = N'HIV Viral Load' THEN tr.result_value + ' ' + ISNULL(tr.unit, '') END) AS viral_load,
+        MAX(CASE WHEN tt.name = 'CD4' THEN tr.result_value + ' ' + ISNULL(tr.unit, '') END) AS cd4,
+        MAX(CASE WHEN tt.name = N'Sàng lọc' THEN tr.notes END) AS sang_loc,
+        MAX(CASE WHEN tt.name = N'Khẳng định' THEN tr.notes END) AS khang_dinh
+    INTO #XetNghiemGanNhat
+    FROM TestResults tr
+    LEFT JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+    LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
+    LEFT JOIN TestRequests r ON tn.request_id = r.request_id
+    LEFT JOIN Services s ON r.service_id = s.service_id
+    LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+    LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
+    WHERE a.patient_id = @patient_id
+    GROUP BY tn.test_datetime
+    ORDER BY tn.test_datetime DESC;
+    IF NOT EXISTS (SELECT 1 FROM #XetNghiemGanNhat)
+    BEGIN
+      SELECT 
+        CAST(NULL AS NVARCHAR(255)) AS viral_load,
+        CAST(NULL AS NVARCHAR(255)) AS cd4,
+        CAST(NULL AS NVARCHAR(255)) AS sang_loc,
+        CAST(NULL AS NVARCHAR(255)) AS khang_dinh
+      INTO #XetNghiemGanNhat
+      WHERE 1=0
+    END
 
--- Hiển thị tổng hợp tất cả
-SELECT 
-    pi.ho_ten,
-    pi.ma_bn,
-    pi.tuoi,
-    pi.gender,
-    pi.gio_hen,
-    pi.appointment_id,
-    ai.phac_do,
-    FORMAT(ai.ngay_bat_dau, 'yyyy-MM-dd') AS ngay_bat_dau,
-    ai.tuan_thu,
-    ai.tac_dung_phu,
-    xn.viral_load,
-    xn.cd4,
-    xn.sang_loc,
-    xn.khang_dinh
-FROM #PatientInfo pi
-JOIN #ARVInfo ai ON 1 = 1
-JOIN #XetNghiemGanNhat xn ON 1 = 1;
+    -- Hiển thị tổng hợp tất cả
+    SELECT 
+        pi.ho_ten,
+        pi.ma_bn,
+        pi.tuoi,
+        pi.gender,
+        pi.gio_hen,
+        pi.appointment_id,
+        ai.phac_do,
+        FORMAT(ai.ngay_bat_dau, 'yyyy-MM-dd') AS ngay_bat_dau,
+        ai.tuan_thu,
+        ai.tac_dung_phu,
+        xn.viral_load,
+        xn.cd4,
+        xn.sang_loc,
+        xn.khang_dinh
+    FROM #PatientInfo pi
+    LEFT JOIN #ARVInfo ai ON 1 = 1
+    LEFT JOIN #XetNghiemGanNhat xn ON 1 = 1;
 
--- Cleanup
-DROP TABLE #PatientInfo;
-DROP TABLE #ARVInfo;
-DROP TABLE #LatestTests;
-DROP TABLE #XetNghiemGanNhat;`;
+    -- Cleanup
+    DROP TABLE #PatientInfo;
+    DROP TABLE #ARVInfo;
+    DROP TABLE #LatestTests;
+    DROP TABLE #XetNghiemGanNhat;`;
 
   const request = pool.request().input("patient_id", patientId);
   if (appointmentId) request.input("appointment_id", appointmentId);

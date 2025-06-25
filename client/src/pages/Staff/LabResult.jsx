@@ -1,58 +1,43 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE = 'http://localhost:5000/api/v1';
 
 const LabResult = () => {
   const { state } = useLocation();
-  const { note, patient, testType, room } = state || {};
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { note, results, patient, testType, room } = state || {};
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!note?.test_note_id) return setLoading(false);
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get(`${API_BASE}/lab/test-results/${note.test_note_id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setResults(res.data.data || []);
-      } catch (err) {
-        setResults([]);
-      }
-      setLoading(false);
-    };
-    fetchResults();
-  }, [note?.test_note_id]);
+  // Debug để xem dữ liệu
+  console.log('LabResult state:', state);
+  console.log('LabResult note:', note);
+  console.log('LabResult results:', results);
 
-  if (!note || (!results && !loading)) {
+  if (!note || !results || results.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-red-600 font-bold">
-        Không có dữ liệu kết quả.
+        Không có dữ liệu kết quả. Note: {!!note}, Results: {results?.length || 0}
       </div>
     );
   }
 
-  // Lấy thông tin từ note (ưu tiên backend mới)
+  // Tính tuổi và thời gian trả kết quả
   const age = note?.dob ? new Date().getFullYear() - new Date(note.dob).getFullYear() : '-';
   const birthYear = note?.dob ? new Date(note.dob).getFullYear() : '-';
-  const sampleTime = note?.test_datetime ? new Date(note.test_datetime).toLocaleString() : '-';
-  const resultTime = note?.created_at ? new Date(note.created_at).toLocaleString() : '-';
-
-  // Xác định loại phiếu
-  const type = (note?.test_type_name || note?.service_name || '').toLowerCase();
-  const isScreening = type.includes('sàng lọc');
-  const isConfirm = type.includes('khẳng định');
-  const isCD4 = type.includes('cd4');
-  const isViral = type.includes('viral');
-
-  // Lọc kết quả
-  const cd4Result = results.find(r => (r.test_type_name || '').toLowerCase().includes('cd4'));
-  const viralResult = results.find(r => (r.test_type_name || '').toLowerCase().includes('viral'));
-  // Kết luận (nếu có)
-  const conclusion = note?.review || note?.result_value || results[0]?.result_value || '-';
+  
+  // Lọc kết quả mới nhất cho mỗi loại test (tránh duplicate)
+  const latestResults = results.reduce((acc, result) => {
+    const existing = acc.find(r => r.test_type_name === result.test_type_name);
+    if (!existing || new Date(result.created_at) > new Date(existing.created_at)) {
+      // Thay thế kết quả cũ bằng kết quả mới hơn
+      const filtered = acc.filter(r => r.test_type_name !== result.test_type_name);
+      return [...filtered, result];
+    }
+    return acc;
+  }, []);
+  
+  // Thời gian trả kết quả: lấy thời gian tạo kết quả mới nhất
+  const resultTime = latestResults.length > 0 ? new Date(latestResults[latestResults.length - 1].created_at).toLocaleString() : '-';
+  
+  // Thời gian nhận mẫu: test_datetime là thời gian bắt đầu xét nghiệm
+  const sampleTime = note.test_datetime ? new Date(note.test_datetime).toLocaleString() : '-';
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">
@@ -76,64 +61,38 @@ const LabResult = () => {
           </div>
         </div>
 
-        {/* Kết quả xét nghiệm */}
-        <div>
-          <h2 className="text-xl font-medium mb-2">Chi tiết Kết quả</h2>
-          {/* Sàng lọc: chỉ hiện kết luận, ẩn bảng */}
-          {isScreening ? (
-            <div className="mt-6 text-lg font-bold text-center">
-              Kết luận: <span className={conclusion === 'Dương tính' ? 'text-red-600' : 'text-green-600'}>{conclusion}</span>
-            </div>
-          ) : (
-            <>
-              {/* Khẳng định hoặc CD4/Viral Load */}
-              {(isConfirm || isCD4 || isViral) && (
-                <table className="w-full border-collapse text-sm text-gray-700">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border px-3 py-2 text-left">Chỉ số</th>
-                      <th className="border px-3 py-2 text-left">Kết quả</th>
-                      <th className="border px-3 py-2 text-left">Đơn vị</th>
-                      <th className="border px-3 py-2 text-left">Giá trị Tham chiếu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cd4Result && (
-                      <tr>
-                        <td className="border px-3 py-2">CD4</td>
-                        <td className="border px-3 py-2">{cd4Result.result_value || '-'}</td>
-                        <td className="border px-3 py-2">{cd4Result.unit || '-'}</td>
-                        <td className="border px-3 py-2">{cd4Result.reference_range || '-'}</td>
-                      </tr>
-                    )}
-                    {viralResult && (
-                      <tr>
-                        <td className="border px-3 py-2">Viral Load</td>
-                        <td className="border px-3 py-2">{viralResult.result_value || '-'}</td>
-                        <td className="border px-3 py-2">{viralResult.unit || '-'}</td>
-                        <td className="border px-3 py-2">{viralResult.reference_range || '-'}</td>
-                      </tr>
-                    )}
-                    {/* Nếu là khẳng định, thêm dòng kết luận */}
-                    {isConfirm && (
-                      <tr>
-                        <td colSpan={4} className="font-bold text-center bg-gray-50">
-                          Kết luận: <span className={conclusion === 'Dương tính' ? 'text-red-600' : 'text-green-600'}>{conclusion}</span>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </>
-          )}
+        {/* Bảng Chi tiết Kết quả */}
+         <div>
+            <h2 className="text-xl font-medium mb-2">Chi tiết Kết quả</h2>
+          <table className="w-full border-collapse text-sm text-gray-700">
+             <thead>
+               <tr className="bg-gray-100">
+                <th className="border px-3 py-2 text-left">STT</th>
+                <th className="border px-3 py-2 text-left">Loại Xét nghiệm</th>
+                <th className="border px-3 py-2 text-left">Giá trị Tham chiếu</th>
+                <th className="border px-3 py-2 text-left">Kết quả</th>
+                <th className="border px-3 py-2 text-left">Đơn vị</th>
+               </tr>
+             </thead>
+             <tbody>
+               {latestResults.map((r, idx) => (
+                 <tr key={r.result_id} className="odd:bg-white even:bg-gray-50">
+                  <td className="border px-3 py-2">{idx + 1}</td>
+                  <td className="border px-3 py-2">{r.test_type_name || '-'}</td>
+                  <td className="border px-3 py-2">{r.reference_range || '-'}</td>
+                  <td className="border px-3 py-2">{r.result_value || '-'}</td>
+                  <td className="border px-3 py-2">{r.unit || '-'}</td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
           {/* Ghi chú chung dưới bảng */}
           {note.notes && (
             <div className="mt-4 text-sm text-gray-600"><b>Ghi chú:</b> {note.notes}</div>
           )}
-        </div>
-      </div>
-    </div>
+         </div>
+       </div>
+     </div>
   );
 };
 
