@@ -102,12 +102,12 @@ export const AuthProvider = ({ children }) => {
     
     if (!isLoginPage && userType === "staff") {
       // Chỉ staff mới redirect về login
-      console.log(
+        console.log(
         "AuthContext: Redirecting to staff login",
-        currentPath
-      );
+          currentPath
+        );
       localStorage.removeItem("userType"); // Xóa sau khi sử dụng
-      window.location.href = "/login/staff";
+        window.location.href = "/login/staff";
     }
     // Patient không redirect, ở lại trang hiện tại
   };

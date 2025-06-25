@@ -166,7 +166,7 @@ exports.createAppointment = async (req, res, next) => {
 
     // Lấy thông tin service để xác định loại dịch vụ
     const serviceResult = await pool
-      .request()
+        .request()
       .input("serviceId", service_id)
       .query("SELECT service_type, price FROM Services WHERE service_id = @serviceId");
     
@@ -216,10 +216,10 @@ exports.createAppointment = async (req, res, next) => {
       
       const currentBookings = slotCountResult.recordset[0].count;
       if (currentBookings >= maxPatientsPerSlot) {
-        return res
-          .status(400)
+      return res
+        .status(400)
           .json({ message: "Khung giờ này đã đầy, vui lòng chọn khung giờ khác" });
-      }
+    }
 
     } else if (actualServiceType === "test") {
       // Dịch vụ xét nghiệm
@@ -239,8 +239,8 @@ exports.createAppointment = async (req, res, next) => {
         `);
       
       if (roomResult.recordset.length === 0) {
-        return res
-          .status(400)
+      return res
+        .status(400)
           .json({ message: "Không tìm thấy phòng xét nghiệm phù hợp" });
       }
       
