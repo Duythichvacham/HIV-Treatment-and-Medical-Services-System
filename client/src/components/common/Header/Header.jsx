@@ -17,12 +17,15 @@ const Header = () => {
   // Debug log
   console.log("Header - User:", user);
   console.log("Header - isStaff:", isStaff());
-    const handleLogout = () => {
+  const handleLogout = () => {
     logout();
     // Only staff should be redirected to login page after logout
     // Patients stay on current page
     if (isStaff()) {
       navigate("/login/staff");
+    } else {
+      // Redirect patients to home page after logout
+      navigate("/");
     }
     // No redirect for patients - they stay on current page
   };
@@ -63,13 +66,13 @@ const Header = () => {
     <header className="bg-white shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo as link */}{" "}          <button
+          {/* Logo as link */}{" "}
+          <button
             onClick={() => {
               if (user?.role === "Lab-Staff") navigate("/lab-staff");
               else if (user?.role === "Registration-staff")
                 navigate("/registration-staff");
-              else if (user?.role === "Doctor")
-                navigate("/doctor-dashboard");
+              else if (user?.role === "Doctor") navigate("/doctor-dashboard");
               else if (isStaff())
                 navigate("/lab-staff"); // fallback cho Manager và roles khác
               else navigate("/");
@@ -80,7 +83,8 @@ const Header = () => {
             <div className="text-gray-800 font-semibold text-lg">
               HIV Care Center
             </div>
-          </button>          {/* Desktop Navigation */}
+          </button>{" "}
+          {/* Desktop Navigation */}
           {!isStaff() && (
             <nav className="hidden md:flex items-center space-x-8">
               <Link
@@ -291,7 +295,8 @@ const Header = () => {
                         </div>
                       )}
                     </div>
-                  </div>                  <Link
+                  </div>{" "}
+                  <Link
                     to="/appointment"
                     className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
@@ -304,7 +309,9 @@ const Header = () => {
                 {user ? (
                   <AvatarDropdown user={user} onLogout={handleLogout} />
                 ) : (
-                  <>                    <Link
+                  <>
+                    {" "}
+                    <Link
                       to="/login/patient"
                       state={{ from: location.pathname }}
                       className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"

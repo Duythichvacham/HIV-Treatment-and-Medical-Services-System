@@ -80,7 +80,7 @@ const MainServiceDetail = () => {
     const detailsMap = {
       screening: [
         "Sàng lọc từ giai đoạn sớm",
-        "Kết quả nhanh chóng trong 30 phút",
+        "Kết quả nhanh chóng",
         "Bảo mật tuyệt đối thông tin cá nhân",
         "Sử dụng công nghệ hiện đại",
         "Đội ngũ y tế chuyên nghiệp",
@@ -269,15 +269,15 @@ const MainServiceDetail = () => {
               Đặt lịch ngay
             </h2>{" "}
             <AppointmentForm
-  serviceType={`service_${service.service_id}`}
-  serviceName={service.name}
-  price={
-    service.price === 0 || service.price === null
-      ? "Miễn phí"
-      : `${Number(service.price).toLocaleString()}đ`
-  }
-  user={user}
-/>
+              serviceType={`service_${service.service_id}`}
+              serviceName={service.name}
+              price={
+                service.price === 0 || service.price === null
+                  ? "Miễn phí"
+                  : `${Number(service.price).toLocaleString()}đ`
+              }
+              user={user}
+            />
           </div>
         </div>
       </div>

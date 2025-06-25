@@ -4,10 +4,16 @@ import {
   getDoctors,
   getSlots,
   createAppointment,
+  checkExistingAppointment,
+  getServices,
 } from "../../../../services/api";
 import { getCurrentDate } from "../../../../utils/dateUtil";
+import AppointmentConfirmModal from "../../../../components/common/AppointmentConfirmModal";
+import AppointmentSuccessModal from "../../../../components/common/AppointmentSuccessModal";
+import { useAuth } from "../../../../contexts/AuthContext";
 
 const ConsultAppointment = () => {
+  const { isAuthenticated } = useAuth();
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [selectedTime, setSelectedTime] = useState(null);
@@ -18,6 +24,27 @@ const ConsultAppointment = () => {
   const [loading, setLoading] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [appointmentData, setAppointmentData] = useState(null);
+  const [serviceConsultation, setServiceConsultation] = useState(null);
+
+  // Fetch consultation service to get correct price
+  useEffect(() => {
+    const fetchService = async () => {
+      try {
+        const allServices = await getServices();
+        const serviceList = allServices.data || allServices;
+        const consultationService = serviceList.find(
+          (s) => s.service_type === "consultation" && s.service_id === 2
+        );
+        setServiceConsultation(consultationService);
+      } catch (err) {
+        console.error("Error fetching service:", err);
+      }
+    };
+    fetchService();
+  }, []);
 
   // Fetch doctors when date changes
   useEffect(() => {
@@ -112,35 +139,120 @@ const ConsultAppointment = () => {
         return "Không rõ";
     }
   };
-
   const getConsultPrice = () => {
-    if (consultType === "video") return "200.000đ";
-    if (consultType === "chat") return "150.000đ";
-    return "0đ";
+    const basePrice = serviceConsultation ? serviceConsultation.price : 100000;
+    // For now, all consultation types use the same price from DB
+    return `${Number(basePrice).toLocaleString()}đ`;
   };
-
   const handleBooking = async () => {
+    // Kiểm tra authentication trước
+    if (!isAuthenticated()) {
+      alert("Vui lòng đăng nhập để đặt lịch khám!");
+      window.location.href = "/login/patient";
+      return;
+    }
     if (!selectedDoctor || !selectedTime) {
       alert("Vui lòng chọn bác sĩ và khung giờ!");
       return;
     }
 
+    // Check existing appointment
     try {
       setLoading(true);
-      await createAppointment({
+      const existingCheck = await checkExistingAppointment(
+        selectedDate,
+        "consultation",
+        selectedDoctor.id
+      );
+      if (existingCheck.hasExisting) {
+        alert(
+          "Bạn đã có lịch hẹn vào ngày này. Vui lòng chọn ngày khác hoặc hủy lịch cũ trước."
+        );
+        setLoading(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Cannot check existing appointment:", err);
+      // Continue anyway if check fails
+    }
+
+    const slotObj = timeSlots.find((s) => s.id === selectedTime.id);
+    const slotLabel = slotObj ? slotObj.time_slot || slotObj.time : "";
+    setAppointmentData({
+      serviceName: `Tư vấn trực tuyến - ${selectedDoctor.name}`,
+      date: selectedDate,
+      time: slotLabel,
+      fee: getConsultPrice(),
+      isDoctor: true,
+      room: "", // Will be set from API response
+      doctorOrStaff: selectedDoctor.name,
+      slotLabel,
+    });
+    setIsConfirmOpen(true);
+    setLoading(false);
+  };
+
+  const handleConfirmBooking = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await createAppointment({
         doctor_id: selectedDoctor.id,
-        appointment_date: selectedDate,
-        time_slot: selectedTime.time_slot || selectedTime.time,
+        slot_id: selectedTime.id,
+        service_id: 2, // Tư vấn
+        bookingDate: selectedDate,
         reason: reason.trim() || "Không có ghi chú",
-        service_type: "consultation",
+        serviceType: "consultation",
         consultation_type: consultType,
       });
-      alert("Đặt lịch tư vấn thành công!");
+
+      const appointment_id =
+        res?.appointment?.appointment_id || res?.appointment_id;
+
+      // Lấy chi tiết appointment
+      const token = localStorage.getItem("token");
+      const detailRes = await fetch(`/api/v1/appointments/${appointment_id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const detail = await detailRes.json();
+      const mappedData = {
+        queueNumber: detail.data?.queue_number,
+        serviceName:
+          detail.data?.service_name ||
+          `Tư vấn trực tuyến - ${selectedDoctor.name}`,
+        room: detail.data?.room || "Online", // Get from API, fallback to Online for consultation
+        doctorOrStaff: detail.data?.doctor_name || selectedDoctor.name,
+        date: detail.data?.bookingDate
+          ? detail.data.bookingDate.slice(0, 10)
+          : selectedDate,
+        time:
+          detail.data?.slot_label ||
+          selectedTime.time_slot ||
+          selectedTime.time,
+        fee: getConsultPrice(),
+        isDoctor: true,
+      };
+
+      setAppointmentData(mappedData);
+      setIsConfirmOpen(false);
+      setIsReceiptOpen(true);
+
+      // Reset form
       setSelectedDoctor(null);
       setSelectedTime(null);
       setReason("");
     } catch (err) {
-      alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!");
+      let msg = "Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại!";
+      if (err?.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      setError(msg);
+      setIsConfirmOpen(false);
       console.error("Error booking appointment:", err);
     } finally {
       setLoading(false);
@@ -223,7 +335,8 @@ const ConsultAppointment = () => {
                   </option>
                   {doctors.map((doctor) => (
                     <option key={doctor.id} value={doctor.id}>
-                      {doctor.name} - {doctor.degrees || "Bác sĩ"} -{" "}
+                      {doctor.name}
+                      {doctor.degrees ? ` - ${doctor.degrees}` : ""} -{" "}
                       {doctor.experience || 0} năm kinh nghiệm
                     </option>
                   ))}
@@ -237,9 +350,9 @@ const ConsultAppointment = () => {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">
                       {selectedDoctor.name}
-                    </h4>
+                    </h4>{" "}
                     <p className="text-gray-600 text-sm mb-1">
-                      {selectedDoctor.degrees || "Bác sĩ HIV/AIDS"}
+                      {selectedDoctor.degrees || ""}
                     </p>
                     <div className="flex items-center space-x-4 mt-2">
                       <div className="flex items-center space-x-1">
@@ -289,60 +402,37 @@ const ConsultAppointment = () => {
                 Không có khung giờ nào khả dụng cho ngày và bác sĩ đã chọn
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {timeSlots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    onClick={() =>
-                      slot.status === "available" && setSelectedTime(slot)
-                    }
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedTime?.id === slot.id
-                        ? "border-purple-500 bg-purple-50"
-                        : slot.status === "available"
-                        ? "border-gray-300 hover:border-purple-300 hover:bg-purple-50"
-                        : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {slot.time_slot || slot.time}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          30 phút tư vấn
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                            slot.status
-                          )}`}
-                        >
-                          {getStatusText(
-                            slot.status,
-                            slot.available,
-                            slot.total
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <select
+                value={selectedTime?.id || ""}
+                onChange={(e) => {
+                  const slotId = parseInt(e.target.value);
+                  const slot = timeSlots.find((s) => s.id === slotId);
+                  setSelectedTime(slot || null);
+                }}
+                disabled={loading || !selectedDoctor}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+              >
+                <option value="">Chọn khung giờ...</option>
+                {timeSlots
+                  .filter((slot) => slot.status === "available")
+                  .map((slot) => (
+                    <option key={slot.id} value={slot.id}>
+                      {slot.time_slot || slot.time} -{" "}
+                      {getStatusText(slot.status, slot.available, slot.total)}
+                    </option>
+                  ))}
+              </select>
             )}
 
             {selectedTime && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
+                    {" "}
                     <h4 className="font-semibold text-gray-900">
                       Khung giờ tư vấn:{" "}
                       {selectedTime.time_slot || selectedTime.time}
                     </h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Thời gian tư vấn: 30 phút
-                    </p>
                   </div>
                   <div className="text-right">
                     <span
@@ -380,9 +470,9 @@ const ConsultAppointment = () => {
                 <Video className="h-8 w-8 text-purple-600" />
                 <div>
                   <h4 className="font-semibold text-gray-900">Video Call</h4>
-                  <p className="text-sm text-gray-600">Tư vấn qua video</p>
+                  <p className="text-sm text-gray-600">Tư vấn qua video</p>{" "}
                   <p className="text-sm font-semibold text-green-600">
-                    200.000đ
+                    {getConsultPrice()}
                   </p>
                 </div>
               </div>
@@ -400,9 +490,11 @@ const ConsultAppointment = () => {
                 <MessageCircle className="h-8 w-8 text-blue-600" />
                 <div>
                   <h4 className="font-semibold text-gray-900">Chat</h4>
-                  <p className="text-sm text-gray-600">Tư vấn qua tin nhắn</p>
+                  <p className="text-sm text-gray-600">
+                    Tư vấn qua tin nhắn
+                  </p>{" "}
                   <p className="text-sm font-semibold text-green-600">
-                    150.000đ
+                    {getConsultPrice()}
                   </p>
                 </div>
               </div>
@@ -434,7 +526,6 @@ const ConsultAppointment = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Tóm tắt đặt lịch
           </h3>
-
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Ngày:</span>
@@ -457,16 +548,12 @@ const ConsultAppointment = () => {
               <span className="font-medium text-right">
                 {selectedDoctor ? selectedDoctor.name : "Chưa chọn"}
               </span>
-            </div>
+            </div>{" "}
             <div className="flex justify-between">
               <span className="text-gray-600">Hình thức:</span>
               <span className="font-medium">
                 {consultType === "video" ? "Video Call" : "Chat"}
               </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Thời gian:</span>
-              <span className="font-medium">30 phút</span>
             </div>
             <hr className="my-3" />
             <div className="flex justify-between text-lg font-semibold">
@@ -475,28 +562,39 @@ const ConsultAppointment = () => {
                 {selectedDoctor ? getConsultPrice() : "0đ"}
               </span>
             </div>
-          </div>
-
-          <button
-            onClick={handleBooking}
-            disabled={!isBookingReady() || loading}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6 ${
-              isBookingReady() && !loading
-                ? "bg-gray-900 text-white hover:bg-gray-800"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            <span>💬</span>
-            <span>
-              {loading
-                ? "Đang đặt lịch..."
-                : isBookingReady()
-                ? "Đặt lịch ngay"
-                : "Vui lòng chọn ngày giờ và bác sĩ"}
-            </span>
-          </button>
+          </div>{" "}
+          {isBookingReady() ? (
+            <button
+              onClick={handleBooking}
+              disabled={loading}
+              className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6 bg-gray-900 text-white hover:bg-gray-800"
+            >
+              <span>💬</span>
+              <span>{loading ? "Đang xử lý..." : "Đặt lịch ngay"}</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 mt-6 bg-gray-300 text-gray-500 cursor-not-allowed"
+            >
+              <span>💬</span>
+              <span>Vui lòng chọn ngày giờ và bác sĩ</span>
+            </button>
+          )}
         </div>
       </div>
+      {/* Modals */}
+      <AppointmentConfirmModal
+        isOpen={isConfirmOpen}
+        onCancel={() => setIsConfirmOpen(false)}
+        onConfirm={handleConfirmBooking}
+        data={appointmentData}
+      />
+      <AppointmentSuccessModal
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        appointmentData={appointmentData}
+      />
     </div>
   );
 };

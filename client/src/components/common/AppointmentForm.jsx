@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import AppointmentSuccessModal from './AppointmentSuccessModal';
-import AppointmentConfirmModal from './AppointmentConfirmModal';
-import { createAppointment, getSlots } from '../../services/api';
+import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import AppointmentSuccessModal from "./AppointmentSuccessModal";
+import AppointmentConfirmModal from "./AppointmentConfirmModal";
+import { createAppointment, getSlots } from "../../services/api";
 
 const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
-  const [reason, setReason] = useState('');
-  const [date, setDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('');
+  const [reason, setReason] = useState("");
+  const [date, setDate] = useState("");
+  const [timeSlot, setTimeSlot] = useState("");
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const isDoctor = serviceType && serviceType.startsWith('doctor_');
+  const isDoctor = serviceType && serviceType.startsWith("doctor_");
   const isLoggedIn = !!user;
   const location = useLocation();
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const storageKey = `appointmentForm_${serviceType}`;
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -22,24 +22,27 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
-    const slotObj = slots.find(s => String(s.value) === String(timeSlot));
-    const slotLabel = slotObj ? slotObj.label : '';
-    console.log('DEBUG slots:', slots);
-    console.log('DEBUG timeSlot:', timeSlot);
-    console.log('DEBUG slotLabel:', slotLabel);
+    const slotObj = slots.find((s) => String(s.value) === String(timeSlot));
+    const slotLabel = slotObj ? slotObj.label : "";
+    console.log("DEBUG slots:", slots);
+    console.log("DEBUG timeSlot:", timeSlot);
+    console.log("DEBUG slotLabel:", slotLabel);
     if (isDoctor && !slotLabel) {
-      setError('Vui lòng chọn khung giờ khám!');
+      setError("Vui lòng chọn khung giờ khám!");
       return;
     }
     setAppointmentData({
       serviceName,
       date,
       time: isDoctor ? slotLabel : "Trong giờ làm việc",
-      fee: price,
+      fee:
+        typeof price === "number"
+          ? `${Number(price).toLocaleString()}đ`
+          : price,
       isDoctor,
-      room: 1,
+      room: "", // Will be set from API response
       doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
-      slotLabel
+      slotLabel,
     });
     setIsConfirmOpen(true);
   };
@@ -49,12 +52,14 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     setLoading(true);
     setError(null);
     try {
-      let doctor_id = null, service_id = null, room_id = null;
-      if (serviceType && serviceType.startsWith('doctor_')) {
-        doctor_id = serviceType.replace('doctor_', '');
+      let doctor_id = null,
+        service_id = null,
+        room_id = null;
+      if (serviceType && serviceType.startsWith("doctor_")) {
+        doctor_id = serviceType.replace("doctor_", "");
         service_id = 1;
-      } else if (serviceType && serviceType.startsWith('service_')) {
-        service_id = serviceType.replace('service_', '');
+      } else if (serviceType && serviceType.startsWith("service_")) {
+        service_id = serviceType.replace("service_", "");
       }
       const res = await createAppointment({
         doctor_id,
@@ -63,30 +68,32 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         room_id,
         bookingDate: date,
         reason,
-        serviceType: isDoctor ? "doctor" : "service"
+        serviceType: isDoctor ? "doctor" : "service",
       });
 
       // Lấy appointment_id từ response
-      const appointment_id = res?.appointment?.appointment_id || res?.appointment_id;
+      const appointment_id =
+        res?.appointment?.appointment_id || res?.appointment_id;
       // Gọi API lấy chi tiết lịch hẹn từ backend
-      const token = localStorage.getItem('token');
-      console.log('Token gửi lên BE:', token);
+      const token = localStorage.getItem("token");
+      console.log("Token gửi lên BE:", token);
 
       const detailRes = await fetch(`/api/v1/appointments/${appointment_id}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       const detail = await detailRes.json();
 
       // Debug dữ liệu trả về từ backend
-      console.log('DEBUG chi tiết lịch hẹn từ BE:', detail);
+      console.log("DEBUG chi tiết lịch hẹn từ BE:", detail);
 
       // Map lại dữ liệu cho đúng format modal cần
       const mappedData = {
         queueNumber: detail.data?.queue_number,
         serviceName: detail.data?.service_name || serviceName,
         room: detail.data?.room_id,
+
         doctorOrStaff: detail.data?.doctor_name || detail.data?.staff_name || "Nhân viên xét nghiệm",
         date: detail.data?.bookingDate ? detail.data.bookingDate.slice(0, 10) : '', // chỉ lấy YYYY-MM-DD
         time: isDoctor
@@ -97,18 +104,19 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
             )
           : "Trong giờ làm việc",
         fee: price,
+
         isDoctor,
       };
 
       // Debug dữ liệu truyền vào modal
-      console.log('DEBUG dữ liệu truyền vào modal:', mappedData);
+      console.log("DEBUG dữ liệu truyền vào modal:", mappedData);
 
       setAppointmentData(mappedData);
       setIsConfirmOpen(false);
       setIsReceiptOpen(true);
       sessionStorage.removeItem(storageKey);
     } catch (err) {
-      let msg = 'Đặt lịch thất bại. Vui lòng thử lại!';
+      let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
       if (err?.response?.data?.message) {
         msg = err.response.data.message;
       } else if (err?.message) {
@@ -116,7 +124,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       }
       setError(msg);
       setIsConfirmOpen(false);
-      console.error('DEBUG lỗi đặt lịch:', err);
+      console.error("DEBUG lỗi đặt lịch:", err);
     } finally {
       setLoading(false);
     }
@@ -133,7 +141,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           if (d) setDate(d);
           if (t) setTimeSlot(t);
         } catch (err) {
-          console.error('Failed to parse saved appointment form', err);
+          console.error("Failed to parse saved appointment form", err);
         }
       }
     }
@@ -154,11 +162,11 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
 
   // Format time string to HH:mm
   function formatTime(timeStr) {
-    if (!timeStr) return '';
+    if (!timeStr) return "";
     // Nếu là dạng '08:00:00' thì chỉ lấy 5 ký tự đầu
-    if (/^\d{2}:\d{2}/.test(timeStr)) return timeStr.slice(0,5);
+    if (/^\d{2}:\d{2}/.test(timeStr)) return timeStr.slice(0, 5);
     // Nếu là ISO string hoặc Date object thì parse thủ công
-    if (typeof timeStr === 'string' && timeStr.includes('T')) {
+    if (typeof timeStr === "string" && timeStr.includes("T")) {
       // Lấy phần HH:mm từ chuỗi ISO
       const match = timeStr.match(/T(\d{2}:\d{2})/);
       if (match) return match[1];
@@ -166,8 +174,13 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     try {
       const d = new Date(timeStr);
       if (!isNaN(d.getTime())) {
-        return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        return (
+          d.getHours().toString().padStart(2, "0") +
+          ":" +
+          d.getMinutes().toString().padStart(2, "0")
+        );
       }
+
     } catch {}
     return '';
   }
@@ -181,6 +194,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       if (match) return match[1];
     }
     return '';
+
   }
 
   useEffect(() => {
@@ -191,21 +205,23 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     // Gọi API lấy slot thực tế
     const fetchSlots = async () => {
       try {
-        const doctorId = serviceType.replace('doctor_', '');
-        console.log('Gọi getSlots với:', date, doctorId); // Log tham số truyền lên
+        const doctorId = serviceType.replace("doctor_", "");
+        console.log("Gọi getSlots với:", date, doctorId); // Log tham số truyền lên
         const slotData = await getSlots(date, doctorId);
-        console.log('Kết quả slotData:', slotData); // Log kết quả trả về
+        console.log("Kết quả slotData:", slotData); // Log kết quả trả về
         // Map lại dữ liệu slot cho đúng format FE cần, format giờ phút
         setSlots(
-          slotData.map(s => ({
-            label: `${formatTime(s.start_time)} - ${formatTime(s.end_time)} (${s.available_spots} chỗ trống)`,
+          slotData.map((s) => ({
+            label: `${formatTime(s.start_time)} - ${formatTime(s.end_time)} (${
+              s.available_spots
+            } chỗ trống)`,
             value: s.slot_id,
-            available: s.available_spots > 0
+            available: s.available_spots > 0,
           }))
         );
       } catch (err) {
         setSlots([]);
-        console.error('Lỗi khi lấy slot:', err); // Log lỗi nếu có
+        console.error("Lỗi khi lấy slot:", err); // Log lỗi nếu có
       }
     };
     fetchSlots();
@@ -222,7 +238,9 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
             <div className="font-semibold">{price}</div>
           </div>
           <div className="sm:col-span-3">
-            <label className="block text-gray-700 mb-1">Lý do khám <span className="text-red-500">*</span></label>
+            <label className="block text-gray-700 mb-1">
+              Lý do khám <span className="text-red-500">*</span>
+            </label>
             <textarea
               required
               value={reason}
@@ -234,18 +252,24 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         </div>
 
         <div>
-          <label className="block text-gray-700 mb-1">Chọn ngày khám <span className="text-red-500">*</span></label>
+          <label className="block text-gray-700 mb-1">
+            Chọn ngày khám <span className="text-red-500">*</span>
+          </label>
           <input
             type="date"
             required
             min={today}
-            value={date}            onChange={(e) => setDate(e.target.value)}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             className="w-full px-3 py-2 border rounded focus:outline-none focus:ring disabled:bg-gray-100"
-          />        </div>
+          />{" "}
+        </div>
 
         {isDoctor && (
           <div>
-            <label className="block text-gray-700 mb-1">Chọn khung giờ khám <span className="text-red-500">*</span></label>
+            <label className="block text-gray-700 mb-1">
+              Chọn khung giờ khám <span className="text-red-500">*</span>
+            </label>
             <select
               required
               disabled={!date}
@@ -258,9 +282,14 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
               ) : (
                 <>
                   <option value="">-- Chọn khung giờ khám --</option>
-                  {slots.map(s => (
-                    <option key={s.value} value={s.value} disabled={!s.available}>
-                      {s.label}{!s.available && ' (Hết slot)'}
+                  {slots.map((s) => (
+                    <option
+                      key={s.value}
+                      value={s.value}
+                      disabled={!s.available}
+                    >
+                      {s.label}
+                      {!s.available && " (Hết slot)"}
                     </option>
                   ))}
                 </>
@@ -270,12 +299,13 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         )}
 
         <div>
-          {isLoggedIn ? (            <button
+          {isLoggedIn ? (
+            <button
               type="submit"
               className="bg-green-600 text-white w-full px-6 py-2 rounded-full hover:bg-green-700 transition disabled:opacity-50"
               disabled={!date || (isDoctor && !timeSlot) || loading}
             >
-              {loading ? 'Đang xử lý...' : 'Xác nhận đặt lịch'}
+              {loading ? "Đang xử lý..." : "Xác nhận đặt lịch"}
             </button>
           ) : (
             <Link

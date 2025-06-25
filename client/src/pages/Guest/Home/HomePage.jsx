@@ -7,11 +7,6 @@ import { useAuth } from "../../../contexts/AuthContext";
 
 const HomePage = () => {
   const { user, isAuthenticated, isStaff, getDefaultPath } = useAuth();
-  
-  // Redirect staff users to their dashboard
-  if (isAuthenticated() && isStaff()) {
-    return <Navigate to={getDefaultPath(user.role)} replace />;
-  }
 
   const [doctors, setDoctors] = useState([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
@@ -20,6 +15,7 @@ const HomePage = () => {
   const [services, setServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [servicesError, setServicesError] = useState(null);
+
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -79,6 +75,11 @@ const HomePage = () => {
       }
     );
   };
+
+  // Redirect staff users to their dashboard
+  if (isAuthenticated() && isStaff()) {
+    return <Navigate to={getDefaultPath(user.role)} replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
