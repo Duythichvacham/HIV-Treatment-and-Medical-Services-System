@@ -65,12 +65,15 @@ api.interceptors.response.use(
       const isLoginRequest = error.config?.url?.includes("/login");
 
       if (!isLoginRequest) {
-        // Clear auth and redirect to login only for token expiration
         localStorage.removeItem("token");
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
-        window.location.href = "/login/staff";
+        const userType = localStorage.getItem("userType");
+        localStorage.removeItem("userType");
+        if (userType === "staff") {
+          window.location.href = "/login/staff";
+        }
       }
     }
 
@@ -187,6 +190,12 @@ export const login = async (username, password) => {
     // Store token in localStorage
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
+      // Lưu loại user
+      if (response.data.role === "Patient") {
+        localStorage.setItem("userType", "patient");
+      } else {
+        localStorage.setItem("userType", "staff");
+      }
     }
 
     return response.data;
@@ -200,12 +209,15 @@ export const login = async (username, password) => {
  * Logout user
  */
 export const logout = () => {
+  const userType = localStorage.getItem("userType");
   localStorage.removeItem("token");
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("user");
-  localStorage.removeItem("staff");
-  localStorage.removeItem("patient");
+  localStorage.removeItem("userType");
+  if (userType === "staff") {
+    window.location.href = "/login/staff";
+  }
 };
 
 /**
@@ -239,24 +251,104 @@ export const getDoctorById = async (id) => {
     throw error;
   }
 };
-export const getLabQueue = async (date) => {
+
+// ===========================================
+// LAB STAFF API ENDPOINTS
+// ===========================================
+
+/**
+ * Get all lab tests with optional filtering
+ * @param {string} status - Filter by status (requested, in_progress, completed, cancelled)
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ * @param {number} room_id - Filter by room ID
+ */
+export const getAllLabTests = async (
+  status = null,
+  date = null,
+  lab_staff_id = null,
+  room_id = null
+) => {
   const params = {};
+  if (status) params.status = status;
   if (date) params.date = date;
-  const response = await api.get("/api/v1/lab/queue", { params });
+  if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+  if (room_id) params.room_id = room_id;
+
+  const response = await api.get("/api/v1/lab/lab-tests", { params });
   return response.data.data;
 };
 
-export const getLabInProgress = async (date) => {
-  const params = {};
-  if (date) params.date = date;
-  const response = await api.get("/api/v1/lab/in-progress", { params });
+/**
+ * Get lab queue (wrapper for getAllLabTests)
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ * @param {number} room_id - Filter by room ID
+ */
+export const getLabQueue = async (
+  date,
+  lab_staff_id = null,
+  room_id = null
+) => {
+  return getAllLabTests("requested", date, lab_staff_id, room_id);
+};
+
+/**
+ * Get lab in progress (wrapper for getAllLabTests)
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ * @param {number} room_id - Filter by room ID
+ */
+export const getLabInProgress = async (
+  date,
+  lab_staff_id = null,
+  room_id = null
+) => {
+  return getAllLabTests("in_progress", date, lab_staff_id, room_id);
+};
+
+/**
+ * Get lab done (wrapper for getAllLabTests)
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ * @param {number} room_id - Filter by room ID
+ */
+export const getLabDone = async (date, lab_staff_id = null, room_id = null) => {
+  return getAllLabTests("completed", date, lab_staff_id, room_id);
+};
+
+/**
+ * Get list of lab rooms
+ */
+export const getLabRooms = async () => {
+  const response = await api.get("/api/v1/lab/rooms");
   return response.data.data;
 };
 
-export const getLabDone = async (date) => {
+/**
+ * Get lab staff shifts
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ */
+export const getLabStaffShifts = async (date = null, lab_staff_id = null) => {
   const params = {};
   if (date) params.date = date;
-  const response = await api.get("/api/v1/lab/done", { params });
+  if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+
+  const response = await api.get("/api/v1/lab/shifts", { params });
+  return response.data.data;
+};
+
+/**
+ * Get current lab staff shift
+ * @param {number} lab_staff_id - Lab staff ID (required)
+ * @param {string} date - Filter by date (YYYY-MM-DD format, default: today)
+ */
+export const getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
+  const params = { lab_staff_id };
+  if (date) params.date = date;
+
+  const response = await api.get("/api/v1/lab/current-shift", { params });
   return response.data.data;
 };
 
@@ -299,6 +391,77 @@ export const getUserAppointments = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching user appointments:", error);
+    throw error;
+  }
+};
+
+// ===========================================
+// REGISTRATION STAFF API ENDPOINTS
+// ===========================================
+
+/**
+ * Get pending test requests for registration staff
+ */
+export const getPendingTestRequests = async () => {
+  try {
+    const response = await api.get("/api/v1/test-requests/pending");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getPendingTestRequests error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Approve test request and process payment
+ * @param {number} requestId - Test request ID
+ * @param {string} paymentMethod - Payment method (cash, qr_code)
+ */
+export const approveTestRequest = async (requestId, paymentMethod) => {
+  try {
+    const response = await api.patch(
+      `/api/v1/test-requests/${requestId}/approve`,
+      {
+        payment_method: paymentMethod,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ approveTestRequest error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get registration staff statistics
+ */
+export const getRegistrationStatistics = async () => {
+  try {
+    const response = await api.get("/api/v1/test-requests/statistics");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getRegistrationStatistics error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get payment history for registration staff
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {string} search - Search term
+ */
+export const getPaymentHistory = async (date = null, search = null) => {
+  try {
+    const params = {};
+    if (date) params.date = date;
+    if (search) params.search = search;
+
+    const response = await api.get("/api/v1/test-requests/payment-history", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("❌ getPaymentHistory error:", error);
     throw error;
   }
 };

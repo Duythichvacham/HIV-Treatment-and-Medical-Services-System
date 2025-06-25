@@ -14,6 +14,7 @@ const doctorRouter = require("./doctor");
 const slotRouter = require("./slot");
 
 const serviceRouter = require("./service");
+const registrationRouter = require("./registration");
 
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
@@ -27,13 +28,13 @@ function route(app) {
   app.use("/api/v1/lab/appointments", appointmentRouter);
 
   ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
-  app.use("/api/v1/test-requests", testRouter);
+  app.use("/api/v1/test", testRouter); // Changed path to avoid conflict
 
   ///api/v1/lab/test-notes/{test_note_id} (GET, lấy chi tiết phiếu xét nghiệm)
   app.use("/api/v1/lab/test-notes", testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
-  app.use("/api/v1/lab/test-results", testRouter);
+  app.use("/api/v1/lab", testRouter);
 
   ///api/v1/doctor/appointments/finished||in-progress||queue
   app.use("/api/v1/doctor/appointments", doctorRouter);
@@ -47,8 +48,8 @@ function route(app) {
   ///api/v1/lab/appointments/finished||in-progress||queue
   app.use(`${process.env.API_PREFIX}/lab/appointments`, appointmentRouter);
 
-  ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
-  app.use(`${process.env.API_PREFIX}/test-requests`, testRouter);
+  ///api/v1/test/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
+  app.use(`${process.env.API_PREFIX}/test`, testRouter);
 
   ///api/v1/lab/test-notes/{test_note_id} (GET, lấy chi tiết phiếu xét nghiệm)
   app.use(`${process.env.API_PREFIX}/lab/test-notes`, testRouter);
@@ -94,11 +95,14 @@ function route(app) {
   app.use("/booking", bookingRouter);
   //GET /appointments – lấy danh sách lịch hẹn của người dùng
   app.use("/appointments", authenticateToken, appointmentRouter);
-  app.use("/api/v1/lab/queue", testRouter);
-  app.use("/api/v1/lab/in-progress", testRouter);
-  app.use("/api/v1/lab/done", testRouter);
-
   app.use("/api/v1/lab", testRouter);
+  // app.use("/api/v1/lab", testRouter);
+  // app.use("/api/v1/lab", testRouter);
+
+  app.use("/api/v1/lab/appointments/test", testRouter);
+
+  // Registration Staff routes
+  app.use("/api/v1/test-requests", registrationRouter);
 }
 
 module.exports = route;

@@ -9,37 +9,42 @@ const PatientCard = ({
   onContinueExam,
   onViewHistory,
 }) => (
-  <div className="bg-white rounded-xl shadow border p-6 flex flex-col gap-3 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2">      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-          patient.queue_number === 0 
-            ? 'bg-red-100 text-red-700' 
-            : 'bg-blue-100 text-blue-700'
-        }`}>
-          {patient.queue_number === 0 ? '!' : (patient.queue_number || index + 1)}
+  <div className="bg-white rounded-xl shadow border p-5 flex flex-col gap-2 hover:shadow-md transition-shadow relative">
+    {type === "waiting" && (
+      <span className="absolute top-2 right-2 px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full font-medium">
+        Thường
+      </span>
+    )}
+    {type === "examining" && (
+      <span className="absolute top-2 right-2 px-2 py-0.5 bg-orange-50 text-orange-600 text-xs rounded-full font-medium">
+        Khám Gấp
+      </span>
+    )}
+    {type === "completed" && (
+      <span className="absolute top-2 right-2 px-2 py-0.5 bg-green-50 text-green-600 text-xs rounded-full font-medium">
+        Thường
+      </span>
+    )}
+    <div className="flex items-center gap-2 mb-1">
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-base font-bold ${
+          type === "waiting"
+            ? "bg-blue-100 text-blue-700"
+            : type === "examining"
+            ? "bg-orange-100 text-orange-700"
+            : "bg-green-100 text-green-700"
+        }`}
+      >
+        {index + 1}
+      </div>
+      <div>
+        <div className="font-bold text-base text-gray-900">
+          {patient.full_name || patient.name}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-lg text-gray-900">
-              {patient.full_name || patient.name}
-            </span>            <span className={`text-xs px-2 py-0.5 rounded-full ${
-              patient.queue_number === 0 
-                ? 'bg-red-100 text-red-600' 
-                : 'bg-gray-100 text-gray-600'
-            }`}>
-              {patient.queue_number === 0 ? 'Ưu tiên' : 'Thường'}
-            </span>
-          </div>
-          <div className="text-gray-400 text-sm">
-            {patient.code ||
-              `HIV${String(patient.patient_id).padStart(3, "0")}`}
-          </div>
+        <div className="text-gray-500 text-sm">
+          {patient.code || `HIV${String(patient.patient_id).padStart(3, "0")}`}
         </div>
-      </div>      {(patient.status === "urgent" || patient.queue_number === 0) && (
-        <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-          Khẩn cấp
-        </span>
-      )}
+      </div>
     </div>
     <div className="flex flex-col gap-1 text-gray-700 text-sm mb-2">
       <div className="flex items-center gap-1">

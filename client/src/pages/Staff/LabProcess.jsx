@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -16,6 +16,25 @@ const LabProcess = () => {
   const [review, setReview] = useState('');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [testDetail, setTestDetail] = useState(null);
+
+  useEffect(() => {
+    const fetchTestNoteDetail = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const test_note_id = data.test_note_id || data.id;
+        if (!test_note_id) return;
+        const res = await axios.get(`${API_BASE}/lab/test-notes/${test_note_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTestDetail(res.data.data);
+      } catch (err) {
+        setTestDetail(null);
+      }
+    };
+    fetchTestNoteDetail();
+    // eslint-disable-next-line
+  }, [data.test_note_id, data.id]);
 
   const handleDraft = () => {
     // TODO: lưu tạm kết quả
@@ -27,22 +46,64 @@ const LabProcess = () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
-      // Chuẩn bị dữ liệu gửi lên BE
-      let payload = {
-        test_note_id: data.test_note_id || data.id,
-        notes: note,
-      };
-      if (data.type === 'Sàng lọc') {
-        payload.result_value = screeningResult === 'positive' ? 'Dương tính' : 'Âm tính';
-        payload.unit = '';
-        payload.reference_range = '';
+      const test_note_id = data.test_note_id || data.id;
+      const serviceId = Number(testDetail?.service_id || data.service_id);
+      // Gửi dữ liệu theo từng loại service
+      if (serviceId === 3) {
+        // CD4
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          test_type_id: 1,
+          result_value: cd4Value,
+          unit: 'cells/mm³',
+          reference_range: '500-1500',
+          notes: note
+        }, { headers });
+        // Viral Load
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          test_type_id: 2,
+          result_value: viralLoadValue,
+          unit: 'copies/ml',
+          reference_range: '<50',
+          notes: note
+        }, { headers });
+      } else if (serviceId === 4) {
+        // Sàng lọc
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          test_type_id: 3,
+          result_value: screeningResult === 'positive' ? 'Dương tính' : 'Âm tính',
+          unit: '',
+          reference_range: '',
+          notes: note
+        }, { headers });
+      } else if (serviceId === 5) {
+        // Khẳng định: gửi 1 lần duy nhất với object result_value, unit, reference_range cho từng chỉ số
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          result_value: {
+            cd4: cd4Value,
+            viral_load: viralLoadValue,
+            confirm: review
+          },
+          unit: {
+            cd4: 'cells/mm³',
+            viral_load: 'copies/ml',
+            confirm: ''
+          },
+          reference_range: {
+            cd4: '500-1500',
+            viral_load: '<50',
+            confirm: ''
+          },
+          notes: note
+        }, { headers });
       } else {
-        payload.result_value = `Viral: ${viralResult}, CD4: ${cd4Result}`;
-        payload.unit = 'copies/mL';
-        payload.reference_range = '';
+        alert('Loại xét nghiệm không hợp lệ!');
+        setSubmitting(false);
+        return;
       }
-      // Gọi API nhập kết quả xét nghiệm
-      await axios.post(`${API_BASE}/lab/test-results`, payload, { headers });
       alert('Gửi kết quả thành công!');
       navigate('/lab-staff');
     } catch (err) {
@@ -52,121 +113,132 @@ const LabProcess = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <div className="max-w-7xl mx-auto bg-white rounded-xl shadow p-6">
-        {/* Header trang xử lý mẫu */}
-        <div className="flex items-center mb-6">
-          <Link
-            to="/lab-staff"
-            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-100 text-gray-700 text-sm"
-          >
-            <span className="text-lg">←</span>
-            <span className="ml-2">Quay lại hàng đợi</span>
-          </Link>
-          <h1 className="text-2xl font-semibold text-gray-900 ml-6">Xử lý mẫu xét nghiệm</h1>
+    <div className="container mx-auto py-6">
+      <Link to="/lab-staff" className="text-gray-600 hover:underline mb-4 inline-block">← Quay lại hàng đợi</Link>
+      <h1 className="text-2xl font-bold mb-4">Xử lý mẫu xét nghiệm</h1>
+      <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2">Thông tin mẫu</h2>
+          <div className="text-gray-700 mb-1">{testDetail?.patient_name || data.name || '—'}</div>
+          <div className="text-gray-500 mb-1">{testDetail?.patient_code || data.code || '—'}</div>
+          <div className="text-gray-500 mb-1">{testDetail?.age ? `${testDetail.age} tuổi` : (data.age ? `${data.age} tuổi` : '—')} - {testDetail?.gender || data.gender || '—'}</div>
+          <div className="font-semibold mt-2 mb-1">Thông tin xét nghiệm</div>
+          <span className="inline-block bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-semibold mb-1">
+            {testDetail?.service_name || testDetail?.test_name || data.service_name || data.test || data.type || 'test'}
+          </span>
+          {/* Hiển thị nguồn mẫu */}
+          {testDetail && testDetail.source === 'doctor_request' && (
+            <div className="text-gray-500 mb-1">
+              BS chỉ định: {testDetail.doctor_name || 'Không rõ'}
+            </div>
+          )}
+          {testDetail && testDetail.source === 'self_booking' && (
+            <div className="text-gray-500 mb-1">
+              Bệnh nhân tự đăng ký
+            </div>
+          )}
+          <div className="text-green-600 font-semibold">{testDetail?.status_text || data.status_text || 'Đang xử lý'}</div>
         </div>
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Thông tin mẫu */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Thông tin mẫu</h2>
-            <div className="text-lg font-bold mb-1">{data.name || '—'}</div>
-            <div className="text-sm text-gray-500 mb-1">{data.code || '—'}</div>
-            {data.age && data.gender && (
-              <div className="text-sm text-gray-700 mb-1">{data.age} tuổi - {data.gender}</div>
-            )}
-            {data.time && (
-              <div className="text-sm text-gray-700 mb-4">Hẹn lúc: {data.time}</div>
-            )}
-            <div className="mb-4">
-              <div className="text-sm font-medium">Thông tin xét nghiệm</div>
-              <div className="mt-2">
-                <span className="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs">{data.type || ''}</span>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500">BS chỉ định: <b>{data.doctor || '—'}</b></div>
-            <div className="mt-2 text-xs text-green-600">Đang xử lý</div>
-          </div>
-
-          {/* Form nhập kết quả */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Nhập kết quả xét nghiệm</h2>
             <div className="space-y-4">
-              {data.type === 'Sàng lọc' ? (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Kết quả * (Âm tính/Dương tính)</label>
-                  <select
-                    className="w-full border rounded px-3 py-2"
-                    value={screeningResult}
-                    onChange={(e) => setScreeningResult(e.target.value)}
-                    required
-                  >
-                    <option value="">Chọn kết quả</option>
-                    <option value="positive">Dương tính</option>
-                    <option value="negative">Âm tính</option>
-                  </select>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Kết quả Viral Load *</label>
-                    <select
-                      className="w-full border rounded px-3 py-2"
-                      value={viralResult}
-                      onChange={(e) => setViralResult(e.target.value)}
-                      required
-                    >
-                      <option value="">Chọn kết quả Viral Load</option>
-                      <option value="high">Tải lượng virus cao</option>
-                      <option value="low">Tải lượng virus thấp</option>
-                      <option value="undetectable">Không phát hiện được virus</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Giá trị Viral Load (copies/mL)</label>
-                    <input
-                      type="number"
-                      className="w-full border rounded px-3 py-2"
-                      value={viralLoadValue}
-                      onChange={(e) => setViralLoadValue(e.target.value)}
-                      placeholder="Nhập giá trị Viral Load"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Kết quả CD4 *</label>
-                    <select
-                      className="w-full border rounded px-3 py-2"
-                      value={cd4Result}
-                      onChange={(e) => setCd4Result(e.target.value)}
-                      required
-                    >
-                      <option value="">Chọn kết quả CD4</option>
-                      <option value="normal">Bình thường</option>
-                      <option value="low">Thấp</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Giá trị CD4 (cells/µL)</label>
-                    <input
-                      type="number"
-                      className="w-full border rounded px-3 py-2"
-                      value={cd4Value}
-                      onChange={(e) => setCd4Value(e.target.value)}
-                      placeholder="Nhập giá trị CD4"
-                    />
-                  </div>
-                </>
-              )}
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Đánh giá kết quả</label>
-                <textarea
-                  className="w-full border rounded px-3 py-2"
-                  rows={3}
-                  value={review}
-                  onChange={(e) => setReview(e.target.value)}
-                  placeholder="Đánh giá và nhận xét về kết quả..."
-                />
-              </div>
+              {(() => {
+                const serviceId = Number(testDetail?.service_id || data.service_id);
+                const serviceName = (testDetail?.service_name || data.service_name || '').toLowerCase();
+                // CD4 + Viral Load (service_id = 3)
+                if (serviceId === 3 || (serviceName.includes('cd4') && serviceName.includes('viral'))) {
+                  return (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Giá trị CD4 (cells/µL) *</label>
+                        <input
+                          type="number"
+                          className="w-full border rounded px-3 py-2"
+                          value={cd4Value}
+                          onChange={(e) => setCd4Value(e.target.value)}
+                          placeholder="Nhập giá trị CD4"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Giá trị Viral Load (copies/mL) *</label>
+                        <input
+                          type="number"
+                          className="w-full border rounded px-3 py-2"
+                          value={viralLoadValue}
+                          onChange={(e) => setViralLoadValue(e.target.value)}
+                          placeholder="Nhập giá trị Viral Load"
+                          required
+                        />
+                      </div>
+                    </>
+                  );
+                }
+                // Sàng lọc (service_id = 4)
+                if (serviceId === 4 || serviceName.includes('sàng lọc')) {
+                  return (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Kết quả sàng lọc *</label>
+                      <select
+                        className="w-full border rounded px-3 py-2"
+                        value={screeningResult}
+                        onChange={(e) => setScreeningResult(e.target.value)}
+                        required
+                      >
+                        <option value="">Chọn kết quả</option>
+                        <option value="positive">Dương tính</option>
+                        <option value="negative">Âm tính</option>
+                      </select>
+                    </div>
+                  );
+                }
+                // Khẳng định (service_id = 5): CD4 + Viral Load + Dropdown kết luận
+                if (serviceId === 5 || serviceName.includes('khẳng định')) {
+                  return (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Giá trị CD4 (cells/µL) *</label>
+                        <input
+                          type="number"
+                          className="w-full border rounded px-3 py-2"
+                          value={cd4Value}
+                          onChange={(e) => setCd4Value(e.target.value)}
+                          placeholder="Nhập giá trị CD4"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Giá trị Viral Load (copies/mL) *</label>
+                        <input
+                          type="number"
+                          className="w-full border rounded px-3 py-2"
+                          value={viralLoadValue}
+                          onChange={(e) => setViralLoadValue(e.target.value)}
+                          placeholder="Nhập giá trị Viral Load"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Kết luận khẳng định *</label>
+                        <select
+                          className="w-full border rounded px-3 py-2"
+                          value={review}
+                          onChange={(e) => setReview(e.target.value)}
+                          required
+                        >
+                          <option value="">Chọn kết luận</option>
+                          <option value="Dương tính">Dương tính</option>
+                          <option value="Âm tính">Âm tính</option>
+                        </select>
+                      </div>
+                    </>
+                  );
+                }
+                // Trường hợp khác (fallback)
+                return null;
+              })()}
+              {/* Ghi chú thêm: luôn hiển thị */}
               <div>
                 <label className="block text-sm font-medium mb-1">Ghi chú thêm</label>
                 <textarea

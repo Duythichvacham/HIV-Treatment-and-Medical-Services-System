@@ -28,13 +28,19 @@ const DoctorDashboard = () => {
     const fetchDoctorId = async () => {
       try {
         console.log(`[DEBUG] Fetching doctor_id for account_id: ${user.id}`);
-        const res = await axios.get(`http://localhost:5000/api/v1/doctor/by-account/${user.id}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/v1/doctor/by-account/${user.id}`
+        );
         setDoctorId(res.data.doctor_id);
         console.log("[DEBUG] doctor_id response:", res.data);
       } catch (err) {
         setDoctorId(null);
         if (err.response) {
-          console.error("[DEBUG] Error fetching doctor_id - response:", err.response.status, err.response.data);
+          console.error(
+            "[DEBUG] Error fetching doctor_id - response:",
+            err.response.status,
+            err.response.data
+          );
         } else {
           console.error("[DEBUG] Error fetching doctor_id - error:", err);
         }
@@ -48,11 +54,16 @@ const DoctorDashboard = () => {
 
   const [queue, setQueue] = useState([]);
   const [inProgress, setInProgress] = useState([]);
-  const [finished, setFinished] = useState([]);  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("queue");  const [search, setSearch] = useState("");  const [viewingPatientId, setViewingPatientId] = useState(null);
+  const [finished, setFinished] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("queue");
+  const [search, setSearch] = useState("");
+  const [viewingPatientId, setViewingPatientId] = useState(null);
   const [viewingAppointmentId, setViewingAppointmentId] = useState(null);
   const [viewMode, setViewMode] = useState("edit"); // "edit" or "view"
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD format
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  ); // YYYY-MM-DD format
   const consultationPatients = [
     {
       id: 1,
@@ -69,14 +80,15 @@ const DoctorDashboard = () => {
       cd4: "500 cells/μL",
       status: "normal",
     },
-  ];  useEffect(() => {
+  ];
+  useEffect(() => {
     // Fetch appointments cho tất cả tab khi có doctorId
     if (!doctorId) return;
-    
+
     const fetchAppointments = async () => {
       setLoading(true);
       try {
-        const dateParam = selectedDate ? `?date=${selectedDate}` : '';
+        const dateParam = selectedDate ? `?date=${selectedDate}` : "";
         const [queueRes, inProgressRes, finishedRes] = await Promise.all([
           axios.get(`${baseURL}/queue/${doctorId}${dateParam}`),
           axios.get(`${baseURL}/in_progress/${doctorId}${dateParam}`),
@@ -114,59 +126,78 @@ const DoctorDashboard = () => {
           .toLowerCase()
           .includes(search.toLowerCase())
     );
-  };  // Thêm vào trong DoctorDashboard component
+  }; // Thêm vào trong DoctorDashboard component
 
-  const [selectedPatient, setSelectedPatient] = useState(null);
-  const [mode, setMode] = useState(""); // "exam" hoặc ""  // API để cập nhật status appointment
+  //const [selectedPatient, setSelectedPatient] = useState(null);
+  //const [mode, setMode] = useState(""); // "exam" hoặc ""  // API để cập nhật status appointment
   const updateAppointmentStatus = async (appointmentId, status) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Updating appointment status:', { appointmentId, status, token: token ? 'exists' : 'missing' });
-      
-      const response = await axios.post(`http://localhost:5000/api/v1/appointments/${appointmentId}/status`, {
-        status: status
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const token = localStorage.getItem("token");
+      console.log("Updating appointment status:", {
+        appointmentId,
+        status,
+        token: token ? "exists" : "missing",
       });
-      
-      console.log('Update appointment status response:', response.data);
+
+      const response = await axios.post(
+        `http://localhost:5000/api/v1/appointments/${appointmentId}/status`,
+        {
+          status: status,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Update appointment status response:", response.data);
       return response.data;
     } catch (error) {
-      console.error('Error updating appointment status:', error.response?.data || error.message);
+      console.error(
+        "Error updating appointment status:",
+        error.response?.data || error.message
+      );
       throw error;
     }
-  };  const handleStartExam = async (patient) => {
+  };
+  const handleStartExam = async (patient) => {
     try {
-      console.log('Starting exam for patient:', patient);
-      
+      console.log("Starting exam for patient:", patient);
+
       // Gọi API để cập nhật status thành 'in_progress'
-      await updateAppointmentStatus(patient.appointment_id, 'in_progress');
-      
-      console.log('Status updated successfully, switching to exam view');      // Chuyển sang phiếu khám bệnh đầy đủ (mode = edit)
+      await updateAppointmentStatus(patient.appointment_id, "in_progress");
+
+      console.log("Status updated successfully, switching to exam view"); // Chuyển sang phiếu khám bệnh đầy đủ (mode = edit)
       setViewMode("edit");
       setViewingPatientId(patient.patient_id);
       setViewingAppointmentId(patient.appointment_id);
+
+      // Hiển thị thông báo
+      alert("Bắt đầu khám bệnh nhân: " + (patient.full_name || patient.name));
       // Chuyển sang inProgress
       setQueue((prev) =>
         prev.filter((p) => p.appointment_id !== patient.appointment_id)
       );
       setInProgress((prev) => [...prev, { ...patient, status: "in_progress" }]);
     } catch (error) {
-      console.error('Error starting exam:', error);
-      alert('Có lỗi xảy ra khi bắt đầu khám bệnh: ' + (error.response?.data?.message || error.message));
+      console.error("Error starting exam:", error);
+      alert(
+        "Có lỗi xảy ra khi bắt đầu khám bệnh: " +
+          (error.response?.data?.message || error.message)
+      );
     }
-  };  const handleContinueExam = (patient) => {
-    console.log('Continuing exam for patient:', patient);
+  };
+  const handleContinueExam = (patient) => {
+    console.log("Continuing exam for patient:", patient);
     // Chuyển sang phiếu khám bệnh đầy đủ (mode = edit)
     setViewMode("edit");
     setViewingPatientId(patient.patient_id);
     setViewingAppointmentId(patient.appointment_id);
   };
   const handleViewHistory = (patient) => {
-    console.log('Viewing history for patient:', patient);
+    console.log("Viewing history for patient:", patient);
     // Chuyển sang xem hồ sơ (mode = view)
     setViewMode("view");
     setViewingPatientId(patient.patient_id);
@@ -174,34 +205,46 @@ const DoctorDashboard = () => {
   };
   const handleFinishExam = async (examData) => {
     try {
-      console.log('handleFinishExam called with examData:', examData);
-      
+      console.log("handleFinishExam called with examData:", examData);
+
       // Tìm patient hiện tại trong inProgress list
-      const currentPatient = inProgress.find(p => p.patient_id === viewingPatientId);
+      const currentPatient = inProgress.find(
+        (p) => p.patient_id === viewingPatientId
+      );
       if (!currentPatient) {
-        throw new Error('Không tìm thấy thông tin bệnh nhân trong danh sách đang khám');
+        throw new Error(
+          "Không tìm thấy thông tin bệnh nhân trong danh sách đang khám"
+        );
       }
-      
-      console.log('Found current patient:', currentPatient);
-      
+
+      console.log("Found current patient:", currentPatient);
+
       // Gọi API để cập nhật status thành 'completed'
-      await updateAppointmentStatus(currentPatient.appointment_id, 'completed');
-      
+      await updateAppointmentStatus(currentPatient.appointment_id, "completed");
+
       // Chuyển sang finished
       setInProgress((prev) =>
         prev.filter((p) => p.appointment_id !== currentPatient.appointment_id)
       );
-      setFinished((prev) => [...prev, { ...currentPatient, status: "completed" }]);        // Quay về dashboard
+      setFinished((prev) => [
+        ...prev,
+        { ...currentPatient, status: "completed" },
+      ]); // Quay về dashboard
       setViewingPatientId(null);
       setViewingAppointmentId(null);
       setViewMode("edit");
-      
-      alert('Hoàn thành khám bệnh thành công!');
+
+      alert("Hoàn thành khám bệnh thành công!");
     } catch (error) {
-      console.error('Error finishing exam:', error);
-      alert('Có lỗi xảy ra khi hoàn thành khám bệnh: ' + (error.message || error.response?.data?.message));
+      console.error("Error finishing exam:", error);
+      alert(
+        "Có lỗi xảy ra khi hoàn thành khám bệnh: " +
+          (error.message || error.response?.data?.message)
+      );
     }
-  };if (viewingPatientId) {    return (
+  };
+  if (viewingPatientId) {
+    return (
       <PatientExam
         patientId={viewingPatientId}
         appointmentId={viewingAppointmentId}
@@ -217,7 +260,9 @@ const DoctorDashboard = () => {
   }
   return (
     <div className="min-h-screen bg-blue-50 p-6">
-      <div className="max-w-7xl mx-auto">        {/* Header */}
+      <div className="max-w-7xl mx-auto">
+        {" "}
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Dashboard Bác sĩ
@@ -226,16 +271,18 @@ const DoctorDashboard = () => {
             <p className="text-gray-600">Quản lý bệnh nhân và lịch khám</p>
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Calendar className="w-4 h-4" />
-              <span>Ngày: {new Date(selectedDate).toLocaleDateString('vi-VN', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}</span>
+              <span>
+                Ngày:{" "}
+                {new Date(selectedDate).toLocaleDateString("vi-VN", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </span>
             </div>
           </div>
         </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 flex items-center justify-between">
@@ -287,7 +334,6 @@ const DoctorDashboard = () => {
             </div>
           </div>
         </div>
-
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
@@ -312,7 +358,8 @@ const DoctorDashboard = () => {
             <MessageCircle className="w-5 h-5" />
             Tư vấn trực tuyến
           </button>
-        </div>        {/* Date Picker and Search */}
+        </div>{" "}
+        {/* Date Picker and Search */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Date Picker */}
           <div className="flex items-center gap-2">
@@ -324,13 +371,15 @@ const DoctorDashboard = () => {
               className="px-4 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() =>
+                setSelectedDate(new Date().toISOString().split("T")[0])
+              }
               className="px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               Hôm nay
             </button>
           </div>
-          
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -342,12 +391,16 @@ const DoctorDashboard = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-        </div>        {/* Content */}
+        </div>{" "}
+        {/* Content */}
         {tab === "queue" ? (
           loading ? (
             <div className="text-center text-gray-500 py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p>Đang tải dữ liệu cho ngày {new Date(selectedDate).toLocaleDateString('vi-VN')}...</p>
+              <p>
+                Đang tải dữ liệu cho ngày{" "}
+                {new Date(selectedDate).toLocaleDateString("vi-VN")}...
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -356,13 +409,19 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-orange-700 text-xl font-bold">
                   <Clock className="w-6 h-6" />
                   Đang chờ khám ({queue.length})
-                </div>                <div className="space-y-4">
+                </div>{" "}
+                <div className="space-y-4">
                   {filterPatients(queue).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân chờ khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
+                      {search
+                        ? "Không tìm thấy bệnh nhân nào"
+                        : `Không có bệnh nhân chờ khám vào ngày ${new Date(
+                            selectedDate
+                          ).toLocaleDateString("vi-VN")}`}
                     </div>
                   ) : (
-                    filterPatients(queue).map((patient, idx) => (                      <PatientCard
+                    filterPatients(queue).map((patient, idx) => (
+                      <PatientCard
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
@@ -378,13 +437,19 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-blue-700 text-xl font-bold">
                   <FileText className="w-6 h-6" />
                   Đang khám ({inProgress.length})
-                </div>                <div className="space-y-4">
+                </div>{" "}
+                <div className="space-y-4">
                   {filterPatients(inProgress).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân đang khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
+                      {search
+                        ? "Không tìm thấy bệnh nhân nào"
+                        : `Không có bệnh nhân đang khám vào ngày ${new Date(
+                            selectedDate
+                          ).toLocaleDateString("vi-VN")}`}
                     </div>
                   ) : (
-                    filterPatients(inProgress).map((patient, idx) => (                      <PatientCard
+                    filterPatients(inProgress).map((patient, idx) => (
+                      <PatientCard
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
@@ -400,10 +465,15 @@ const DoctorDashboard = () => {
                 <div className="flex items-center gap-2 mb-4 text-green-700 text-xl font-bold">
                   <CheckCircle className="w-6 h-6" />
                   Hoàn thành ({finished.length})
-                </div>                <div className="space-y-4">
+                </div>{" "}
+                <div className="space-y-4">
                   {filterPatients(finished).length === 0 ? (
                     <div className="text-center text-gray-400 py-8">
-                      {search ? "Không tìm thấy bệnh nhân nào" : `Không có bệnh nhân hoàn thành khám vào ngày ${new Date(selectedDate).toLocaleDateString('vi-VN')}`}
+                      {search
+                        ? "Không tìm thấy bệnh nhân nào"
+                        : `Không có bệnh nhân hoàn thành khám vào ngày ${new Date(
+                            selectedDate
+                          ).toLocaleDateString("vi-VN")}`}
                     </div>
                   ) : (
                     filterPatients(finished).map((patient, idx) => (
@@ -411,9 +481,8 @@ const DoctorDashboard = () => {
                         key={patient.appointment_id || patient.id}
                         patient={patient}
                         index={idx}
-                        type="completed"                        onViewHistory={() =>
-                          handleViewHistory(patient)
-                        }
+                        type="completed"
+                        onViewHistory={() => handleViewHistory(patient)}
                       />
                     ))
                   )}
@@ -441,7 +510,8 @@ const DoctorDashboard = () => {
                     index={idx}
                     type="waiting"
                   />
-                ))              )}
+                ))
+              )}
             </div>
           </div>
         )}

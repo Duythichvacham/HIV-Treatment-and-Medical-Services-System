@@ -93,18 +93,18 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         queueNumber: detail.data?.queue_number,
         serviceName: detail.data?.service_name || serviceName,
         room: detail.data?.room_id,
-        doctorOrStaff:
-          detail.data?.doctor_name ||
-          detail.data?.staff_name ||
-          "Nhân viên xét nghiệm",
-        date: detail.data?.bookingDate
-          ? detail.data.bookingDate.slice(0, 10)
-          : "", // chỉ lấy YYYY-MM-DD
-        time: detail.data?.slot_label || "Trong giờ làm việc",
-        fee:
-          typeof price === "number"
-            ? `${Number(price).toLocaleString()}đ`
-            : price,
+
+        doctorOrStaff: detail.data?.doctor_name || detail.data?.staff_name || "Nhân viên xét nghiệm",
+        date: detail.data?.bookingDate ? detail.data.bookingDate.slice(0, 10) : '', // chỉ lấy YYYY-MM-DD
+        time: isDoctor
+          ? (
+              formatTimeStr(detail.data?.start_time) && formatTimeStr(detail.data?.end_time)
+                ? `${formatTimeStr(detail.data.start_time)} - ${formatTimeStr(detail.data.end_time)}`
+                : "Trong giờ làm việc"
+            )
+          : "Trong giờ làm việc",
+        fee: price,
+
         isDoctor,
       };
 
@@ -180,10 +180,21 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           d.getMinutes().toString().padStart(2, "0")
         );
       }
-    } catch (err) {
-      console.error("Error formatting time:", err);
+
+    } catch {}
+    return '';
+  }
+
+  // Hàm format an toàn cho giờ slot
+  function formatTimeStr(t) {
+    if (!t) return '';
+    if (/^\d{2}:\d{2}/.test(t)) return t.slice(0,5);
+    if (typeof t === 'string' && t.includes('T')) {
+      const match = t.match(/T(\d{2}:\d{2})/);
+      if (match) return match[1];
     }
-    return timeStr;
+    return '';
+
   }
 
   useEffect(() => {

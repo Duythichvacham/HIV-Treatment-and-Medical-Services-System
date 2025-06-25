@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Calendar,
   DollarSign,
@@ -11,165 +11,87 @@ import {
   Search,
 } from "lucide-react";
 import PaymentModal from "../../components/common/PaymentModal";
-
-const mockTestRequests = [
-  {
-    patientName: "Nguyễn Văn A",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm CD4", price: 200000 },
-      { name: "Xét nghiệm Sàng lọc", price: 100000 },
-    ],
-    totalAmount: 300000,
-    createdAt: "2025-06-19 08:30:00",
-  },
-  {
-    patientName: "Trần Thị B",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm Khẳng định", price: 130000 },
-      { name: "Xét nghiệm Tải lượng virus", price: 250000 },
-    ],
-    totalAmount: 380000,
-    createdAt: "2025-06-19 09:15:00",
-  },
-];
-
-const mockCompletedRequests = [
-  {
-    patientName: "Phạm Văn D",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm CD4", price: 200000 },
-      { name: "Xét nghiệm Sàng lọc", price: 100000 },
-    ],
-    totalAmount: 300000,
-    paymentMethod: "Tiền mặt",
-    roomNumber: "P101",
-    queueNumber: 15,
-    completedAt: "2025-06-19 07:30:00",
-  },
-  {
-    patientName: "Hoàng Thị E",
-    doctorName: "BS. Minh",
-    services: [{ name: "Xét nghiệm Khẳng định", price: 130000 }],
-    totalAmount: 130000,
-    paymentMethod: "QR Code",
-    roomNumber: "P102",
-    queueNumber: 16,
-    completedAt: "2025-06-19 08:00:00",
-  },
-  {
-    patientName: "Lý Văn F",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm Tải lượng virus", price: 250000 },
-      { name: "Xét nghiệm CD4", price: 200000 },
-    ],
-    totalAmount: 450000,
-    paymentMethod: "Tiền mặt",
-    roomNumber: "P101",
-    queueNumber: 17,
-    completedAt: "2025-06-19 08:45:00",
-  },
-  {
-    patientName: "Ngô Thị G",
-    doctorName: "BS. Minh",
-    services: [{ name: "Xét nghiệm Sàng lọc", price: 100000 }],
-    totalAmount: 100000,
-    paymentMethod: "QR Code",
-    roomNumber: "P102",
-    queueNumber: 18,
-    completedAt: "2025-06-19 09:30:00",
-  },
-  {
-    patientName: "Trần Văn H",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm CD4", price: 200000 },
-      { name: "Xét nghiệm Khẳng định", price: 130000 },
-      { name: "Xét nghiệm Sàng lọc", price: 100000 },
-    ],
-    totalAmount: 430000,
-    paymentMethod: "Tiền mặt",
-    roomNumber: "P101",
-    queueNumber: 19,
-    completedAt: "2025-06-19 10:15:00",
-  },
-  {
-    patientName: "Phan Thị I",
-    doctorName: "BS. Minh",
-    services: [{ name: "Xét nghiệm Tải lượng virus", price: 250000 }],
-    totalAmount: 250000,
-    paymentMethod: "QR Code",
-    roomNumber: "P102",
-    queueNumber: 20,
-    completedAt: "2025-06-19 11:00:00",
-  },
-  {
-    patientName: "Võ Văn J",
-    doctorName: "BS. Kiên",
-    services: [
-      { name: "Xét nghiệm CD4", price: 200000 },
-      { name: "Xét nghiệm Tải lượng virus", price: 250000 },
-    ],
-    totalAmount: 450000,
-    paymentMethod: "Tiền mặt",
-    roomNumber: "P101",
-    queueNumber: 21,
-    completedAt: "2025-06-19 11:30:00",
-  },
-  {
-    patientName: "Đặng Thị K",
-    doctorName: "BS. Minh",
-    services: [
-      { name: "Xét nghiệm Khẳng định", price: 130000 },
-      { name: "Xét nghiệm Sàng lọc", price: 100000 },
-    ],
-    totalAmount: 230000,
-    paymentMethod: "QR Code",
-    roomNumber: "P102",
-    queueNumber: 22,
-    completedAt: "2025-06-19 12:00:00",
-  },
-  {
-    patientName: "Bùi Văn L",
-    doctorName: "BS. Kiên",
-    services: [{ name: "Xét nghiệm Sàng lọc", price: 100000 }],
-    totalAmount: 100000,
-    paymentMethod: "Tiền mặt",
-    roomNumber: "P101",
-    queueNumber: 23,
-    completedAt: "2025-06-19 12:30:00",
-  },
-];
-
-const mockStats = {
-  pendingRequests: 2,
-  todayRevenue: 2450000,
-  processedToday: 9,
-};
+import {
+  getPendingTestRequests,
+  approveTestRequest,
+  getRegistrationStatistics,
+  getPaymentHistory,
+} from "../../services/api";
+import { getCurrentDate, formatDateVietnamese } from "../../utils/dateUtil";
 
 const RegistrationStaff = () => {
-  const [testRequests, setTestRequests] = useState(mockTestRequests);
-  const [completedRequests] = useState(mockCompletedRequests);
-  const [stats, setStats] = useState(mockStats);
+  const [testRequests, setTestRequests] = useState([]);
+  const [completedRequests, setCompletedRequests] = useState([]);
+  const [stats, setStats] = useState({
+    pending_requests: 0,
+    today_revenue: 0,
+    processed_today: 0,
+  });
   const [activeTab, setActiveTab] = useState("process");
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleProcessPayment = (requestIndex) => {
+  // Lấy ngày hiện tại để hiển thị
+  const today = getCurrentDate();
+  const todayFormatted = formatDateVietnamese(today);
+
+  // Fetch data khi component mount và khi tab thay đổi
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Luôn fetch statistics
+      const statsResponse = await getRegistrationStatistics();
+      setStats(statsResponse.data);
+
+      if (activeTab === "process") {
+        // Fetch pending test requests
+        const pendingResponse = await getPendingTestRequests();
+        setTestRequests(pendingResponse.data || []);
+      } else if (activeTab === "history") {
+        // Fetch payment history
+        const historyResponse = await getPaymentHistory();
+        setCompletedRequests(historyResponse.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Không thể tải dữ liệu. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleProcessPayment = async (requestIndex) => {
     const request = testRequests[requestIndex];
-    setTestRequests((prev) =>
-      prev.filter((_, index) => index !== requestIndex)
-    );
-    setStats((prev) => ({
-      ...prev,
-      pendingRequests: prev.pendingRequests - 1,
-      processedToday: prev.processedToday + 1,
-      todayRevenue: prev.todayRevenue + request?.totalAmount || 0,
-    }));
 
-    alert("Đã thu tiền thành công!\nPhiếu xét nghiệm đang được in...");
+    try {
+      setLoading(true);
+      await approveTestRequest(request.appointment_id);
+
+      // Cập nhật UI
+      setTestRequests((prev) =>
+        prev.filter((_, index) => index !== requestIndex)
+      );
+      setStats((prev) => ({
+        ...prev,
+        pending_requests: prev.pending_requests - 1,
+        processed_today: prev.processed_today + 1,
+        today_revenue: prev.today_revenue + (request.total_price || 0),
+      }));
+
+      alert("Đã thu tiền thành công!\nPhiếu xét nghiệm đang được in...");
+    } catch (err) {
+      console.error("Error processing payment:", err);
+      alert("Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -185,10 +107,10 @@ const RegistrationStaff = () => {
   // Filter completed requests based on search term
   const filteredCompletedRequests = completedRequests.filter(
     (request) =>
-      request.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.queueNumber.toString().includes(searchTerm)
+      request.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.room_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.queue_number?.toString().includes(searchTerm)
   );
 
   return (
@@ -200,9 +122,41 @@ const RegistrationStaff = () => {
             Quản lý Xét nghiệm - Registration Staff
           </h1>
           <p className="text-gray-600">
-            Xử lý đơn xét nghiệm và thu tiền từ bệnh nhân
+            Xử lý đơn xét nghiệm và thu tiền từ bệnh nhân - Ngày {todayFormatted}
           </p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="text-red-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading Spinner */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="space-y-6">
@@ -242,7 +196,7 @@ const RegistrationStaff = () => {
                         Đơn chờ xử lý
                       </p>
                       <p className="text-3xl font-bold text-orange-600">
-                        {stats.pendingRequests}
+                        {stats.pending_requests}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         TestRequests status = 'requested'
@@ -259,7 +213,7 @@ const RegistrationStaff = () => {
                         Doanh thu hôm nay
                       </p>
                       <p className="text-3xl font-bold text-green-600">
-                        {formatCurrency(stats.todayRevenue)}
+                        {formatCurrency(stats.today_revenue)}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Tổng tiền đã thu
@@ -276,7 +230,7 @@ const RegistrationStaff = () => {
                         Số đơn đã xử lý
                       </p>
                       <p className="text-3xl font-bold text-blue-600">
-                        {stats.processedToday}
+                        {stats.processed_today}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Trong ngày hôm nay
@@ -292,17 +246,17 @@ const RegistrationStaff = () => {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <TestTube className="h-5 w-5" />
-                    Danh sách đơn xét nghiệm chờ xử lý
+                    Danh sách đơn xét nghiệm chờ xử lý - Hôm nay ({todayFormatted})
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Các đơn xét nghiệm từ bác sĩ cần thu tiền và duyệt
+                    Các đơn xét nghiệm từ bác sĩ cần thu tiền và duyệt trong ngày
                   </p>
                 </div>
                 <div className="p-6">
                   {testRequests.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <TestTube className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>Không có đơn xét nghiệm nào chờ xử lý</p>
+                      <p>Không có đơn xét nghiệm nào chờ xử lý hôm nay ({todayFormatted})</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -316,16 +270,18 @@ const RegistrationStaff = () => {
                               <div className="flex items-center gap-2">
                                 <User className="h-4 w-4 text-blue-600" />
                                 <span className="font-semibold text-gray-900">
-                                  {request.patientName}
+                                  {request.patient_name}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Stethoscope className="h-4 w-4" />
-                                <span>{request.doctorName}</span>
+                                <span>{request.doctor_name}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Calendar className="h-4 w-4" />
-                                <span>{formatDateTime(request.createdAt)}</span>
+                                <span>
+                                  {formatDateTime(request.request_date)}
+                                </span>
                               </div>
                             </div>
 
@@ -341,10 +297,10 @@ const RegistrationStaff = () => {
                                       className="flex justify-between items-center text-sm"
                                     >
                                       <span className="text-gray-700">
-                                        {service.name}
+                                        {service.service_name}
                                       </span>
                                       <span className="font-medium text-gray-900">
-                                        {formatCurrency(service.price)}
+                                        {formatCurrency(service.service_price)}
                                       </span>
                                     </div>
                                   )
@@ -358,7 +314,7 @@ const RegistrationStaff = () => {
                                   Tổng tiền:
                                 </div>
                                 <div className="text-lg font-bold text-green-600">
-                                  {formatCurrency(request.totalAmount)}
+                                  {formatCurrency(request.total_price)}
                                 </div>
                               </div>
                             </div>
@@ -400,19 +356,24 @@ const RegistrationStaff = () => {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <Receipt className="h-5 w-5" />
-                    Lịch sử thanh toán hôm nay
+                    Lịch sử thanh toán hôm nay ({todayFormatted})
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Danh sách các đơn xét nghiệm đã thanh toán thành công
+                    Danh sách các đơn xét nghiệm đã thanh toán thành công trong ngày
                   </p>
                   <div className="mt-4 flex items-center gap-4 text-sm">
                     <span className="text-gray-600">Tổng thu:</span>
                     <span className="font-semibold text-green-600">
-                      {formatCurrency(2450000)}
+                      {formatCurrency(
+                        filteredCompletedRequests.reduce(
+                          (sum, request) => sum + (request.total_price || 0),
+                          0
+                        )
+                      )}
                     </span>
                     <span className="text-gray-600">•</span>
                     <span className="text-gray-600">
-                      {completedRequests.length} đơn đã thanh toán
+                      {filteredCompletedRequests.length} đơn đã thanh toán
                     </span>
                   </div>
                 </div>
@@ -423,7 +384,7 @@ const RegistrationStaff = () => {
                       <p>
                         {searchTerm
                           ? "Không tìm thấy kết quả phù hợp"
-                          : "Chưa có đơn nào được thanh toán hôm nay"}
+                          : `Chưa có đơn nào được thanh toán hôm nay (${todayFormatted})`}
                       </p>
                     </div>
                   ) : (
@@ -438,17 +399,17 @@ const RegistrationStaff = () => {
                               <div className="flex items-center gap-2">
                                 <User className="h-4 w-4 text-blue-600" />
                                 <span className="font-semibold text-gray-900">
-                                  {request.patientName}
+                                  {request.patient_name}
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Stethoscope className="h-4 w-4" />
-                                <span>{request.doctorName}</span>
+                                <span>{request.doctor_name}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Calendar className="h-4 w-4" />
                                 <span>
-                                  {formatDateTime(request.completedAt)}
+                                  {formatDateTime(request.payment_date)}
                                 </span>
                               </div>
                             </div>
@@ -465,10 +426,10 @@ const RegistrationStaff = () => {
                                       className="flex justify-between items-center text-sm"
                                     >
                                       <span className="text-gray-700">
-                                        {service.name}
+                                        {service.service_name}
                                       </span>
                                       <span className="font-medium text-gray-900">
-                                        {formatCurrency(service.price)}
+                                        {formatCurrency(service.service_price)}
                                       </span>
                                     </div>
                                   )
@@ -482,7 +443,7 @@ const RegistrationStaff = () => {
                                   Tổng tiền:
                                 </div>
                                 <div className="text-lg font-bold text-green-600">
-                                  {formatCurrency(request.totalAmount)}
+                                  {formatCurrency(request.total_price)}
                                 </div>
                               </div>
                             </div>
@@ -493,7 +454,7 @@ const RegistrationStaff = () => {
                                   Thanh toán:
                                 </div>
                                 <div className="font-medium text-blue-900">
-                                  {request.paymentMethod}
+                                  {request.payment_method || "Tiền mặt"}
                                 </div>
                               </div>
                             </div>
@@ -504,10 +465,10 @@ const RegistrationStaff = () => {
                                   Phòng:
                                 </div>
                                 <div className="font-medium text-gray-900">
-                                  {request.roomNumber}
+                                  {request.room_name || "N/A"}
                                 </div>
                                 <div className="text-sm text-gray-600 mt-1">
-                                  STT: {request.queueNumber}
+                                  STT: {request.queue_number || "N/A"}
                                 </div>
                               </div>
                               <div className="flex justify-center">
