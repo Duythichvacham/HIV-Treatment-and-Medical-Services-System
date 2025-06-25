@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const doctorController = require('../controllers/doctorController');
+const examsController = require('../controllers/examsController');
+
 
 
 
@@ -14,11 +16,11 @@ const doctorController = require('../controllers/doctorController');
 // /api/v1/doctor/appointments/finished (GET, lấy bệnh nhân hoàn thành khám), 
 //router.get('/finished',doctorController.getPatientfinished);
 // /api/v1/doctor/exams/{exam_id} (GET, lấy thẻ khám - thực tế chỉ có moi thông tin cơ bản), 
-router.get('/exams/:exam_id', doctorController.getExams);
+router.get('/exams/:exam_id', examsController.getExams);
  //api/v1/doctor/prescriptions (POST, tạo đơn thuốc), 
 router.post('/', doctorController.createPrescription);
 ///api/v1/doctor/exams/{exam_id} (PATCH, cập nhật thẻ khá	m), -- liên quan nhiều bảng - tham khảo trang demo
-router.patch('/doctor/exams/:examID', doctorController.updateExam);
+router.patch('/doctor/exams/:examID', examsController.updateExam);
 
 
 
