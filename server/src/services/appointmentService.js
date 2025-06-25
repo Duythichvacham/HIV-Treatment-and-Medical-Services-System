@@ -49,6 +49,7 @@ exports.createAppointment = async (data) => {
         AND ((@doctor_id IS NOT NULL AND doctor_id IS NOT NULL) OR (@doctor_id IS NULL AND doctor_id IS NULL))
     `);
   if (existResult.recordset[0].count > 0) {
+
     const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
 
     err.statusCode = 400;
