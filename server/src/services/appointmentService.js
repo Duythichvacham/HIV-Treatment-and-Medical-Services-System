@@ -27,6 +27,7 @@ exports.createAppointment = async (data) => {
     bookingDate,
   } = data;
 
+
   // Xác định nguồn phiếu: self_booking (tự đặt) hay doctor_request (bác sĩ chỉ định)
   // Giả sử: nếu doctor_id có giá trị => doctor_request, ngược lại self_booking
   const source = doctor_id ? 'doctor_request' : 'self_booking';
