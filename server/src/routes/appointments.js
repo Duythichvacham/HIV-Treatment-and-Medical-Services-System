@@ -23,13 +23,20 @@ router.get(
   appointmentController.getLabTestFinished
 );
 
-
-// GET lấy danh sách lịch hẹn của người dùng 
+// GET lấy danh sách lịch hẹn của người dùng
 router.get("/", appointmentController.getAppointments);
-
+// GET lấy danh sách lịch hẹn của một patient theo patient_id
+router.get(
+  "/patient",
+  authenticateToken,
+  appointmentController.getAppointmentsByPatientId
+);
 ///api/v1/appointments/{appointment_id}/status (POST, cập nhật status cho appointments)
-router.post("/:appointment_id/status", authenticateToken, appointmentController.updateStatus);
-
+router.post(
+  "/:appointment_id/status",
+  authenticateToken,
+  appointmentController.updateStatus
+);
 
 // Lấy chi tiết lịch hẹn theo appointment_id
 router.get(

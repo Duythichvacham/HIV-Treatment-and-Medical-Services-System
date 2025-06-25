@@ -263,13 +263,18 @@ export const getDoctorById = async (id) => {
  * @param {number} lab_staff_id - Filter by lab staff ID
  * @param {number} room_id - Filter by room ID
  */
-export const getAllLabTests = async (status = null, date = null, lab_staff_id = null, room_id = null) => {
+export const getAllLabTests = async (
+  status = null,
+  date = null,
+  lab_staff_id = null,
+  room_id = null
+) => {
   const params = {};
   if (status) params.status = status;
   if (date) params.date = date;
   if (lab_staff_id) params.lab_staff_id = lab_staff_id;
   if (room_id) params.room_id = room_id;
-  
+
   const response = await api.get("/api/v1/lab/lab-tests", { params });
   return response.data.data;
 };
@@ -280,8 +285,12 @@ export const getAllLabTests = async (status = null, date = null, lab_staff_id = 
  * @param {number} lab_staff_id - Filter by lab staff ID
  * @param {number} room_id - Filter by room ID
  */
-export const getLabQueue = async (date, lab_staff_id = null, room_id = null) => {
-  return getAllLabTests('requested', date, lab_staff_id, room_id);
+export const getLabQueue = async (
+  date,
+  lab_staff_id = null,
+  room_id = null
+) => {
+  return getAllLabTests("requested", date, lab_staff_id, room_id);
 };
 
 /**
@@ -290,8 +299,12 @@ export const getLabQueue = async (date, lab_staff_id = null, room_id = null) => 
  * @param {number} lab_staff_id - Filter by lab staff ID
  * @param {number} room_id - Filter by room ID
  */
-export const getLabInProgress = async (date, lab_staff_id = null, room_id = null) => {
-  return getAllLabTests('in_progress', date, lab_staff_id, room_id);
+export const getLabInProgress = async (
+  date,
+  lab_staff_id = null,
+  room_id = null
+) => {
+  return getAllLabTests("in_progress", date, lab_staff_id, room_id);
 };
 
 /**
@@ -301,7 +314,7 @@ export const getLabInProgress = async (date, lab_staff_id = null, room_id = null
  * @param {number} room_id - Filter by room ID
  */
 export const getLabDone = async (date, lab_staff_id = null, room_id = null) => {
-  return getAllLabTests('completed', date, lab_staff_id, room_id);
+  return getAllLabTests("completed", date, lab_staff_id, room_id);
 };
 
 /**
@@ -321,7 +334,7 @@ export const getLabStaffShifts = async (date = null, lab_staff_id = null) => {
   const params = {};
   if (date) params.date = date;
   if (lab_staff_id) params.lab_staff_id = lab_staff_id;
-  
+
   const response = await api.get("/api/v1/lab/shifts", { params });
   return response.data.data;
 };
@@ -334,7 +347,7 @@ export const getLabStaffShifts = async (date = null, lab_staff_id = null) => {
 export const getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
   const params = { lab_staff_id };
   if (date) params.date = date;
-  
+
   const response = await api.get("/api/v1/lab/current-shift", { params });
   return response.data.data;
 };
@@ -378,6 +391,77 @@ export const getUserAppointments = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching user appointments:", error);
+    throw error;
+  }
+};
+
+// ===========================================
+// REGISTRATION STAFF API ENDPOINTS
+// ===========================================
+
+/**
+ * Get pending test requests for registration staff
+ */
+export const getPendingTestRequests = async () => {
+  try {
+    const response = await api.get("/api/v1/test-requests/pending");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getPendingTestRequests error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Approve test request and process payment
+ * @param {number} requestId - Test request ID
+ * @param {string} paymentMethod - Payment method (cash, qr_code)
+ */
+export const approveTestRequest = async (requestId, paymentMethod) => {
+  try {
+    const response = await api.patch(
+      `/api/v1/test-requests/${requestId}/approve`,
+      {
+        payment_method: paymentMethod,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ approveTestRequest error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get registration staff statistics
+ */
+export const getRegistrationStatistics = async () => {
+  try {
+    const response = await api.get("/api/v1/test-requests/statistics");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getRegistrationStatistics error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get payment history for registration staff
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {string} search - Search term
+ */
+export const getPaymentHistory = async (date = null, search = null) => {
+  try {
+    const params = {};
+    if (date) params.date = date;
+    if (search) params.search = search;
+
+    const response = await api.get("/api/v1/test-requests/payment-history", {
+      params,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("❌ getPaymentHistory error:", error);
     throw error;
   }
 };

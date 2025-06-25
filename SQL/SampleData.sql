@@ -156,19 +156,18 @@ INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime,
 (10, 12, 5, '2025-06-24 15:30:00', N'Sàng lọc âm tính');
 
 -- 14. TestResults
-INSERT INTO TestResults (test_note_id, result_value, unit, reference_range) VALUES
-(1, '650', 'cells/mm³', '500-1500'),
-(1, '25', 'copies/ml', '<50'),
-(2, 'Positive', '', 'Positive'),
-(3, '720', 'cells/mm³', '500-1500'),
-(4, 'Negative', '', 'Negative'),
-(5, 'Positive', '', 'Positive'),
-(6, '580', 'cells/mm³', '500-1500'),
-(7, '45', 'copies/ml', '<50'),
-(8, '680', 'cells/mm³', '500-1500'),
-(9, 'Negative', '', 'Negative'),
-(10, 'Positive', '', 'Positive');
-
+INSERT INTO TestResults (test_note_id,test_type_id, result_value, unit, reference_range) VALUES
+(1,1, '650', 'cells/mm³', '500-1500'),
+(1,2, '25', 'copies/ml', '<50'),
+(2,3, 'Positive', '', 'Positive'),
+(3,1, '720', 'cells/mm³', '500-1500'),
+(4,3, 'Negative', '', 'Negative'),
+(5,4, 'Positive', '', 'Positive'),
+(6,1, '580', 'cells/mm³', '500-1500'),
+(7,2, '45', 'copies/ml', '<50'),
+(8,1, '680', 'cells/mm³', '500-1500'),
+(9,3, 'Negative', '', 'Negative'),
+(10,4, 'Positive', '', 'Positive');
 -- 15. MedicalHistory
 INSERT INTO MedicalHistory (patient_id, hiv_discovered_at, arv_status, arv_adherence, arv_side_effects, medical_history, allergies) VALUES
 (1, '2020-03-15', N'Đang điều trị', 'good', N'Không có tác dụng phụ', N'Không có bệnh lý đi kèm', N'Không dị ứng thuốc'),

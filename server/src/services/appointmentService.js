@@ -27,18 +27,17 @@ exports.createAppointment = async (data) => {
     bookingDate,
   } = data;
 
-
   // Xác định nguồn phiếu: self_booking (tự đặt) hay doctor_request (bác sĩ chỉ định)
   // Giả sử: nếu doctor_id có giá trị => doctor_request, ngược lại self_booking
-  const source = doctor_id ? 'doctor_request' : 'self_booking';
+  const source = doctor_id ? "doctor_request" : "self_booking";
 
   // Kiểm tra bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày và cùng nguồn chưa
-  const existResult = await pool.request()
-    .input('patient_id', patient_id)
-    .input('bookingDate', bookingDate)
-    .input('service_id', service_id)
-    .input('doctor_id', doctor_id)
-    .query(`
+  const existResult = await pool
+    .request()
+    .input("patient_id", patient_id)
+    .input("bookingDate", bookingDate)
+    .input("service_id", service_id)
+    .input("doctor_id", doctor_id).query(`
 
       SELECT COUNT(*) AS count
       FROM Appointments
@@ -49,8 +48,9 @@ exports.createAppointment = async (data) => {
         AND ((@doctor_id IS NOT NULL AND doctor_id IS NOT NULL) OR (@doctor_id IS NULL AND doctor_id IS NULL))
     `);
   if (existResult.recordset[0].count > 0) {
-
-    const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
+    const err = new Error(
+      "Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới."
+    );
 
     err.statusCode = 400;
     throw err;
@@ -82,18 +82,21 @@ exports.createAppointment = async (data) => {
 
   // Bổ sung: Tạo hóa đơn cho dịch vụ xét nghiệm (service_type = 'test')
   // Lấy service_type và giá dịch vụ
-  const serviceResult = await pool.request()
-    .input('serviceId', service_id)
-    .query('SELECT price, service_type FROM Services WHERE service_id = @serviceId');
+  const serviceResult = await pool
+    .request()
+    .input("serviceId", service_id)
+    .query(
+      "SELECT price, service_type FROM Services WHERE service_id = @serviceId"
+    );
   const service = serviceResult.recordset[0];
-  if (service && service.service_type === 'test') {
-    await pool.request()
-      .input('patientId', patient_id)
-      .input('appointmentId', appointment.appointment_id)
-      .input('amount', service.price || 0)
-      .input('serviceType', 'test')
-      .input('status', 'paid')
-      .query(`
+  if (service && service.service_type === "test") {
+    await pool
+      .request()
+      .input("patientId", patient_id)
+      .input("appointmentId", appointment.appointment_id)
+      .input("amount", service.price || 0)
+      .input("serviceType", "test")
+      .input("status", "paid").query(`
         INSERT INTO Invoices (patient_id, appointment_id, amount, service_type, status)
         VALUES (@patientId, @appointmentId, @amount, @serviceType, @status)
       `);
@@ -200,6 +203,7 @@ SELECT  a.appointment_id
       ,a.queue_number
       ,a.bookingDate
       ,a.created_at
+      ,r.room_name
       ,d.full_name as doctor_name
   FROM Appointments as a 
   LEFT JOIN Slots as s ON a.slot_id = s.slot_id
