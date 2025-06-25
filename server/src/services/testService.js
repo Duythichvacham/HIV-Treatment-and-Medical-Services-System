@@ -91,12 +91,43 @@ exports.getTestNoteDetail = async (test_note_id) => {
 //POST, nhập kết quả xét nghiệm và hoàn thành
 exports.createTestResultAndComplete = async ({
   test_note_id,
+  test_type_id,
   result_value,
   unit,
   reference_range,
   notes,
 }) => {
   const pool = await sql.connect(config);
+
+  // Nếu có test_type_id, chỉ lưu 1 chỉ số
+  if (test_type_id) {
+    // Kiểm tra đã có kết quả chưa
+    const existingResult = await pool.request()
+      .input('test_note_id', test_note_id)
+      .input('test_type_id', test_type_id)
+      .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+    if (existingResult.recordset.length > 0) {
+      // UPDATE
+      const update = await pool.request()
+        .input('test_note_id', test_note_id)
+        .input('test_type_id', test_type_id)
+        .input('result_value', result_value)
+        .input('unit', unit)
+        .input('reference_range', reference_range)
+        .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+      result = update.recordset[0];
+    } else {
+      // INSERT
+      const insert = await pool.request()
+        .input('test_note_id', test_note_id)
+        .input('test_type_id', test_type_id)
+        .input('result_value', result_value)
+        .input('unit', unit)
+        .input('reference_range', reference_range)
+        .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+      result = insert.recordset[0];
+    }
+  }
 
   // 1. Lấy appointment_id từ test_note_id
   const testNoteRes = await pool.request()
@@ -229,6 +260,13 @@ exports.createTestResultAndComplete = async ({
       WHERE tn.test_note_id = @test_note_id
         AND tn.request_id IS NULL
     `);
+
+  // Sau khi lưu kết quả, cập nhật status của appointment thành 'completed'
+  if (appointment_id) {
+    await pool.request()
+      .input('appointment_id', appointment_id)
+      .query("UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id");
+  }
 
   // Debug toàn bộ TestResults và TestNotes liên quan test_note_id
   const allResults = await pool.request()
@@ -475,6 +513,7 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
       WHERE tr.test_note_id = @test_note_id
       ORDER BY tr.result_id ASC
+  `);
   return result.recordset;
 };
 

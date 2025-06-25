@@ -31,34 +31,35 @@ exports.createAppointment = async (data) => {
   } = data;
 
   // Xác định nguồn phiếu: self_booking (tự đặt) hay doctor_request (bác sĩ chỉ định)
-  // Giả sử: nếu doctor_id có giá trị => doctor_request, ngược lại self_booking
   const source = doctor_id ? 'doctor_request' : 'self_booking';
 
   // Áp dụng validation rules mới
   await validateAppointmentRules(pool, patient_id, service_id, bookingDate, doctor_id);
 
-  // Kiểm tra duplicate booking (thêm validation cuối cùng)
-  const duplicateCheck = await pool.request()
-    .input('patientId', patient_id)
+  // Kiểm tra: chỉ cho đặt 1 lịch khám bác sĩ/ngày
+  // Lấy service_type từ service_id
+  const serviceTypeResult = await pool.request()
     .input('serviceId', service_id)
-    .input('bookingDate', bookingDate)
-    .input('doctorId', doctor_id || null)
-    .input('slotId', slot_id || null)
-    .query(`
-      SELECT COUNT(*) AS count
-      FROM Appointments
-      WHERE patient_id = @patientId
-        AND service_id = @serviceId
-        AND bookingDate = @bookingDate
-        AND doctor_id = @doctorId
-        AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
-        AND status IN ('requested', 'in_progress')
-    `);
-
-  if (duplicateCheck.recordset[0].count > 0) {
-    const err = new Error('Bệnh nhân đã có lịch chưa hoàn thành cho dịch vụ này trong ngày này (cùng nguồn). Vui lòng hoàn thành hoặc hủy lịch cũ trước khi đặt mới.');
-    err.statusCode = 400;
-    throw err;
+    .query('SELECT service_type FROM Services WHERE service_id = @serviceId');
+  const serviceType = serviceTypeResult.recordset[0]?.service_type;
+  if (serviceType === 'examination') {
+    const check = await pool.request()
+      .input('patient_id', patient_id)
+      .input('bookingDate', bookingDate)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments a
+        JOIN Services s ON a.service_id = s.service_id
+        WHERE a.patient_id = @patient_id
+          AND a.bookingDate = @bookingDate
+          AND s.service_type = 'examination'
+          AND a.status IN ('requested', 'in_progress')
+      `);
+    if (check.recordset[0].count > 0) {
+      const err = new Error('Bệnh nhân đã có lịch khám trong ngày này!');
+      err.statusCode = 400;
+      throw err;
+    }
   }
 
   // Sử dụng logic dùng chung để lấy queue_number

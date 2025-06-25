@@ -12,34 +12,25 @@ const validateAppointmentRules = async (pool, patient_id, service_id, bookingDat
   }
   
   const serviceType = serviceResult.recordset[0].service_type;
-  const isSelfBooking = !doctor_id; // Tự đặt = không có doctor_id
 
-  // Quy tắc 1: Kiểm tra xét nghiệm chưa hoàn thành
-  const pendingTestsResult = await pool.request()
-    .input('patient_id', patient_id)
-    .query(`
-      SELECT COUNT(*) AS count
-      FROM Appointments a
-      JOIN Services s ON a.service_id = s.service_id
-      WHERE a.patient_id = @patient_id
-        AND s.service_type = 'test'
-        AND a.status IN ('requested', 'in_progress')
-    `);
-  
-  const hasPendingTests = pendingTestsResult.recordset[0].count > 0;
-
-  // Áp dụng các quy tắc
-  if (hasPendingTests) {
-    // Nếu có xét nghiệm chưa hoàn thành
-    if (serviceType === 'examination') {
-      throw new Error('Không thể đặt khám bác sĩ khi có xét nghiệm chưa hoàn thành. Vui lòng hoàn thành xét nghiệm trước.');
-    } else if (serviceType === 'test') {
-      throw new Error('Không thể đặt xét nghiệm mới khi có xét nghiệm chưa hoàn thành. Vui lòng hoàn thành xét nghiệm trước.');
-    } else if (serviceType === 'consultation') {
-      throw new Error('Không thể đặt tư vấn khi có xét nghiệm chưa hoàn thành. Vui lòng hoàn thành xét nghiệm trước.');
+  // Chỉ kiểm tra với dịch vụ xét nghiệm
+  if (serviceType === 'test') {
+    // Kiểm tra còn xét nghiệm cùng loại (service_id) chưa hoàn thành không
+    const pendingSameTestResult = await pool.request()
+      .input('patient_id', patient_id)
+      .input('service_id', service_id)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments a
+        WHERE a.patient_id = @patient_id
+          AND a.service_id = @service_id
+          AND a.status IN ('requested', 'in_progress')
+      `);
+    if (pendingSameTestResult.recordset[0].count > 0) {
+      throw new Error('Không thể đặt xét nghiệm mới khi còn xét nghiệm cùng loại chưa hoàn thành. Vui lòng hoàn thành trước.');
     }
   }
-
+  // Không kiểm tra gì thêm cho các loại dịch vụ khác
   return true;
 };
 

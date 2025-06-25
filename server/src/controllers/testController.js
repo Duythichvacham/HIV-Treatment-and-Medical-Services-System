@@ -125,7 +125,7 @@ exports.getTestNoteDetail = async (req, res, next) => {
 /// POST /api/v1/lab/test-results
 exports.createTestResultAndComplete = async (req, res, next) => {
   try {
-    const { test_note_id, result_value, unit, reference_range, notes } = req.body;
+    const { test_note_id, test_type_id, result_value, unit, reference_range, notes } = req.body;
 
     if (!test_note_id || !result_value) {
       const err = new Error('Thiếu thông tin bắt buộc!');
@@ -135,6 +135,7 @@ exports.createTestResultAndComplete = async (req, res, next) => {
 
     const result = await testService.createTestResultAndComplete({
       test_note_id,
+      test_type_id,
       result_value,
       unit,
       reference_range,
