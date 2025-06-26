@@ -21,6 +21,10 @@ const registrationRouter = require("./registration");
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 
 function route(app) {
+  /**
+   * API doctor
+   * Prefix: api/v1/doctor
+   */
   //các thao tác liên quan đến appointments gắn với patient
   app.use("/api/v1/appointments", appointmentRouter);
 
@@ -28,10 +32,10 @@ function route(app) {
   app.use("/api/v1/lab/appointments", appointmentRouter);
 
   ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
-  app.use("/api/v1/test", testRouter); // Changed path to avoid conflict
+  // app.use("/api/v1/test", testRouter); // Changed path to avoid conflict
 
   ///api/v1/lab/test-notes/{test_note_id} (GET, lấy chi tiết phiếu xét nghiệm)
-  app.use("/api/v1/lab/test-notes", testRouter);
+  // app.use("/api/v1/lab/test-notes", testRouter);
 
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
   app.use("/api/v1/lab", testRouter);
@@ -103,6 +107,7 @@ function route(app) {
 
   // Registration Staff routes
   app.use("/api/v1/test-requests", registrationRouter);
+  //
 }
 
 module.exports = route;
