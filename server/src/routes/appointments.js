@@ -41,7 +41,7 @@ router.post(
 // Lấy chi tiết lịch hẹn theo appointment_id
 router.get(
   "/:appointment_id",
-  require("../middleware/authMiddleware"),
+  authenticateToken,
   appointmentController.getAppointmentDetail
 );
 

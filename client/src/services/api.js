@@ -206,21 +206,6 @@ export const login = async (username, password) => {
 };
 
 /**
- * Logout user
- */
-export const logout = () => {
-  const userType = localStorage.getItem("userType");
-  localStorage.removeItem("token");
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("userType");
-  if (userType === "staff") {
-    window.location.href = "/login/staff";
-  }
-};
-
-/**
  * Get current user info from token
  */
 export const getCurrentUser = async () => {
@@ -387,7 +372,7 @@ export const checkExistingAppointment = async (
 // ===========================================
 export const getUserAppointments = async () => {
   try {
-    const response = await api.get("/api/v1/appointments/patient");
+    const response = await api.get("/api/v1/appointments/user");
     return response.data;
   } catch (error) {
     console.error("Error fetching user appointments:", error);

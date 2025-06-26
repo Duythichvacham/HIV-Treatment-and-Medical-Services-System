@@ -245,11 +245,21 @@ const LabStaff = () => {
       const headers = { Authorization: `Bearer ${token}` };
       // Lấy chi tiết phiếu xét nghiệm
       const noteRes = await axios.get(`${API_BASE}/lab/test-notes/${test_note_id}`, { headers });
-      // Lấy kết quả xét nghiệm (giả định trả về trong noteRes.data.data.results hoặc cần gọi API khác)
+      // Lấy kết quả xét nghiệm từ API riêng
+      const resultsRes = await axios.get(`${API_BASE}/lab/test-results/${test_note_id}`, { headers });
+      
+      console.log('DEBUG noteRes:', noteRes.data);
+      console.log('DEBUG resultsRes:', resultsRes.data);
+      
       const note = noteRes.data.data;
-      const results = note?.results || [];
+      const results = resultsRes.data.data || [];
+      
+      console.log('DEBUG note:', note);
+      console.log('DEBUG results:', results);
+      
       navigate('/lab-result', { state: { note, results } });
     } catch (err) {
+      console.error('DEBUG handleViewResult error:', err);
       alert('Không thể lấy chi tiết kết quả!');
     }
   };
@@ -313,10 +323,7 @@ const LabStaff = () => {
               {section.cards.length === 0 ? (
                 <div className="text-center text-gray-500 py-4">Không có mẫu xét nghiệm nào.</div>
               ) : (
-                (section.title === 'Chờ xét nghiệm'
-                  ? [...section.cards].sort((a, b) => new Date(a.bookTime) - new Date(b.bookTime))
-                  : section.cards
-                ).map(card => (
+                [...section.cards].sort((a, b) => (a.stt || 0) - (b.stt || 0)).map(card => (
                   <Card
                     key={
                       (card.test_note_id !== undefined && card.test_note_id !== null)

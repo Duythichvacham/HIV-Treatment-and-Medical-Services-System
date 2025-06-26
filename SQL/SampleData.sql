@@ -97,7 +97,9 @@ INSERT INTO ServicesTestTypes (service_id, test_type_id) VALUES
 (3, 1), -- Xét nghiệm CD4 và Viral Load -> CD4
 (3, 2), -- Xét nghiệm CD4 và Viral Load -> HIV Viral Load
 (4, 3), -- Xét nghiệm sàng lọc -> Sàng lọc
-(5, 4); -- Xét nghiệm khẳng định -> Khẳng định
+(5, 4),
+(5,1), 
+(5,2);-- Xét nghiệm khẳng định -> Khẳng định
 
 
 -- 10. WorkingShifts
@@ -156,18 +158,21 @@ INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime,
 (10, 12, 5, '2025-06-24 15:30:00', N'Sàng lọc âm tính');
 
 -- 14. TestResults
-INSERT INTO TestResults (test_note_id,test_type_id, result_value, unit, reference_range) VALUES
-(1,1, '650', 'cells/mm³', '500-1500'),
-(1,2, '25', 'copies/ml', '<50'),
-(2,3, 'Positive', '', 'Positive'),
-(3,1, '720', 'cells/mm³', '500-1500'),
-(4,3, 'Negative', '', 'Negative'),
-(5,4, 'Positive', '', 'Positive'),
-(6,1, '580', 'cells/mm³', '500-1500'),
-(7,2, '45', 'copies/ml', '<50'),
-(8,1, '680', 'cells/mm³', '500-1500'),
-(9,3, 'Negative', '', 'Negative'),
-(10,4, 'Positive', '', 'Positive');
+
+INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) VALUES
+(1, 1, '650', 'cells/mm³', '500-1500'), -- CD4
+(1, 2, '25', 'copies/ml', '<50'),        -- HIV Viral Load
+(2, 4, 'Positive', '', 'Positive'),      -- Khẳng định
+(3, 1, '720', 'cells/mm³', '500-1500'),  -- CD4
+(4, 3, 'Negative', '', 'Negative'),      -- Sàng lọc
+(5, 4, 'Positive', '', 'Positive'),      -- Khẳng định
+(6, 1, '580', 'cells/mm³', '500-1500'),  -- CD4
+(7, 2, '45', 'copies/ml', '<50'),        -- HIV Viral Load
+(8, 1, '680', 'cells/mm³', '500-1500'),  -- CD4
+(9, 3, 'Negative', '', 'Negative'),      -- Sàng lọc
+(10, 4, 'Positive', '', 'Positive');     -- Khẳng định
+
+
 -- 15. MedicalHistory
 INSERT INTO MedicalHistory (patient_id, hiv_discovered_at, arv_status, arv_adherence, arv_side_effects, medical_history, allergies) VALUES
 (1, '2020-03-15', N'Đang điều trị', 'good', N'Không có tác dụng phụ', N'Không có bệnh lý đi kèm', N'Không dị ứng thuốc'),

@@ -1,5 +1,39 @@
 const { poolPromise } = require("../config/db");
 
+// Hàm validation cho các quy tắc đặt lịch
+const validateAppointmentRules = async (pool, patient_id, service_id, bookingDate, doctor_id = null) => {
+  // Lấy thông tin service để xác định loại dịch vụ
+  const serviceResult = await pool.request()
+    .input('serviceId', service_id)
+    .query('SELECT service_type FROM Services WHERE service_id = @serviceId');
+  
+  if (serviceResult.recordset.length === 0) {
+    throw new Error('Không tìm thấy dịch vụ');
+  }
+  
+  const serviceType = serviceResult.recordset[0].service_type;
+
+  // Chỉ kiểm tra với dịch vụ xét nghiệm
+  if (serviceType === 'test') {
+    // Kiểm tra còn xét nghiệm cùng loại (service_id) chưa hoàn thành không
+    const pendingSameTestResult = await pool.request()
+      .input('patient_id', patient_id)
+      .input('service_id', service_id)
+      .query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments a
+        WHERE a.patient_id = @patient_id
+          AND a.service_id = @service_id
+          AND a.status IN ('requested', 'in_progress')
+      `);
+    if (pendingSameTestResult.recordset[0].count > 0) {
+      throw new Error('Không thể đặt xét nghiệm mới khi còn xét nghiệm cùng loại chưa hoàn thành. Vui lòng hoàn thành trước.');
+    }
+  }
+  // Không kiểm tra gì thêm cho các loại dịch vụ khác
+  return true;
+};
+
 exports.confirmPayment = async (invoiceId) => {
   const pool = await poolPromise;
   const result = await pool.request()
@@ -122,6 +156,31 @@ exports.cancelBooking = async (invoiceId) => {
 exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, serviceId }) => {
   const pool = await poolPromise;
 
+  // Bước 0: Áp dụng validation rules mới
+  await validateAppointmentRules(pool, patientId, serviceId, bookingDate, doctorId);
+
+  // Bước 0.5: Kiểm tra duplicate booking (thêm validation cuối cùng)
+  const duplicateCheck = await pool.request()
+    .input('patientId', patientId)
+    .input('serviceId', serviceId)
+    .input('bookingDate', bookingDate)
+    .input('doctorId', doctorId || null)
+    .input('slotId', slotId || null)
+    .query(`
+      SELECT COUNT(*) AS count
+      FROM Appointments
+      WHERE patient_id = @patientId
+        AND service_id = @serviceId
+        AND bookingDate = @bookingDate
+        AND doctor_id = @doctorId
+        AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
+        AND status IN ('requested', 'in_progress')
+    `);
+  
+  if (duplicateCheck.recordset[0].count > 0) {
+    throw new Error('Bạn đã có lịch hẹn tương tự trong ngày này. Vui lòng kiểm tra lại.');
+  }
+
   // Bước 1: Xác định room_id
   let roomId;
   if (doctorId) {
@@ -208,13 +267,14 @@ exports.createBooking = async ({ patientId, doctorId, bookingDate, slotId, servi
     // Tính số thứ tự cộng dồn
     queueNumber = (slot_index - 1) * maxPatientsPerSlot + current_bookings + 1;
   } else {
-    // Đặt xét nghiệm: giữ nguyên logic cũ
+    // Đặt xét nghiệm: queue_number tăng dần trong ngày, chỉ đếm những appointments còn hiệu lực
     const queueResult = await pool.request()
       .input('bookingDate', bookingDate)
       .query(`
         SELECT COUNT(*) AS count
         FROM Appointments
-        WHERE bookingDate = @bookingDate AND doctor_id IS NULL
+        WHERE bookingDate = @bookingDate 
+          AND doctor_id IS NULL
       `);
     queueNumber = (queueResult.recordset[0].count || 0) + 1;
   }
@@ -278,6 +338,7 @@ async function getQueueNumber({ pool, doctorId, slotId, bookingDate, useMaxPatie
     if (slot_index === 0) {
       throw new Error('Không tìm thấy slot_id phù hợp!');
     }
+    
     let maxPatientsPerSlot = 6;
     if (useMaxPatientsPerSlot) {
       const maxSlotResult = await pool.request()
@@ -292,6 +353,7 @@ async function getQueueNumber({ pool, doctorId, slotId, bookingDate, useMaxPatie
         maxPatientsPerSlot = maxSlotResult.recordset[0].max_patients_per_slot;
       }
     }
+    
     // Đếm số lượng đã đặt trong slot hiện tại
     const countResult = await pool.request()
       .input('doctorId', doctorId)
@@ -301,20 +363,31 @@ async function getQueueNumber({ pool, doctorId, slotId, bookingDate, useMaxPatie
         SELECT COUNT(*) AS count
         FROM Appointments
         WHERE doctor_id = @doctorId AND bookingDate = @bookingDate AND slot_id = @slotId
+          AND status IN ('requested', 'in_progress')
       `);
     const current_bookings = countResult.recordset[0].count || 0;
+    
+    // Kiểm tra slot có đủ chỗ không
+    if (current_bookings >= maxPatientsPerSlot) {
+      throw new Error(`Khung giờ này đã đầy (${current_bookings}/${maxPatientsPerSlot}). Vui lòng chọn khung giờ khác.`);
+    }
+    
     return (slot_index - 1) * maxPatientsPerSlot + current_bookings + 1;
   } else {
-    // Đặt xét nghiệm: queue_number tăng dần trong ngày
+    // Đặt xét nghiệm: queue_number tăng dần trong ngày, chỉ đếm những appointments còn hiệu lực
     const queueResult = await pool.request()
       .input('bookingDate', bookingDate)
       .query(`
         SELECT COUNT(*) AS count
         FROM Appointments
-        WHERE bookingDate = @bookingDate AND doctor_id IS NULL
+        WHERE bookingDate = @bookingDate 
+          AND doctor_id IS NULL
       `);
     return (queueResult.recordset[0].count || 0) + 1;
   }
 }
 
 exports.getQueueNumber = getQueueNumber;
+
+// Export validation function
+exports.validateAppointmentRules = validateAppointmentRules;

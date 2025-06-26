@@ -1,5 +1,6 @@
 import { Calendar, Clock, FileText, Phone, User } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 const PatientCard = ({
   patient,
@@ -8,9 +9,35 @@ const PatientCard = ({
   onStartExam,
   onContinueExam,
   onViewHistory,
-}) => (
-  <div className="bg-white rounded-xl shadow border p-6 flex flex-col gap-3 hover:shadow-md transition-shadow">
-    <div className="flex items-center justify-between mb-2">      <div className="flex items-center gap-3">
+}) => {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!patient?.patient_id) return;
+    setLoading(true);
+    axios
+      .get(`/api/v1/doctor/current-exam/${patient.patient_id}${patient.appointment_id ? `?appointmentId=${patient.appointment_id}` : ''}`)
+      .then((res) => {
+        setDetail(res.data.data?.[0] || null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Không lấy được thông tin chi tiết');
+        setLoading(false);
+      });
+  }, [patient?.patient_id, patient?.appointment_id]);
+
+  // Ưu tiên lấy từ detail nếu có, fallback sang patient prop
+  const arvRegimen = detail?.phac_do || patient.arv_regimen || "Chưa có";
+  const arvAdherence = detail?.tuan_thu || patient.arv_adherence || "Chưa có";
+  const viralLoad = detail?.viral_load || patient.viral_load || "Chưa có";
+  const cd4 = detail?.cd4 || patient.cd4 || "Chưa có";
+
+  return (
+    <div className="bg-white rounded-xl shadow border p-6 flex flex-col gap-3 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-2">      <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
           patient.queue_number === 0 
             ? 'bg-red-100 text-red-700' 
@@ -77,22 +104,24 @@ const PatientCard = ({
     </div>
     <div className="bg-blue-50 rounded p-3 text-sm">
       <span className="font-semibold">ARV:</span>{" "}
-      {patient.arv_regimen || "Chưa có"}
+      {arvRegimen}
       <br />
       <span className="font-semibold">Tuân thủ:</span>{" "}
-      {patient.arv_adherence === "good"
+      {arvAdherence === "good"
         ? "Tốt (>95%)"
-        : patient.arv_adherence === "average"
+        : arvAdherence === "average"
         ? "Khá (90-95%)"
-        : patient.arv_adherence || "Chưa có"}
+        : arvAdherence || "Chưa có"}
     </div>
     <div className="bg-green-50 rounded p-3 text-sm mt-2">
       <span className="font-semibold">Viral Load:</span>{" "}
-      {patient.viral_load || "Chưa có"}
+      {viralLoad}
       <br />
       <span className="font-semibold">CD4:</span>{" "}
-      {patient.cd4 ? `${patient.cd4}` : "Chưa có"}
+      {cd4}
     </div>
+    {loading && <div className="text-gray-500 text-xs mt-1">Đang tải chi tiết...</div>}
+    {error && <div className="text-red-500 text-xs mt-1">{error}</div>}
     {type === "waiting" && (
       <button
         onClick={onStartExam}
@@ -122,5 +151,5 @@ const PatientCard = ({
     )}
   </div>
 );
-
+}
 export default PatientCard;
