@@ -91,6 +91,9 @@ CREATE TABLE ServicesTestTypes (
     PRIMARY KEY (service_id, test_type_id)
 );
 -- Appointments
+-- check back: nếu type khám + cùng ngày với bookingDate = chặn
+-- queue_number trong bảng này chỉ quản lý stt cho type khám, xn thì kéo xuống dưới cùng
+-- nếu là type xét nghiệm thì hoàn thành phiếu khám mới cho đặt tiếp
 CREATE TABLE Appointments (
     appointment_id INT PRIMARY KEY IDENTITY(1,1),
     patient_id INT NOT NULL FOREIGN KEY REFERENCES Patients(patient_id),
@@ -99,7 +102,6 @@ CREATE TABLE Appointments (
     slot_id INT NULL FOREIGN KEY REFERENCES Slots(slot_id),
     service_id INT NULL FOREIGN KEY REFERENCES Services(service_id),
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
-    queue_number INT NOT NULL DEFAULT 1,
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
     bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
@@ -112,14 +114,20 @@ CREATE TABLE TestRequests (
     request_id INT PRIMARY KEY IDENTITY(1,1),
     doctor_id INT NOT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- người làm đơn
     appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- phát sinh từ đơn đặt lịch nào khi đang khám
-    service_id INT NULL FOREIGN KEY REFERENCES Services(service_id), -- nếu là dịch vụ thì sẽ có service_type
     request_date DATETIME DEFAULT GETDATE(),
     approved_by_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- registration-staff
     approved_at DATETIME NULL,
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
 );
-
-
+-- TestRequestDetails - chi tiết các dịch vụ trong một yêu cầu xét nghiệm
+-- Mỗi yêu cầu có thể bao gồm nhiều dịch vụ khác nhau
+CREATE TABLE TestRequestDetails (
+    detail_id INT PRIMARY KEY IDENTITY(1,1),
+    request_id INT NOT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
+    service_id INT NOT NULL FOREIGN KEY REFERENCES Services(service_id),
+    notes NVARCHAR(255) NULL, -- Ghi chú cụ thể cho dịch vụ này (nếu cần)
+    created_at DATETIME NOT NULL DEFAULT GETDATE()
+);
 -- WorkingShifts
 CREATE TABLE WorkingShifts (
     shift_id INT PRIMARY KEY IDENTITY(1,1),
@@ -130,7 +138,6 @@ CREATE TABLE WorkingShifts (
     shift_date DATE NOT NULL,-- phân ca cho bs theo ngày (các slots được cố định cho đặt lịch vì vậy làm cả ngày là full slots)
     room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id),-- nếu là regis thì không cần room
     status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'canceled')) DEFAULT 'approved',
-    max_patients_per_slot INT NULL DEFAULT 6 CHECK (max_patients_per_slot > 0),
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 
@@ -226,3 +233,17 @@ CREATE TABLE Invoices (
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     pdf_url VARCHAR(255) NULL -- lưu đường dẫn file pdf hóa đơn nếu có (có thể không cần vì có thể tạo từ app)
 );
+-- QueueNumbers - Bảng quản lý số thứ tự - không liên quan logic nên không cần liên kết
+CREATE TABLE QueueNumbers (
+    queue_id INT PRIMARY KEY IDENTITY(1,1),
+    queue_type VARCHAR(20) NOT NULL CHECK (queue_type IN ('examination', 'test','consultation')), -- loại hàng đợi: khám, xét nghiệm, tư vấn
+    slot_id INT NULL FOREIGN KEY REFERENCES Slots(slot_id), -- NULL cho xét nghiệm
+    doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- NULL cho xét nghiệm
+    current_number INT NOT NULL DEFAULT 0 CHECK (current_number >= 0),
+    max_number INT NOT NULL CHECK (max_number > 0), -- 8 cho khám, 1000 cho xét nghiệm
+    CONSTRAINT uq_queue_type_slot_doctor UNIQUE (queue_type, slot_id, doctor_id)
+);
+
+-- Khởi tạo bản ghi duy nhất
+INSERT INTO QueueNumbers (queue_id, queue_type, current_number, max_number)
+VALUES (1, 'test', 0, 1000);

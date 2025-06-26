@@ -1,4 +1,4 @@
-const { poolPromise, sql } = require('../config/db');
+const { poolPromise, sql } = require("../config/db");
 
 /**
  * Lấy danh sách TestRequests pending của ngày hiện tại và nhóm theo appointment_id
@@ -37,13 +37,13 @@ const getPendingTestRequests = async () => {
     const pool = await poolPromise;
     const result = await pool.request().query(query);
     const rows = result.recordset;
-    
+
     // Nhóm theo appointment_id
     const groupedRequests = {};
-    
-    rows.forEach(row => {
+
+    rows.forEach((row) => {
       const appointmentId = row.appointment_id;
-      
+
       if (!groupedRequests[appointmentId]) {
         groupedRequests[appointmentId] = {
           appointment_id: appointmentId,
@@ -57,27 +57,29 @@ const getPendingTestRequests = async () => {
           created_at: row.request_date,
           updated_at: row.approved_at,
           services: [],
-          total_price: 0
+          total_price: 0,
         };
       }
-      
+
       // Thêm service vào nhóm
       groupedRequests[appointmentId].services.push({
         id: row.request_id,
         service_id: row.service_id,
         service_name: row.service_name,
         service_price: row.service_price,
-        service_description: row.service_description
+        service_description: row.service_description,
       });
-      
+
       // Cập nhật tổng tiền
-      groupedRequests[appointmentId].total_price += parseFloat(row.service_price || 0);
+      groupedRequests[appointmentId].total_price += parseFloat(
+        row.service_price || 0
+      );
     });
-    
+
     // Chuyển object thành array
     return Object.values(groupedRequests);
   } catch (error) {
-    console.error('Error in getPendingTestRequests:', error);
+    console.error("Error in getPendingTestRequests:", error);
     throw error;
   }
 };
@@ -96,16 +98,16 @@ const approveTestRequest = async (appointmentId) => {
   try {
     const pool = await poolPromise;
     const request = pool.request();
-    request.input('appointmentId', sql.Int, appointmentId);
+    request.input("appointmentId", sql.Int, appointmentId);
     const result = await request.query(query);
-    
+
     return {
       success: true,
       affectedRows: result.rowsAffected[0],
-      message: `Đã duyệt ${result.rowsAffected[0]} yêu cầu xét nghiệm cho appointment ${appointmentId}`
+      message: `Đã duyệt ${result.rowsAffected[0]} yêu cầu xét nghiệm cho appointment ${appointmentId}`,
     };
   } catch (error) {
-    console.error('Error in approveTestRequest:', error);
+    console.error("Error in approveTestRequest:", error);
     throw error;
   }
 };
@@ -116,7 +118,7 @@ const approveTestRequest = async (appointmentId) => {
 const getRegistrationStatistics = async () => {
   try {
     const pool = await poolPromise;
-    
+
     // Đếm số TestRequests theo trạng thái - chỉ ngày hiện tại
     const statusQuery = `
       SELECT tr.status, COUNT(*) as count
@@ -161,10 +163,10 @@ const getRegistrationStatistics = async () => {
       totalRevenue: revenueRows[0]?.total_revenue || 0,
       pending_requests: todayStats?.pending_requests || 0,
       processed_today: todayStats?.processed_today || 0,
-      today_revenue: revenueRows[0]?.total_revenue || 0
+      today_revenue: revenueRows[0]?.total_revenue || 0,
     };
   } catch (error) {
-    console.error('Error in getRegistrationStatistics:', error);
+    console.error("Error in getRegistrationStatistics:", error);
     throw error;
   }
 };
@@ -201,16 +203,16 @@ const getPaymentHistory = async (limit = 50) => {
   try {
     const pool = await poolPromise;
     const request = pool.request();
-    request.input('limit', sql.Int, limit);
+    request.input("limit", sql.Int, limit);
     const result = await request.query(query);
     const rows = result.recordset;
-    
+
     // Nhóm theo appointment_id để hiển thị như một đơn thanh toán
     const groupedPayments = {};
-    
-    rows.forEach(row => {
+
+    rows.forEach((row) => {
       const appointmentId = row.appointment_id;
-      
+
       if (!groupedPayments[appointmentId]) {
         groupedPayments[appointmentId] = {
           appointment_id: appointmentId,
@@ -222,31 +224,33 @@ const getPaymentHistory = async (limit = 50) => {
           payment_date: row.payment_date,
           status: row.status,
           services: [],
-          total_price: 0
+          total_price: 0,
         };
       }
-      
+
       // Thêm service vào nhóm thanh toán
       groupedPayments[appointmentId].services.push({
         id: row.request_id,
         service_id: row.service_id,
         service_name: row.service_name,
-        service_price: row.service_price
+        service_price: row.service_price,
       });
-      
+
       // Cập nhật tổng tiền
-      groupedPayments[appointmentId].total_price += parseFloat(row.service_price || 0);
+      groupedPayments[appointmentId].total_price += parseFloat(
+        row.service_price || 0
+      );
     });
-    
+
     // Chuyển object thành array và sắp xếp theo ngày thanh toán
-    const groupedArray = Object.values(groupedPayments).sort((a, b) => 
-      new Date(b.payment_date) - new Date(a.payment_date)
+    const groupedArray = Object.values(groupedPayments).sort(
+      (a, b) => new Date(b.payment_date) - new Date(a.payment_date)
     );
-    
+
     // Giới hạn số lượng kết quả theo nhóm appointment, không phải theo record
     return groupedArray.slice(0, Math.ceil(limit / 2)); // Chia đôi vì có thể có nhiều service/appointment
   } catch (error) {
-    console.error('Error in getPaymentHistory:', error);
+    console.error("Error in getPaymentHistory:", error);
     throw error;
   }
 };
@@ -255,5 +259,5 @@ module.exports = {
   getPendingTestRequests,
   approveTestRequest,
   getRegistrationStatistics,
-  getPaymentHistory
+  getPaymentHistory,
 };

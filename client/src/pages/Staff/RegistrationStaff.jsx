@@ -122,7 +122,8 @@ const RegistrationStaff = () => {
             Quản lý Xét nghiệm - Registration Staff
           </h1>
           <p className="text-gray-600">
-            Xử lý đơn xét nghiệm và thu tiền từ bệnh nhân - Ngày {todayFormatted}
+            Xử lý đơn xét nghiệm và thu tiền từ bệnh nhân - Ngày{" "}
+            {todayFormatted}
           </p>
         </div>
 
@@ -246,17 +247,22 @@ const RegistrationStaff = () => {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                     <TestTube className="h-5 w-5" />
-                    Danh sách đơn xét nghiệm chờ xử lý - Hôm nay ({todayFormatted})
+                    Danh sách đơn xét nghiệm chờ xử lý - Hôm nay (
+                    {todayFormatted})
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Các đơn xét nghiệm từ bác sĩ cần thu tiền và duyệt trong ngày
+                    Các đơn xét nghiệm từ bác sĩ cần thu tiền và duyệt trong
+                    ngày
                   </p>
                 </div>
                 <div className="p-6">
                   {testRequests.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <TestTube className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>Không có đơn xét nghiệm nào chờ xử lý hôm nay ({todayFormatted})</p>
+                      <p>
+                        Không có đơn xét nghiệm nào chờ xử lý hôm nay (
+                        {todayFormatted})
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -359,7 +365,8 @@ const RegistrationStaff = () => {
                     Lịch sử thanh toán hôm nay ({todayFormatted})
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">
-                    Danh sách các đơn xét nghiệm đã thanh toán thành công trong ngày
+                    Danh sách các đơn xét nghiệm đã thanh toán thành công trong
+                    ngày
                   </p>
                   <div className="mt-4 flex items-center gap-4 text-sm">
                     <span className="text-gray-600">Tổng thu:</span>
