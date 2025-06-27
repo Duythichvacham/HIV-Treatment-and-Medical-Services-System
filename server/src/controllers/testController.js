@@ -162,14 +162,10 @@ exports.createTestResultAndComplete = async (req, res, next) => {
 exports.getLabQueue = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    const queue = await testService.getAllLabTests(
-      "requested",
-      date,
-      lab_staff_id,
-      room_id
-    );
+    // Gọi service mới chỉ lấy queue xét nghiệm
+    const queue = await testService.getLabTestQueue(date, lab_staff_id, room_id);
     res.json({
-      message: "Lấy danh sách mẫu chờ xét nghiệm thành công",
+      message: "Lấy danh sách bệnh nhân chờ xét nghiệm thành công",
       data: queue,
     });
   } catch (error) {
@@ -181,14 +177,10 @@ exports.getLabQueue = async (req, res, next) => {
 exports.getLabInProgress = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    const inProgress = await testService.getAllLabTests(
-      "in_progress",
-      date,
-      lab_staff_id,
-      room_id
-    );
+    // Gọi service mới chỉ lấy bệnh nhân đang xét nghiệm
+    const inProgress = await testService.getLabTestInProgress(date, lab_staff_id, room_id);
     res.json({
-      message: "Lấy danh sách mẫu đang xét nghiệm thành công",
+      message: "Lấy danh sách bệnh nhân đang xét nghiệm thành công",
       data: inProgress,
     });
   } catch (error) {
@@ -200,15 +192,11 @@ exports.getLabInProgress = async (req, res, next) => {
 exports.getLabFinished = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    const done = await testService.getAllLabTests(
-      "completed",
-      date,
-      lab_staff_id,
-      room_id
-    );
+    // Gọi service mới chỉ lấy bệnh nhân đã hoàn thành xét nghiệm
+    const finished = await testService.getLabTestFinished(date, lab_staff_id, room_id);
     res.json({
-      message: "Lấy danh sách mẫu đã hoàn thành thành công",
-      data: done,
+      message: "Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công",
+      data: finished,
     });
   } catch (error) {
     next(error);
