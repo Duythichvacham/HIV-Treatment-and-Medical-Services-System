@@ -3,6 +3,7 @@ const express = require("express"); // import express
 const cors = require("cors"); // import cors
 const app = express(); // khởi tạo ứng dụng express
 const errorHandler = require("./middleware/errorHandler"); // Import middleware xử lý lỗi
+const { initializeScheduler } = require("./utils/scheduler"); // Import scheduler cho queue management
 
 // Enable CORS for all origins in development- thiếu cái này browser nó từ chối request từ client
 // CORS (Cross-Origin Resource Sharing) cho phép server chấp nhận request từ các nguồn
@@ -22,6 +23,10 @@ app.get("/", (req, res) => {
   res.send("HIV Clinic API is running");
 });
 app.use(errorHandler);
+
+// Khởi tạo scheduler cho queue management
+initializeScheduler();
+
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

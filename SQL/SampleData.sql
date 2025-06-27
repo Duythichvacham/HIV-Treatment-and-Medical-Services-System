@@ -103,46 +103,46 @@ INSERT INTO ServicesTestTypes (service_id, test_type_id) VALUES
 
 
 -- 10. WorkingShifts
-INSERT INTO WorkingShifts (account_id, doctor_id, lab_staff_id, registration_staff_id, shift_date, room_id, status, max_patients_per_slot) VALUES
-(1, 1, NULL, NULL, '2025-06-23', 1, 'approved', 6),
-(1, 2, NULL, NULL, '2025-06-23', 2, 'approved', 6),
-(1, 3, NULL, NULL, '2025-06-23', 3, 'approved', 6),
-(1, 4, NULL, NULL, '2025-06-24', 4, 'approved', 6),
-(1, 5, NULL, NULL, '2025-06-24', 5, 'approved', 6),
-(1, NULL, 5, NULL, '2025-06-23', 6, 'approved', NULL),
-(1, NULL, 6, NULL, '2025-06-23', 10, 'approved', NULL),
-(1, NULL, NULL, 7, '2025-06-23', NULL, 'approved', NULL),
-(1, NULL, NULL, 8, '2025-06-24', NULL, 'approved', NULL),
-(1, 1, NULL, NULL, '2025-06-25', 11, 'approved', 6),
-(1, 2, NULL, NULL, '2025-06-25', 1, 'approved', 6);
+INSERT INTO WorkingShifts (account_id, doctor_id, lab_staff_id, registration_staff_id, shift_date, room_id, status) VALUES
+(1, 1, NULL, NULL, '2025-06-23', 1, 'approved'),
+(1, 2, NULL, NULL, '2025-06-23', 2, 'approved'),
+(1, 3, NULL, NULL, '2025-06-23', 3, 'approved'),
+(1, 4, NULL, NULL, '2025-06-24', 4, 'approved'),
+(1, 5, NULL, NULL, '2025-06-24', 5, 'approved'),
+(1, NULL, 5, NULL, '2025-06-23', 6, 'approved'),
+(1, NULL, 6, NULL, '2025-06-23', 10, 'approved'),
+(1, NULL, NULL, 7, '2025-06-23', NULL, 'approved'),
+(1, NULL, NULL, 8, '2025-06-24', NULL, 'approved'),
+(1, 1, NULL, NULL, '2025-06-25', 11, 'approved'),
+(1, 2, NULL, NULL, '2025-06-25', 1, 'approved');
 
 -- 11. Appointments
-INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, queue_number, room_id, bookingDate) VALUES
-(1, 1, 1, 1, 'completed', 1, 1, '2025-06-23'),
-(2, 2, 2, 1, 'completed', 1, 2, '2025-06-23'),
-(3, 3, 3, 2, 'completed', 1, 7, '2025-06-23'),
-(4, 4, 1, 1, 'in_progress', 1, 4, '2025-06-24'),
-(5, 5, 2, 1, 'requested', 1, 5, '2025-06-24'),
-(6, 1, 3, 1, 'completed', 1, 1, '2025-06-23'),
-(7, 2, 4, 2, 'completed', 1, 8, '2025-06-23'),
-(8, NULL, 1, 3, 'in_progress', 1, 6, '2025-06-24'),
-(9, NULL, 2, 4, 'requested', 1, 10, '2025-06-24'),
-(10, 3, 1, 1, 'requested', 1, 11, '2025-06-25'),
-(1, 4, 5, 1, 'completed', 1, 4, '2025-06-24'),
-(2, NULL, 6, 5, 'completed', 1, 6, '2025-06-24');
+INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate) VALUES
+(1, 1, 1, 1, 'completed', 1, '2025-06-23'),
+(2, 2, 2, 1, 'completed', 2, '2025-06-23'),
+(3, 3, 3, 2, 'completed', 7, '2025-06-23'),
+(4, 4, 1, 1, 'in_progress', 4, '2025-06-24'),
+(5, 5, 2, 1, 'requested', 5, '2025-06-24'),
+(6, 1, 3, 1, 'completed', 1, '2025-06-23'),
+(7, 2, 4, 2, 'completed', 8, '2025-06-23'),
+(8, NULL, 1, 3, 'in_progress', 6, '2025-06-24'),
+(9, NULL, 2, 4, 'requested', 10, '2025-06-24'),
+(10, 3, 1, 1, 'requested', 11, '2025-06-25'),
+(1, 4, 5, 1, 'completed', 4, '2025-06-24'),
+(2, NULL, 6, 5, 'completed', 6, '2025-06-24');
 
 -- 12. TestRequests
-INSERT INTO TestRequests (doctor_id, appointment_id, service_id, request_date, approved_by_id, approved_at, status) VALUES
-(1, 1, 3, '2025-06-23 09:30:00', 7, '2025-06-23 10:00:00', 'completed'),
-(1, 1, 5, '2025-06-23 09:30:00', 7, '2025-06-23 10:00:00', 'completed'),
-(2, 2, 3, '2025-06-23 10:30:00', 7, '2025-06-23 11:00:00', 'completed'),
-(3, 3, 4, '2025-06-23 11:30:00', 8, '2025-06-23 12:00:00', 'completed'),
-(2, 6, 5, '2025-06-23 11:30:00', NULL, NULL, 'requested'),
-(4, 4, 3, '2025-06-24 08:30:00', 7, '2025-06-24 09:00:00', 'in_progress'),
-(5, 11, 5, '2025-06-24 13:30:00', 8, '2025-06-24 14:00:00', 'completed'),
-(3, 8, 3, '2025-06-24 07:30:00', 7, '2025-06-24 08:00:00', 'in_progress'),
-(1, 9, 4, '2025-06-24 08:30:00', NULL, NULL, 'requested'),
-(2, 12, 5, '2025-06-24 14:30:00', 8, '2025-06-24 15:00:00', 'completed');
+INSERT INTO TestRequests (doctor_id, appointment_id, request_date, approved_by_id, approved_at, status) VALUES
+(1, 1, '2025-06-23 09:30:00', 7, '2025-06-23 10:00:00', 'completed'),
+(1, 1,  '2025-06-23 09:30:00', 7, '2025-06-23 10:00:00', 'completed'),
+(2, 2, '2025-06-23 10:30:00', 7, '2025-06-23 11:00:00', 'completed'),
+(3, 3, '2025-06-23 11:30:00', 8, '2025-06-23 12:00:00', 'completed'),
+(2, 6,  '2025-06-23 11:30:00', NULL, NULL, 'requested'),
+(4, 4,  '2025-06-24 08:30:00', 7, '2025-06-24 09:00:00', 'in_progress'),
+(5, 11,  '2025-06-24 13:30:00', 8, '2025-06-24 14:00:00', 'completed'),
+(3, 8,  '2025-06-24 07:30:00', 7, '2025-06-24 08:00:00', 'in_progress'),
+(1, 9,  '2025-06-24 08:30:00', NULL, NULL, 'requested'),
+(2, 12, '2025-06-24 14:30:00', 8, '2025-06-24 15:00:00', 'completed');
 
 -- 13. TestNotes
 INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime, notes) VALUES

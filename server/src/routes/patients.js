@@ -1,4 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-// ... define routes
+const appointmentController = require("../controllers/appointmentController");
 module.exports = router;
+///patients/search?name=...&phone=... (GET, tìm kiếm bệnh nhân) - search theo Sdt - tên
+
+//// GET lấy danh sách appointments của một patient theo patient_id
+router.get("/", appointmentController.getAppointmentsByPatientId);

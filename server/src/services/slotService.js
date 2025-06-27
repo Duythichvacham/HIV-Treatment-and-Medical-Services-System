@@ -27,9 +27,9 @@ const getAvailableSlots = async (doctorId, date) => {
           s.slot_id,
           s.start_time,
           s.end_time,
-          ws.max_patients_per_slot,
+          8 as max_patients_per_slot,
           COUNT(a.appointment_id) as current_bookings,
-          (ws.max_patients_per_slot - COUNT(a.appointment_id)) as available_spots
+          (8 - COUNT(a.appointment_id)) as available_spots
         FROM Slots s
         CROSS JOIN WorkingShifts ws
         LEFT JOIN Appointments a
@@ -40,8 +40,8 @@ const getAvailableSlots = async (doctorId, date) => {
         WHERE ws.doctor_id = @doctorId 
           AND ws.shift_date = @date
           AND ws.status = 'approved'
-        GROUP BY s.slot_id, s.start_time, s.end_time, ws.max_patients_per_slot
-        HAVING COUNT(a.appointment_id) < ws.max_patients_per_slot
+        GROUP BY s.slot_id, s.start_time, s.end_time
+        HAVING COUNT(a.appointment_id) < 8
         ORDER BY s.start_time
       `);
 

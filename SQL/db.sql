@@ -1,9 +1,9 @@
 use master
 GO
 GO
-DROP DATABASE HIV_HEATH_CARE
+DROP DATABASE HIV_HEALTH_CARE
 GO
-CREATE DATABASE HIV_HEATH_CARE
+CREATE DATABASE HIV_HEALTH_CARE
 GO
 USE HIV_HEATH_CARE
 -- Accounts
@@ -245,6 +245,6 @@ CREATE TABLE QueueNumbers (
     CONSTRAINT uq_queue_type_slot_doctor UNIQUE (queue_type, slot_id, doctor_id)
 );
 
--- Khởi tạo bản ghi duy nhất
-INSERT INTO QueueNumbers (queue_id, queue_type, current_number, max_number)
-VALUES (1, 'test', 0, 1000);
+-- Khởi tạo queue mặc định cho xét nghiệm
+INSERT INTO QueueNumbers (queue_type, current_number, max_number)
+VALUES ('test', 0, 1000);

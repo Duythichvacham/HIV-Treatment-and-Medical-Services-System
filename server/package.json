@@ -21,9 +21,11 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
+    "node-cron": "^3.0.3",
     "sequelize": "^6.37.7"
   },
   "devDependencies": {
+    "axios": "^1.10.0",
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3"
   }

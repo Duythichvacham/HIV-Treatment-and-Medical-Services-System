@@ -16,7 +16,7 @@ const getCurrentExam = async (patientId, appointmentId = null) => {
     JOIN Appointments a ON p.patient_id = a.patient_id
     JOIN Slots s ON a.slot_id = s.slot_id
     WHERE p.patient_id = @patient_id
-      ${appointmentId ? 'AND a.appointment_id = @appointment_id' : ''}
+      ${appointmentId ? "AND a.appointment_id = @appointment_id" : ""}
     ORDER BY a.created_at DESC;
 
     -- Lấy thông tin điều trị ARV hiện tại (có thể không có)
@@ -166,23 +166,30 @@ const getExamHistory = async (patientId) => {
 //Get: lấy danh sách bệnh nhân queued/in_progress/finished cho bác sĩ theo ngày
 const getAppointmentsByStatus = async (doctor_id, status, date = null) => {
   const pool = await poolPromise;
-  console.log('getAppointmentsByStatus called with doctor_id:', doctor_id, 'status:', status, 'date:', date);
-  
+  console.log(
+    "getAppointmentsByStatus called with doctor_id:",
+    doctor_id,
+    "status:",
+    status,
+    "date:",
+    date
+  );
+
   try {
     const request = pool
       .request()
       .input("doctorId", parseInt(doctor_id, 10))
       .input("status", status);
-    
-    let dateFilter = '';
+
+    let dateFilter = "";
     if (date) {
       request.input("date", date);
-      dateFilter = 'AND CAST(a.bookingDate AS DATE) = @date';
+      dateFilter = "AND CAST(a.bookingDate AS DATE) = @date";
     } else {
       // Mặc định lấy appointments hôm nay
-      dateFilter = 'AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)';
+      dateFilter = "AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)";
     }
-    
+
     const result = await request.query(`
         SELECT 
           a.appointment_id,
@@ -192,7 +199,7 @@ const getAppointmentsByStatus = async (doctor_id, status, date = null) => {
           DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
           p.phone,
           a.status,
-          a.queue_number,
+          ROW_NUMBER() OVER (ORDER BY a.created_at ASC) AS queue_number,
           a.created_at AS booking_time,
           a.bookingDate,
           sl.start_time,
@@ -208,13 +215,18 @@ const getAppointmentsByStatus = async (doctor_id, status, date = null) => {
         WHERE a.doctor_id = @doctorId 
         AND a.status = @status
         ${dateFilter}
-        ORDER BY a.queue_number ASC, a.created_at ASC
+        ORDER BY a.created_at ASC
       `);
-    
-    console.log('Query result:', result.recordset?.length || 0, 'appointments found for date:', date || 'today');
+
+    console.log(
+      "Query result:",
+      result.recordset?.length || 0,
+      "appointments found for date:",
+      date || "today"
+    );
     return result.recordset || [];
   } catch (error) {
-    console.error('Error in getAppointmentsByStatus:', error);
+    console.error("Error in getAppointmentsByStatus:", error);
     throw error;
   }
 };
@@ -298,10 +310,10 @@ const getDoctorsByDate = async (date) => {
 const saveExamData = async (examData) => {
   const pool = await poolPromise;
   const transaction = pool.transaction();
-  
+
   try {
     await transaction.begin();
-    
+
     const {
       appointment_id,
       diagnosis,
@@ -311,29 +323,37 @@ const saveExamData = async (examData) => {
       vitals,
       weight,
       height,
-      clinical_signs
+      clinical_signs,
     } = examData;
-    
-    console.log('saveExamData - Input data:', examData);
-    
+
+    console.log("saveExamData - Input data:", examData);
+
     // 1. Kiểm tra và lưu vào ClinicalExams (update nếu đã có, insert nếu chưa có)
-    const existingExamResult = await transaction.request()
-      .input('appointment_id', appointment_id)
-      .query(`SELECT exam_id FROM ClinicalExams WHERE appointment_id = @appointment_id`);
-    
+    const existingExamResult = await transaction
+      .request()
+      .input("appointment_id", appointment_id)
+      .query(
+        `SELECT exam_id FROM ClinicalExams WHERE appointment_id = @appointment_id`
+      );
+
     let examId;
     if (existingExamResult.recordset.length > 0) {
       // Update existing record
       examId = existingExamResult.recordset[0].exam_id;
-      await transaction.request()
-        .input('appointment_id', appointment_id)
-        .input('vitals', vitals || null)
-        .input('weight', weight || null)
-        .input('height', height || null)
-        .input('bmi', (weight && height) ? (weight / Math.pow(height / 100, 2)).toFixed(2) : null)
-        .input('clinical_signs', clinical_signs || null)
-        .input('diagnosis_primary', diagnosis)
-        .query(`
+      await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .input("vitals", vitals || null)
+        .input("weight", weight || null)
+        .input("height", height || null)
+        .input(
+          "bmi",
+          weight && height
+            ? (weight / Math.pow(height / 100, 2)).toFixed(2)
+            : null
+        )
+        .input("clinical_signs", clinical_signs || null)
+        .input("diagnosis_primary", diagnosis).query(`
           UPDATE ClinicalExams SET
             vitals = @vitals,
             weight = @weight,
@@ -343,77 +363,90 @@ const saveExamData = async (examData) => {
             diagnosis_primary = @diagnosis_primary
           WHERE appointment_id = @appointment_id
         `);
-      console.log('Updated existing ClinicalExam with ID:', examId);
+      console.log("Updated existing ClinicalExam with ID:", examId);
     } else {
       // Insert new record
-      const clinicalExamResult = await transaction.request()
-        .input('appointment_id', appointment_id)
-        .input('vitals', vitals || null)
-        .input('weight', weight || null)
-        .input('height', height || null)
-        .input('bmi', (weight && height) ? (weight / Math.pow(height / 100, 2)).toFixed(2) : null)
-        .input('clinical_signs', clinical_signs || null)
-        .input('diagnosis_primary', diagnosis)
-        .query(`
+      const clinicalExamResult = await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .input("vitals", vitals || null)
+        .input("weight", weight || null)
+        .input("height", height || null)
+        .input(
+          "bmi",
+          weight && height
+            ? (weight / Math.pow(height / 100, 2)).toFixed(2)
+            : null
+        )
+        .input("clinical_signs", clinical_signs || null)
+        .input("diagnosis_primary", diagnosis).query(`
           INSERT INTO ClinicalExams 
           (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary)
           OUTPUT INSERTED.exam_id
           VALUES (@appointment_id, @vitals, @weight, @height, @bmi, @clinical_signs, @diagnosis_primary)
         `);
       examId = clinicalExamResult.recordset[0].exam_id;
-      console.log('Inserted new ClinicalExam with ID:', examId);
+      console.log("Inserted new ClinicalExam with ID:", examId);
     }
-    
+
     // 2. Kiểm tra và lưu vào Prescriptions (update nếu đã có, insert nếu chưa có)
-    const existingPrescriptionResult = await transaction.request()
-      .input('appointment_id', appointment_id)
-      .query(`SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id`);
-    
+    const existingPrescriptionResult = await transaction
+      .request()
+      .input("appointment_id", appointment_id)
+      .query(
+        `SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id`
+      );
+
     let prescriptionId;
     if (existingPrescriptionResult.recordset.length > 0) {
       // Update existing record
       prescriptionId = existingPrescriptionResult.recordset[0].prescription_id;
-      await transaction.request()
-        .input('appointment_id', appointment_id)
-        .input('doctor_notes', note || null)
-        .input('follow_up_plan', treatment_plan || null)
-        .input('counseling_notes', reExamDate ? `Tái khám ngày: ${reExamDate}` : null)
-        .query(`
+      await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .input("doctor_notes", note || null)
+        .input("follow_up_plan", treatment_plan || null)
+        .input(
+          "counseling_notes",
+          reExamDate ? `Tái khám ngày: ${reExamDate}` : null
+        ).query(`
           UPDATE Prescriptions SET
             doctor_notes = @doctor_notes,
             follow_up_plan = @follow_up_plan,
             counseling_notes = @counseling_notes
           WHERE appointment_id = @appointment_id
         `);
-      console.log('Updated existing Prescription with ID:', prescriptionId);
+      console.log("Updated existing Prescription with ID:", prescriptionId);
     } else {
       // Insert new record
-      const prescriptionResult = await transaction.request()
-        .input('appointment_id', appointment_id)
-        .input('doctor_notes', note || null)
-        .input('follow_up_plan', treatment_plan || null)
-        .input('counseling_notes', reExamDate ? `Tái khám ngày: ${reExamDate}` : null)
-        .query(`
+      const prescriptionResult = await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .input("doctor_notes", note || null)
+        .input("follow_up_plan", treatment_plan || null)
+        .input(
+          "counseling_notes",
+          reExamDate ? `Tái khám ngày: ${reExamDate}` : null
+        ).query(`
           INSERT INTO Prescriptions 
           (appointment_id, doctor_notes, follow_up_plan, counseling_notes)
           OUTPUT INSERTED.prescription_id
           VALUES (@appointment_id, @doctor_notes, @follow_up_plan, @counseling_notes)
         `);
       prescriptionId = prescriptionResult.recordset[0].prescription_id;
-      console.log('Inserted new Prescription with ID:', prescriptionId);
+      console.log("Inserted new Prescription with ID:", prescriptionId);
     }
-    
+
     await transaction.commit();
-    
+
     return {
       exam_id: examId,
       prescription_id: prescriptionId,
-      message: 'Lưu dữ liệu khám bệnh thành công'
+      message: "Lưu dữ liệu khám bệnh thành công",
     };
-    
   } catch (error) {
     await transaction.rollback();
-    console.error('Error in saveExamData:', error);
+    console.error("Error in saveExamData:", error);
     throw error;
   }
 };

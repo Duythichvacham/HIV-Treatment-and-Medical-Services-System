@@ -1,9 +1,8 @@
-const { sql, config } = require("../config/db");
-const dbConfig = require("../config/db");
+const { poolPromise, sql } = require("../config/db");
 
 //(PATCH, cập nhật status của TestRequests nếu service_type là "examination")
 exports.updateTestRequestExamStatus = async (request_id, status) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   // Kiểm tra service_type là 'examination' hoặc 'test'
   const check = await pool.request().input("request_id", request_id).query(`
       SELECT s.service_type
@@ -14,7 +13,8 @@ exports.updateTestRequestExamStatus = async (request_id, status) => {
 
   if (
     !check.recordset.length ||
-    (check.recordset[0].service_type !== "examination" && check.recordset[0].service_type !== "test")
+    (check.recordset[0].service_type !== "examination" &&
+      check.recordset[0].service_type !== "test")
   ) {
     return null; // Không phải loại 'examination' hoặc 'test' hoặc không tồn tại
   }
@@ -35,7 +35,7 @@ exports.updateTestRequestExamStatus = async (request_id, status) => {
 
 //(GET, lấy chi tiết phiếu xét nghiệm)
 exports.getTestNoteDetail = async (test_note_id) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
       SELECT 
@@ -80,11 +80,11 @@ exports.getTestNoteDetail = async (test_note_id) => {
     `);
   const detail = result.recordset[0];
   if (detail) {
-    if (detail.source === 'self_booking') {
+    if (detail.source === "self_booking") {
       detail.doctor_name = null;
     }
   }
-  console.log('[DEBUG][getTestNoteDetail] result:', result.recordset);
+  console.log("[DEBUG][getTestNoteDetail] result:", result.recordset);
   return detail;
 };
 
@@ -97,162 +97,246 @@ exports.createTestResultAndComplete = async ({
   reference_range,
   notes,
 }) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
 
   // Nếu có test_type_id, chỉ lưu 1 chỉ số
   if (test_type_id) {
     // Kiểm tra đã có kết quả chưa
-    const existingResult = await pool.request()
-      .input('test_note_id', test_note_id)
-      .input('test_type_id', test_type_id)
-      .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+    const existingResult = await pool
+      .request()
+      .input("test_note_id", test_note_id)
+      .input("test_type_id", test_type_id)
+      .query(
+        "SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+      );
     if (existingResult.recordset.length > 0) {
       // UPDATE
-      const update = await pool.request()
-        .input('test_note_id', test_note_id)
-        .input('test_type_id', test_type_id)
-        .input('result_value', result_value)
-        .input('unit', unit)
-        .input('reference_range', reference_range)
-        .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+      const update = await pool
+        .request()
+        .input("test_note_id", test_note_id)
+        .input("test_type_id", test_type_id)
+        .input("result_value", result_value)
+        .input("unit", unit)
+        .input("reference_range", reference_range)
+        .query(
+          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+        );
       result = update.recordset[0];
     } else {
       // INSERT
-      const insert = await pool.request()
-        .input('test_note_id', test_note_id)
-        .input('test_type_id', test_type_id)
-        .input('result_value', result_value)
-        .input('unit', unit)
-        .input('reference_range', reference_range)
-        .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+      const insert = await pool
+        .request()
+        .input("test_note_id", test_note_id)
+        .input("test_type_id", test_type_id)
+        .input("result_value", result_value)
+        .input("unit", unit)
+        .input("reference_range", reference_range)
+        .query(
+          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)"
+        );
       result = insert.recordset[0];
     }
   }
 
   // 1. Lấy appointment_id từ test_note_id
-  const testNoteRes = await pool.request()
-    .input('test_note_id', test_note_id)
-    .query('SELECT appointment_id FROM TestNotes WHERE test_note_id = @test_note_id');
+  const testNoteRes = await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .query(
+      "SELECT appointment_id FROM TestNotes WHERE test_note_id = @test_note_id"
+    );
   const appointment_id = testNoteRes.recordset[0]?.appointment_id;
-  console.log('[DEBUG] test_note_id:', test_note_id, 'appointment_id:', appointment_id);
-  if (!appointment_id) throw new Error('Không tìm thấy appointment_id cho test_note_id này');
+  console.log(
+    "[DEBUG] test_note_id:",
+    test_note_id,
+    "appointment_id:",
+    appointment_id
+  );
+  if (!appointment_id)
+    throw new Error("Không tìm thấy appointment_id cho test_note_id này");
 
   // 2. Lấy service_id từ appointment_id
-  const appRes = await pool.request()
-    .input('appointment_id', appointment_id)
-    .query('SELECT service_id FROM Appointments WHERE appointment_id = @appointment_id');
+  const appRes = await pool
+    .request()
+    .input("appointment_id", appointment_id)
+    .query(
+      "SELECT service_id FROM Appointments WHERE appointment_id = @appointment_id"
+    );
   const service_id = appRes.recordset[0]?.service_id;
-  console.log('[DEBUG] service_id:', service_id);
-  if (!service_id) throw new Error('Không tìm thấy service_id cho appointment_id này');
+  console.log("[DEBUG] service_id:", service_id);
+  if (!service_id)
+    throw new Error("Không tìm thấy service_id cho appointment_id này");
 
   // 3. Lấy danh sách test_type_id của service này
-  const sttRes = await pool.request()
-    .input('service_id', service_id)
-    .query('SELECT test_type_id FROM ServicesTestTypes WHERE service_id = @service_id');
-  const testTypeIds = sttRes.recordset.map(r => r.test_type_id);
-  console.log('[DEBUG] testTypeIds:', testTypeIds);
+  const sttRes = await pool
+    .request()
+    .input("service_id", service_id)
+    .query(
+      "SELECT test_type_id FROM ServicesTestTypes WHERE service_id = @service_id"
+    );
+  const testTypeIds = sttRes.recordset.map((r) => r.test_type_id);
+  console.log("[DEBUG] testTypeIds:", testTypeIds);
 
   // 4. Nếu có nhiều test_type_id (ví dụ khẳng định), lưu từng chỉ số với đúng test_type_id
   let results = [];
   if (testTypeIds.length > 1) {
-    const values = typeof result_value === 'object' ? result_value : {};
+    const values = typeof result_value === "object" ? result_value : {};
     for (const test_type_id of testTypeIds) {
-      let value = null, u = '', ref = '';
-      if (test_type_id === 1) { // CD4
+      let value = null,
+        u = "",
+        ref = "";
+      if (test_type_id === 1) {
+        // CD4
         value = values.cd4;
-        u = typeof unit === 'object' ? unit.cd4 : unit;
-        ref = typeof reference_range === 'object' ? reference_range.cd4 : reference_range;
-      } else if (test_type_id === 2) { // HIV Viral Load
+        u = typeof unit === "object" ? unit.cd4 : unit;
+        ref =
+          typeof reference_range === "object"
+            ? reference_range.cd4
+            : reference_range;
+      } else if (test_type_id === 2) {
+        // HIV Viral Load
         value = values.viral_load;
-        u = typeof unit === 'object' ? unit.viral_load : unit;
-        ref = typeof reference_range === 'object' ? reference_range.viral_load : reference_range;
-      } else if (test_type_id === 4) { // Khẳng định
+        u = typeof unit === "object" ? unit.viral_load : unit;
+        ref =
+          typeof reference_range === "object"
+            ? reference_range.viral_load
+            : reference_range;
+      } else if (test_type_id === 4) {
+        // Khẳng định
         value = values.confirm;
-        u = typeof unit === 'object' ? unit.confirm : unit;
-        ref = typeof reference_range === 'object' ? reference_range.confirm : reference_range;
+        u = typeof unit === "object" ? unit.confirm : unit;
+        ref =
+          typeof reference_range === "object"
+            ? reference_range.confirm
+            : reference_range;
       }
       if (value !== undefined && value !== null) {
         // Kiểm tra xem đã có kết quả cho test_type_id này chưa
-        const existingResult = await pool.request()
-          .input('test_note_id', test_note_id)
-          .input('test_type_id', test_type_id)
-          .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
-        
+        const existingResult = await pool
+          .request()
+          .input("test_note_id", test_note_id)
+          .input("test_type_id", test_type_id)
+          .query(
+            "SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+          );
+
         if (existingResult.recordset.length > 0) {
           // UPDATE nếu đã có
-          console.log('[DEBUG][UPDATE TestResults]', {test_note_id, test_type_id, result_value: value, unit: u, reference_range: ref});
-          const update = await pool.request()
-            .input('test_note_id', test_note_id)
-            .input('test_type_id', test_type_id)
-            .input('result_value', value)
-            .input('unit', u)
-            .input('reference_range', ref)
-            .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+          console.log("[DEBUG][UPDATE TestResults]", {
+            test_note_id,
+            test_type_id,
+            result_value: value,
+            unit: u,
+            reference_range: ref,
+          });
+          const update = await pool
+            .request()
+            .input("test_note_id", test_note_id)
+            .input("test_type_id", test_type_id)
+            .input("result_value", value)
+            .input("unit", u)
+            .input("reference_range", ref)
+            .query(
+              "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+            );
           results.push(update.recordset[0]);
         } else {
           // INSERT nếu chưa có
-          console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id, result_value: value, unit: u, reference_range: ref});
-          const insert = await pool.request()
-            .input('test_note_id', test_note_id)
-            .input('test_type_id', test_type_id)
-            .input('result_value', value)
-            .input('unit', u)
-            .input('reference_range', ref)
-            .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+          console.log("[DEBUG][INSERT TestResults]", {
+            test_note_id,
+            test_type_id,
+            result_value: value,
+            unit: u,
+            reference_range: ref,
+          });
+          const insert = await pool
+            .request()
+            .input("test_note_id", test_note_id)
+            .input("test_type_id", test_type_id)
+            .input("result_value", value)
+            .input("unit", u)
+            .input("reference_range", ref)
+            .query(
+              "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)"
+            );
           results.push(insert.recordset[0]);
         }
       }
     }
   } else {
     // Nếu chỉ có 1 test_type_id, kiểm tra và UPDATE/INSERT
-    const existingResult = await pool.request()
-      .input('test_note_id', test_note_id)
-      .input('test_type_id', testTypeIds[0])
-      .query('SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
-    
+    const existingResult = await pool
+      .request()
+      .input("test_note_id", test_note_id)
+      .input("test_type_id", testTypeIds[0])
+      .query(
+        "SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+      );
+
     if (existingResult.recordset.length > 0) {
       // UPDATE nếu đã có
-      console.log('[DEBUG][UPDATE TestResults]', {test_note_id, test_type_id: testTypeIds[0], result_value, unit, reference_range});
-      const update = await pool.request()
-        .input('test_note_id', test_note_id)
-        .input('test_type_id', testTypeIds[0])
-        .input('result_value', result_value)
-        .input('unit', unit)
-        .input('reference_range', reference_range)
-        .query('UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id');
+      console.log("[DEBUG][UPDATE TestResults]", {
+        test_note_id,
+        test_type_id: testTypeIds[0],
+        result_value,
+        unit,
+        reference_range,
+      });
+      const update = await pool
+        .request()
+        .input("test_note_id", test_note_id)
+        .input("test_type_id", testTypeIds[0])
+        .input("result_value", result_value)
+        .input("unit", unit)
+        .input("reference_range", reference_range)
+        .query(
+          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+        );
       results.push(update.recordset[0]);
     } else {
       // INSERT nếu chưa có
-      console.log('[DEBUG][INSERT TestResults]', {test_note_id, test_type_id: testTypeIds[0], result_value, unit, reference_range});
-      const insert = await pool.request()
-        .input('test_note_id', test_note_id)
-        .input('test_type_id', testTypeIds[0])
-        .input('result_value', result_value)
-        .input('unit', unit)
-        .input('reference_range', reference_range)
-        .query('INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)');
+      console.log("[DEBUG][INSERT TestResults]", {
+        test_note_id,
+        test_type_id: testTypeIds[0],
+        result_value,
+        unit,
+        reference_range,
+      });
+      const insert = await pool
+        .request()
+        .input("test_note_id", test_note_id)
+        .input("test_type_id", testTypeIds[0])
+        .input("result_value", result_value)
+        .input("unit", unit)
+        .input("reference_range", reference_range)
+        .query(
+          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)"
+        );
       results.push(insert.recordset[0]);
     }
   }
 
   // Nếu có notes, cập nhật vào TestNotes
   if (notes) {
-    console.log('[DEBUG][UPDATE TestNotes]', {test_note_id, notes});
-    await pool.request()
-      .input('test_note_id', test_note_id)
-      .input('notes', notes)
-      .query('UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id');
+    console.log("[DEBUG][UPDATE TestNotes]", { test_note_id, notes });
+    await pool
+      .request()
+      .input("test_note_id", test_note_id)
+      .input("notes", notes)
+      .query(
+        "UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id"
+      );
   }
 
   // Cập nhật trạng thái phiếu xét nghiệm như cũ
-  await pool.request().input('test_note_id', test_note_id).query(`
+  await pool.request().input("test_note_id", test_note_id).query(`
       UPDATE tr
       SET tr.status = 'completed'
       FROM TestRequests tr
       JOIN TestNotes tn ON tr.request_id = tn.request_id
       WHERE tn.test_note_id = @test_note_id
     `);
-  await pool.request().input('test_note_id', test_note_id).query(`
+  await pool.request().input("test_note_id", test_note_id).query(`
       UPDATE a
       SET a.status = 'completed'
       FROM Appointments a
@@ -263,29 +347,52 @@ exports.createTestResultAndComplete = async ({
 
   // Sau khi lưu kết quả, cập nhật status của appointment thành 'completed'
   if (appointment_id) {
-    await pool.request()
-      .input('appointment_id', appointment_id)
-      .query("UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id");
+    await pool
+      .request()
+      .input("appointment_id", appointment_id)
+      .query(
+        "UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id"
+      );
   }
 
   // Debug toàn bộ TestResults và TestNotes liên quan test_note_id
-  const allResults = await pool.request()
-    .input('test_note_id', test_note_id)
-    .query('SELECT * FROM TestResults WHERE test_note_id = @test_note_id');
-  console.log('[DEBUG][ALL TestResults]', allResults.recordset);
-  const testNote = await pool.request()
-    .input('test_note_id', test_note_id)
-    .query('SELECT * FROM TestNotes WHERE test_note_id = @test_note_id');
-  console.log('[DEBUG][TestNote]', testNote.recordset[0]);
+  const allResults = await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .query("SELECT * FROM TestResults WHERE test_note_id = @test_note_id");
+  console.log("[DEBUG][ALL TestResults]", allResults.recordset);
+  const testNote = await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .query("SELECT * FROM TestNotes WHERE test_note_id = @test_note_id");
+  console.log("[DEBUG][TestNote]", testNote.recordset[0]);
 
   return results;
 };
 
 // Lấy danh sách tất cả mẫu xét nghiệm với filter theo status, date, lab_staff_id và room
-exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null, room_id = null) => {
-  const pool = await sql.connect(config);
-  console.log('[DEBUG][getAllLabTests] called with status:', status, 'date:', date, 'lab_staff_id:', lab_staff_id, 'room_id:', room_id);
-  
+// NOTE: Function này khác với appointmentService.getLabTestXXX():
+// - Hỗ trợ nhiều filter parameters (date, lab_staff_id, room_id)
+// - UNION cả TestRequests (doctor orders) và Appointments (self-booking)
+// - Sử dụng ROW_NUMBER() thay vì QueueService vì là historical data view
+exports.getAllLabTests = async (
+  status = null,
+  date = null,
+  lab_staff_id = null,
+  room_id = null
+) => {
+  const pool = await poolPromise;
+  console.log(
+    "[DEBUG][getAllLabTests] called with status:",
+    status,
+    "date:",
+    date,
+    "lab_staff_id:",
+    lab_staff_id,
+    "room_id:",
+    room_id
+  );
+
   let query = `
     -- 1. Xét nghiệm do bác sĩ chỉ định (TestRequests)
     SELECT 
@@ -299,7 +406,7 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
         tr.request_date AS bookTime,
         d.full_name AS doctor,
         tr.status,
-        a.queue_number AS stt,
+        ROW_NUMBER() OVER (ORDER BY tr.request_date ASC) AS queue_number,
         p.patient_id,
         NULL AS appointment_id,
         a.room_id,
@@ -330,7 +437,7 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
       AND CONVERT(date, tr.request_date) = ws.shift_date
     LEFT JOIN TestNotes tn ON tn.request_id = tr.request_id
     WHERE 1=1`;
-  
+
   if (status) {
     query += ` AND tr.status = @status`;
   }
@@ -340,7 +447,7 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
   if (room_id) {
     query += ` AND a.room_id = @room_id`;
   }
-  
+
   query += `
     UNION ALL
     -- 2. Xét nghiệm tự đặt (Appointments)
@@ -355,7 +462,7 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
         a.created_at AS bookTime,
         NULL AS doctor,
         a.status,
-        a.queue_number AS stt,
+        ROW_NUMBER() OVER (ORDER BY a.created_at ASC) AS queue_number,
         p.patient_id,
         a.appointment_id,
         a.room_id,
@@ -384,7 +491,7 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
       AND CONVERT(date, a.bookingDate) = ws.shift_date
     LEFT JOIN TestNotes tn ON tn.appointment_id = a.appointment_id
     WHERE a.doctor_id IS NULL AND s.service_type = 'test'`;
-  
+
   if (status) {
     query += ` AND a.status = @status`;
   }
@@ -394,23 +501,22 @@ exports.getAllLabTests = async (status = null, date = null, lab_staff_id = null,
   if (room_id) {
     query += ` AND a.room_id = @room_id`;
   }
-  
+
   query += `
     ORDER BY bookTime ASC`;
-  
-  console.log('[DEBUG][getAllLabTests] SQL Query:', query);
+
   const request = pool.request();
-  if (status) request.input('status', status);
-  if (date) request.input('date', date);
-  if (room_id) request.input('room_id', room_id);
+  if (status) request.input("status", status);
+  if (date) request.input("date", date);
+  if (room_id) request.input("room_id", room_id);
   const result = await request.query(query);
-  console.log('[DEBUG][getAllLabTests] result:', result.recordset);
+  console.log("[DEBUG][getAllLabTests] result:", result.recordset);
   return result.recordset;
 };
 
 // Lấy danh sách phòng xét nghiệm
 exports.getLabRooms = async () => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   const result = await pool.request().query(`
     SELECT 
       room_id,
@@ -425,7 +531,7 @@ exports.getLabRooms = async () => {
 
 // Lấy danh sách ca làm việc của lab staff theo ngày
 exports.getLabStaffShifts = async (date, lab_staff_id = null) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   let query = `
     SELECT 
       ws.shift_id,
@@ -441,33 +547,33 @@ exports.getLabStaffShifts = async (date, lab_staff_id = null) => {
     JOIN Accounts a ON ws.lab_staff_id = a.account_id
     WHERE ws.lab_staff_id IS NOT NULL
     AND r.room_type = N'Xét nghiệm'`;
-  
+
   if (date) {
     query += ` AND ws.shift_date = @date`;
   }
   if (lab_staff_id) {
     query += ` AND ws.lab_staff_id = @lab_staff_id`;
   }
-  
+
   query += ` ORDER BY ws.shift_date DESC, r.room_name`;
-  
+
   const request = pool.request();
-  if (date) request.input('date', date);
-  if (lab_staff_id) request.input('lab_staff_id', lab_staff_id);
-  
+  if (date) request.input("date", date);
+  if (lab_staff_id) request.input("lab_staff_id", lab_staff_id);
+
   const result = await request.query(query);
   return result.recordset;
 };
 
 // Lấy thông tin ca làm việc hiện tại của lab staff
 exports.getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   const currentDate = date || new Date().toISOString().slice(0, 10);
-  
-  const result = await pool.request()
-    .input('lab_staff_id', lab_staff_id)
-    .input('date', currentDate)
-    .query(`
+
+  const result = await pool
+    .request()
+    .input("lab_staff_id", lab_staff_id)
+    .input("date", currentDate).query(`
     SELECT 
         ws.shift_id,
         ws.shift_date,
@@ -484,18 +590,23 @@ exports.getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
       AND ws.status = 'approved'
       AND r.room_type = N'Xét nghiệm'
     `);
-  
+
   return result.recordset[0] || null;
 };
 
-exports.createTestNote = async ({ test_request_id, appointment_id, created_by_id, test_datetime }) => {
-  const pool = await sql.connect(config);
-  const result = await pool.request()
-    .input('request_id', sql.Int, test_request_id)
-    .input('appointment_id', sql.Int, appointment_id)
-    .input('created_by_id', sql.Int, created_by_id)
-    .input('test_datetime', sql.DateTime, test_datetime)
-    .query(`
+exports.createTestNote = async ({
+  test_request_id,
+  appointment_id,
+  created_by_id,
+  test_datetime,
+}) => {
+  const pool = await poolPromise;
+  const result = await pool
+    .request()
+    .input("request_id", sql.Int, test_request_id)
+    .input("appointment_id", sql.Int, appointment_id)
+    .input("created_by_id", sql.Int, created_by_id)
+    .input("test_datetime", sql.DateTime, test_datetime).query(`
       INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime)
       OUTPUT INSERTED.*
       VALUES (@request_id, @appointment_id, @created_by_id, @test_datetime)
@@ -504,9 +615,8 @@ exports.createTestNote = async ({ test_request_id, appointment_id, created_by_id
 };
 
 exports.getTestResultsByTestNoteId = async (test_note_id) => {
-  const pool = await sql.connect(config);
-  const result = await pool.request()
-    .input("test_note_id", test_note_id)
+  const pool = await poolPromise;
+  const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
       SELECT tr.result_id, tr.result_value, tr.unit, tr.reference_range, tr.created_at, tt.name AS test_type_name
       FROM TestResults tr
@@ -519,12 +629,15 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
 
 // Cập nhật trạng thái phiếu xét nghiệm và thời gian bắt đầu (test_datetime)
 exports.updateTestNoteStatus = async (test_note_id, status) => {
-  const pool = await sql.connect(config);
+  const pool = await poolPromise;
   // Nếu chuyển sang in_progress thì cập nhật test_datetime
-  if (status === 'in_progress') {
-    await pool.request()
-      .input('test_note_id', test_note_id)
-      .query('UPDATE TestNotes SET test_datetime = GETDATE() WHERE test_note_id = @test_note_id');
+  if (status === "in_progress") {
+    await pool
+      .request()
+      .input("test_note_id", test_note_id)
+      .query(
+        "UPDATE TestNotes SET test_datetime = GETDATE() WHERE test_note_id = @test_note_id"
+      );
   }
   // KHÔNG update status nếu không có cột status trong TestNotes
 };
