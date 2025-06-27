@@ -618,12 +618,19 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
   const pool = await poolPromise;
   const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
-      SELECT tr.result_id, tr.result_value, tr.unit, tr.reference_range, tr.created_at, tt.name AS test_type_name
+      SELECT 
+        tr.result_id, 
+        tr.test_type_id,
+        tt.name AS test_type_name,
+        tr.result_value, 
+        tr.unit, 
+        tr.reference_range, 
+        tr.created_at
       FROM TestResults tr
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
       WHERE tr.test_note_id = @test_note_id
       ORDER BY tr.result_id ASC
-  `);
+    `);
   return result.recordset;
 };
 
