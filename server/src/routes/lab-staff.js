@@ -20,7 +20,7 @@ router.patch(
 );
 
 // GET /api/v1/lab/test-notes/:test_note_id
-router.get("test-notes/:test_note_id", testController.getTestNoteDetail);
+router.get("/test-notes/:test_note_id", testController.getTestNoteDetail);
 router.get("/current-shift", testController.getCurrentLabStaffShift);
 
 // Thêm routes mới cho phòng và ca làm việc
