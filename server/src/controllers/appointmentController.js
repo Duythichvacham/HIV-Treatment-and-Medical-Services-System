@@ -1,4 +1,5 @@
 const appointmentService = require("../services/appointmentService");
+const { autoCancelPendingAppointments } = require("../utils/scheduler");
 
 exports.updateStatus = async (req, res, next) => {
   try {
@@ -145,6 +146,19 @@ exports.checkExistingAppointment = async (req, res, next) => {
       });
     }
 
+    next(error);
+  }
+};
+
+// Thêm API endpoint để manual cancel pending appointments
+exports.cancelPendingAppointments = async (req, res, next) => {
+  try {
+    await autoCancelPendingAppointments();
+    return res.json({
+      success: true,
+      message: "Successfully cancelled all pending appointments for today",
+    });
+  } catch (error) {
     next(error);
   }
 };

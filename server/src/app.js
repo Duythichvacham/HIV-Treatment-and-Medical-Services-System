@@ -24,7 +24,9 @@ app.get("/", (req, res) => {
 });
 app.use(errorHandler);
 
-// Khởi tạo scheduler cho queue management
+// Khởi tạo scheduler cho queue management and auto-cancel appointments
+// Chạy các job định kỳ để quản lý queue numbers và tự động cancel appointments
+// sau 17h
 initializeScheduler();
 
 const PORT = process.env.PORT;
