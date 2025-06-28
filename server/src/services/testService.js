@@ -101,8 +101,8 @@ exports.createTestResultAndComplete = async ({
 }) => {
   const pool = await poolPromise;
 
-  // Nếu có test_type_id, chỉ lưu 1 chỉ số
-  if (test_type_id) {
+  // Nếu có test_type_id và result_value KHÔNG phải object, chỉ lưu 1 chỉ số
+  if (test_type_id && typeof result_value !== "object") {
     // Kiểm tra đã có kết quả chưa
     const existingResult = await pool
       .request()
@@ -111,6 +111,7 @@ exports.createTestResultAndComplete = async ({
       .query(
         "SELECT result_id FROM TestResults WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
       );
+    let result;
     if (existingResult.recordset.length > 0) {
       // UPDATE
       const update = await pool
@@ -133,11 +134,13 @@ exports.createTestResultAndComplete = async ({
         .input("result_value", result_value)
         .input("unit", unit)
         .input("reference_range", reference_range)
+        .input("notes", notes)
         .query(
-          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)"
+          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range, notes) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range, @notes)"
         );
       result = insert.recordset[0];
     }
+    return result;
   }
 
   // 1. Lấy appointment_id từ test_note_id
@@ -370,6 +373,123 @@ exports.createTestResultAndComplete = async ({
   console.log("[DEBUG][TestNote]", testNote.recordset[0]);
 
   return results;
+};
+
+// Lấy danh sách bệnh nhân chờ xét nghiệm
+exports.getLabTestQueue = async (date, lab_staff_id, room_id) => {
+  const pool = await poolPromise;
+  let query = `
+    SELECT 
+      a.appointment_id,
+      p.full_name AS patient_name,
+      DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+      CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+      a.created_at AS bookTime,
+      s.name AS service_name,
+      a.status,
+      a.room_id,
+      r.room_name
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    LEFT JOIN Rooms r ON a.room_id = r.room_id
+    WHERE a.status = 'requested'
+      AND s.service_type = 'test'
+  `;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  if (room_id) {
+    query += ` AND a.room_id = @room_id`;
+  }
+  // Nếu cần lọc theo lab_staff_id, bổ sung join với WorkingShifts và điều kiện phù hợp
+
+  query += ` ORDER BY a.created_at ASC`;
+
+  const request = pool.request();
+  if (date) request.input("date", date);
+  if (room_id) request.input("room_id", room_id);
+
+  const result = await request.query(query);
+  return result.recordset;
+};
+
+// Lấy danh sách bệnh nhân đang xét nghiệm
+exports.getLabTestInProgress = async (date, lab_staff_id, room_id) => {
+  const pool = await poolPromise;
+  let query = `
+    SELECT 
+      a.appointment_id,
+      p.full_name AS patient_name,
+      DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+      CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+      a.created_at AS bookTime,
+      s.name AS service_name,
+      a.status,
+      a.room_id,
+      r.room_name
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    LEFT JOIN Rooms r ON a.room_id = r.room_id
+    WHERE a.status = 'in_progress'
+      AND s.service_type = 'test'
+  `;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  if (room_id) {
+    query += ` AND a.room_id = @room_id`;
+  }
+  // Nếu cần lọc theo lab_staff_id, bổ sung join với WorkingShifts và điều kiện phù hợp
+
+  query += ` ORDER BY a.created_at ASC`;
+
+  const request = pool.request();
+  if (date) request.input("date", date);
+  if (room_id) request.input("room_id", room_id);
+
+  const result = await request.query(query);
+  return result.recordset;
+};
+
+// lấy danh sách bệnh nhân xét nghiệm hoàn thành
+exports.getLabTestFinished = async (date, lab_staff_id, room_id) => {
+  const pool = await poolPromise;
+  let query = `
+    SELECT 
+      a.appointment_id,
+      p.full_name AS patient_name,
+      DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+      CASE WHEN p.gender = 'male' THEN N'Nam' WHEN p.gender = 'female' THEN N'Nữ' ELSE N'Khác' END AS gender,
+      a.created_at AS bookTime,
+      s.name AS service_name,
+      a.status,
+      a.room_id,
+      r.room_name
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    LEFT JOIN Rooms r ON a.room_id = r.room_id
+    WHERE a.status = 'completed'
+      AND s.service_type = 'test'
+  `;
+  if (date) {
+    query += ` AND CONVERT(date, a.bookingDate) = @date`;
+  }
+  if (room_id) {
+    query += ` AND a.room_id = @room_id`;
+  }
+  // Nếu cần lọc theo lab_staff_id, bổ sung join với WorkingShifts và điều kiện phù hợp
+
+  query += ` ORDER BY a.created_at ASC`;
+
+  const request = pool.request();
+  if (date) request.input("date", date);
+  if (room_id) request.input("room_id", room_id);
+
+  const result = await request.query(query);
+  return result.recordset;
 };
 
 // Lấy danh sách tất cả mẫu xét nghiệm với filter theo status, date, lab_staff_id và room
@@ -621,12 +741,19 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
   const pool = await poolPromise;
   const result = await pool.request().input("test_note_id", test_note_id)
     .query(`
-      SELECT tr.result_id, tr.result_value, tr.unit, tr.reference_range, tr.created_at, tt.name AS test_type_name
+      SELECT 
+        tr.result_id, 
+        tr.test_type_id,
+        tt.name AS test_type_name,
+        tr.result_value, 
+        tr.unit, 
+        tr.reference_range, 
+        tr.created_at
       FROM TestResults tr
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
       WHERE tr.test_note_id = @test_note_id
       ORDER BY tr.result_id ASC
-  `);
+    `);
   return result.recordset;
 };
 
