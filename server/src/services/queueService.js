@@ -48,8 +48,7 @@ exports.getNextQueueNumber = async (
       // Lấy queue number đầu tiên là 1
       await transaction
         .request()
-        .input("queue_id", insertResult.recordset[0].queue_id)
-        .query(`
+        .input("queue_id", insertResult.recordset[0].queue_id).query(`
           UPDATE QueueNumbers 
           SET current_number = 1 
           WHERE queue_id = @queue_id
