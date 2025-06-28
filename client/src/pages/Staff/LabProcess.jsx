@@ -24,11 +24,20 @@ const LabProcess = () => {
         const token = localStorage.getItem('token');
         const test_note_id = data.test_note_id || data.id;
         if (!test_note_id) return;
+        
         const res = await axios.get(`${API_BASE}/lab/test-notes/${test_note_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
         setTestDetail(res.data.data);
+        
+        // Load notes hiện tại nếu có
+        if (res.data.data && res.data.data.notes) {
+          setNote(res.data.data.notes);
+          console.log('DEBUG: Đã load notes hiện tại:', res.data.data.notes);
+        }
       } catch (err) {
+        console.error('DEBUG: Lỗi load TestNote detail:', err);
         setTestDetail(null);
       }
     };
@@ -36,9 +45,27 @@ const LabProcess = () => {
     // eslint-disable-next-line
   }, [data.test_note_id, data.id]);
 
-  const handleDraft = () => {
-    // TODO: lưu tạm kết quả
-    alert('Lưu tạm thành công!');
+  const handleDraft = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const test_note_id = data.test_note_id || data.id;
+      
+      if (!test_note_id) {
+        alert('Không tìm thấy mã phiếu xét nghiệm!');
+        return;
+      }
+      
+      // Cập nhật notes trong TestNote
+      await axios.patch(`${API_BASE}/lab/test-notes/${test_note_id}/notes`, {
+        notes: note
+      }, { headers });
+      
+      alert('Lưu tạm thành công!');
+    } catch (err) {
+      console.error('DEBUG: Lỗi lưu tạm:', err);
+      alert('Không thể lưu tạm! ' + (err?.response?.data?.message || ''));
+    }
   };
 
   const handleSubmit = async () => {
@@ -48,6 +75,15 @@ const LabProcess = () => {
       const headers = { Authorization: `Bearer ${token}` };
       const test_note_id = data.test_note_id || data.id;
       const serviceId = Number(testDetail?.service_id || data.service_id);
+      
+      // Cập nhật notes trong TestNote trước khi tạo kết quả
+      if (note.trim()) {
+        await axios.patch(`${API_BASE}/lab/test-notes/${test_note_id}/notes`, {
+          notes: note
+        }, { headers });
+        console.log('DEBUG: Đã cập nhật notes cho TestNote:', test_note_id);
+      }
+      
       // Gửi dữ liệu theo từng loại service
       if (serviceId === 3) {
         // CD4
@@ -104,10 +140,13 @@ const LabProcess = () => {
         setSubmitting(false);
         return;
       }
+      
+      console.log('DEBUG: Đã gửi kết quả xét nghiệm thành công');
       alert('Gửi kết quả thành công!');
       navigate('/lab-staff');
     } catch (err) {
-      alert('Không thể gửi kết quả!');
+      console.error('DEBUG: Lỗi gửi kết quả:', err);
+      alert('Không thể gửi kết quả! ' + (err?.response?.data?.message || ''));
     }
     setSubmitting(false);
   };
