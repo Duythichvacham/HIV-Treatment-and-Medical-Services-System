@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const authenticateToken = require("../middleware/authMiddleware");
 const registrationController = require("../controllers/registrationController");
 
 // GET /api/v1/registration/test-requests/pending - Lấy danh sách TestRequests chờ xử lý

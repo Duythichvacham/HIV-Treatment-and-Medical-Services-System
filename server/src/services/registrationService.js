@@ -9,10 +9,11 @@ const getPendingTestRequests = async () => {
     SELECT 
       tr.request_id,
       tr.appointment_id,
-      tr.service_id,
+      trd.service_id,
       tr.status,
       tr.request_date,
       tr.approved_at,
+      trd.notes as service_notes,
       s.name as service_name,
       s.price as service_price,
       s.description as service_description,
@@ -23,7 +24,8 @@ const getPendingTestRequests = async () => {
       sl.start_time as appointment_time,
       d.full_name as doctor_name
     FROM TestRequests tr
-    JOIN Services s ON tr.service_id = s.service_id
+    JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+    JOIN Services s ON trd.service_id = s.service_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Doctors d ON tr.doctor_id = d.doctor_id
@@ -47,6 +49,7 @@ const getPendingTestRequests = async () => {
       if (!groupedRequests[appointmentId]) {
         groupedRequests[appointmentId] = {
           appointment_id: appointmentId,
+          request_id: row.request_id,
           patient_name: row.patient_name,
           patient_phone: row.patient_phone,
           patient_address: row.patient_address,
@@ -63,11 +66,12 @@ const getPendingTestRequests = async () => {
 
       // Thêm service vào nhóm
       groupedRequests[appointmentId].services.push({
-        id: row.request_id,
+        request_id: row.request_id,
         service_id: row.service_id,
         service_name: row.service_name,
         service_price: row.service_price,
         service_description: row.service_description,
+        service_notes: row.service_notes,
       });
 
       // Cập nhật tổng tiền
@@ -134,7 +138,8 @@ const getRegistrationStatistics = async () => {
     const revenueQuery = `
       SELECT SUM(s.price) as total_revenue
       FROM TestRequests tr
-      JOIN Services s ON tr.service_id = s.service_id
+      JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+      JOIN Services s ON trd.service_id = s.service_id
       JOIN Appointments a ON tr.appointment_id = a.appointment_id
       WHERE tr.status IN ('in_progress', 'completed')
         AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
@@ -179,9 +184,10 @@ const getPaymentHistory = async (limit = 50) => {
     SELECT TOP (@limit)
       tr.request_id,
       tr.appointment_id,
-      tr.service_id,
+      trd.service_id,
       tr.status,
       tr.approved_at as payment_date,
+      trd.notes as service_notes,
       s.name as service_name,
       s.price as service_price,
       p.full_name as patient_name,
@@ -190,7 +196,8 @@ const getPaymentHistory = async (limit = 50) => {
       sl.start_time as appointment_time,
       d.full_name as doctor_name
     FROM TestRequests tr
-    JOIN Services s ON tr.service_id = s.service_id
+    JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+    JOIN Services s ON trd.service_id = s.service_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Doctors d ON tr.doctor_id = d.doctor_id
@@ -216,6 +223,7 @@ const getPaymentHistory = async (limit = 50) => {
       if (!groupedPayments[appointmentId]) {
         groupedPayments[appointmentId] = {
           appointment_id: appointmentId,
+          request_id: row.request_id,
           patient_name: row.patient_name,
           patient_phone: row.patient_phone,
           appointment_date: row.appointment_date,
@@ -230,10 +238,11 @@ const getPaymentHistory = async (limit = 50) => {
 
       // Thêm service vào nhóm thanh toán
       groupedPayments[appointmentId].services.push({
-        id: row.request_id,
+        request_id: row.request_id,
         service_id: row.service_id,
         service_name: row.service_name,
         service_price: row.service_price,
+        service_notes: row.service_notes,
       });
 
       // Cập nhật tổng tiền

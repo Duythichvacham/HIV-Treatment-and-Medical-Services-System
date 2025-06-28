@@ -206,22 +206,23 @@ export const login = async (username, password) => {
 };
 
 /**
- * Get current user info from token
+ * Get current user info from token (UNUSED - user info is decoded from JWT)
+ * TODO: Remove this function if not needed or implement /api/auth/me endpoint
  */
-export const getCurrentUser = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("No token found");
-  }
+// export const getCurrentUser = async () => {
+//   const token = localStorage.getItem("token");
+//   if (!token) {
+//     throw new Error("No token found");
+//   }
 
-  try {
-    const response = await api.get("/api/auth/me");
-    return response.data;
-  } catch (error) {
-    console.error("❌ getCurrentUser error:", error);
-    throw error;
-  }
-};
+//   try {
+//     const response = await api.get("/api/auth/me");
+//     return response.data;
+//   } catch (error) {
+//     console.error("❌ getCurrentUser error:", error);
+//     throw error;
+//   }
+// };
 
 /**
  * Get doctor by ID
@@ -341,28 +342,21 @@ export const getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
 // CHECK EXISTING APPOINTMENTS
 // ===========================================
 export const checkExistingAppointment = async (
-  date,
-  serviceType,
+  serviceId,
+  bookingDate,
   doctorId = null
 ) => {
   try {
-    // Tạm thời disable check existing để tránh lỗi route conflict
-    console.warn("checkExistingAppointment temporarily disabled for:", {
-      date,
-      serviceType,
-      doctorId,
-    });
-    return { hasExisting: false };
-
-    /* TODO: Cần tạo route mới trong server
-    const params = { date, serviceType };
+    const params = { serviceId, bookingDate };
     if (doctorId) params.doctorId = doctorId;
-    const response = await api.get("/api/v1/appointments/check-existing", { params });
-    return response.data;
-    */
+
+    const response = await api.get("/api/v1/appointments/check-existing", {
+      params,
+    });
+    return response.data.data;
   } catch (error) {
     console.error("Error checking existing appointment:", error);
-    // Return false để cho phép đặt lịch tiếp tục
+    // Return false để cho phép đặt lịch tiếp tục nếu có lỗi server
     return { hasExisting: false };
   }
 };
@@ -372,7 +366,7 @@ export const checkExistingAppointment = async (
 // ===========================================
 export const getUserAppointments = async () => {
   try {
-    const response = await api.get("/api/v1/appointments/user");
+    const response = await api.get("/api/v1/patients/appointment-history");
     return response.data;
   } catch (error) {
     console.error("Error fetching user appointments:", error);
@@ -389,7 +383,9 @@ export const getUserAppointments = async () => {
  */
 export const getPendingTestRequests = async () => {
   try {
-    const response = await api.get("/api/v1/test-requests/pending");
+    const response = await api.get(
+      "/api/v1/registrations/test-requests/pending"
+    );
     return response.data;
   } catch (error) {
     console.error("❌ getPendingTestRequests error:", error);
@@ -405,7 +401,7 @@ export const getPendingTestRequests = async () => {
 export const approveTestRequest = async (requestId, paymentMethod) => {
   try {
     const response = await api.patch(
-      `/api/v1/test-requests/${requestId}/approve`,
+      `/api/v1/registrations/test-requests/${requestId}/approve`,
       {
         payment_method: paymentMethod,
       }
@@ -422,7 +418,9 @@ export const approveTestRequest = async (requestId, paymentMethod) => {
  */
 export const getRegistrationStatistics = async () => {
   try {
-    const response = await api.get("/api/v1/test-requests/statistics");
+    const response = await api.get(
+      "/api/v1/registrations/test-requests/statistics"
+    );
     return response.data;
   } catch (error) {
     console.error("❌ getRegistrationStatistics error:", error);
@@ -441,12 +439,32 @@ export const getPaymentHistory = async (date = null, search = null) => {
     if (date) params.date = date;
     if (search) params.search = search;
 
-    const response = await api.get("/api/v1/test-requests/payment-history", {
-      params,
-    });
+    const response = await api.get(
+      "/api/v1/registrations/test-requests/payment-history",
+      {
+        params,
+      }
+    );
     return response.data;
   } catch (error) {
     console.error("❌ getPaymentHistory error:", error);
+    throw error;
+  }
+};
+
+// ===========================================
+// ADMIN/MANAGER ENDPOINTS
+// ===========================================
+
+/**
+ * Manual cancel all pending appointments for today (Admin/Manager only)
+ */
+export const cancelPendingAppointments = async () => {
+  try {
+    const response = await api.post("/api/v1/appointments/cancel-pending");
+    return response.data;
+  } catch (error) {
+    console.error("❌ cancelPendingAppointments error:", error);
     throw error;
   }
 };

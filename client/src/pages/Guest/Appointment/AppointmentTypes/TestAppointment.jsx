@@ -73,12 +73,14 @@ const TestAppointment = () => {
     // Check existing appointment
     try {
       const existingCheck = await checkExistingAppointment(
-        selectedDate,
-        "test"
+        selectedTestType.service_id, // serviceId
+        selectedDate, // bookingDate
+        null // doctorId (null for test)
       );
       if (existingCheck.hasExisting) {
         alert(
-          "Bạn đã có lịch xét nghiệm vào ngày này. Vui lòng chọn ngày khác hoặc hủy lịch cũ trước."
+          existingCheck.message ||
+            "Bạn đã có lịch xét nghiệm này chưa hoàn thành. Vui lòng hoàn thành trước khi đặt lại."
         );
         return;
       }

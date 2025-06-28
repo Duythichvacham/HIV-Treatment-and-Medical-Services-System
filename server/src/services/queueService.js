@@ -32,7 +32,7 @@ exports.getNextQueueNumber = async (
       `);
 
     if (queueRecord.recordset.length === 0) {
-      // Tạo mới nếu chưa có
+      // Tạo mới nếu chưa có - bắt đầu từ 0 để queue number đầu tiên là 1
       const maxNumber = queue_type === "test" ? 1000 : 8;
       const insertResult = await transaction
         .request()
@@ -41,8 +41,17 @@ exports.getNextQueueNumber = async (
         .input("slot_id", slot_id)
         .input("max_number", maxNumber).query(`
           INSERT INTO QueueNumbers (queue_type, doctor_id, slot_id, current_number, max_number)
-          VALUES (@queue_type, @doctor_id, @slot_id, 1, @max_number);
+          VALUES (@queue_type, @doctor_id, @slot_id, 0, @max_number);
           SELECT SCOPE_IDENTITY() as queue_id;
+        `);
+
+      // Lấy queue number đầu tiên là 1
+      await transaction
+        .request()
+        .input("queue_id", insertResult.recordset[0].queue_id).query(`
+          UPDATE QueueNumbers 
+          SET current_number = 1 
+          WHERE queue_id = @queue_id
         `);
 
       await transaction.commit();

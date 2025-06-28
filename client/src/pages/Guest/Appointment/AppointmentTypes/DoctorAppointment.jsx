@@ -164,13 +164,14 @@ const DoctorAppointment = () => {
     try {
       setLoading(true);
       const existingCheck = await checkExistingAppointment(
-        selectedDate,
-        "doctor",
-        selectedDoctor.id
+        1, // serviceId (1 = Khám tổng quát)
+        selectedDate, // bookingDate
+        selectedDoctor.id // doctorId
       );
       if (existingCheck.hasExisting) {
         alert(
-          "Bạn đã có lịch hẹn vào ngày này. Vui lòng chọn ngày khác hoặc hủy lịch cũ trước."
+          existingCheck.message ||
+            "Bạn đã có lịch khám trong ngày này. Vui lòng chọn ngày khác hoặc hủy lịch cũ trước."
         );
         setLoading(false);
         return;
