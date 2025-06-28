@@ -386,6 +386,7 @@ export const getPendingTestRequests = async () => {
     const response = await api.get(
       "/api/v1/registrations/test-requests/pending"
     );
+    console.log("API getPendingTestRequests response:", response);
     return response.data;
   } catch (error) {
     console.error("❌ getPendingTestRequests error:", error);
@@ -465,6 +466,116 @@ export const cancelPendingAppointments = async () => {
     return response.data;
   } catch (error) {
     console.error("❌ cancelPendingAppointments error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get lab statistics for Lab Staff dashboard
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ */
+export const getLabStatistics = async (date = null, lab_staff_id = null) => {
+  try {
+    const params = {};
+    if (date) params.date = date;
+    if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+
+    const response = await api.get("/api/v1/lab/statistics", { params });
+    return response.data;
+  } catch (error) {
+    console.error("❌ getLabStatistics error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update test status (for Lab Staff workflow)
+ * @param {number} test_id - Test ID
+ * @param {string} status - New status (requested, in_progress, completed)
+ */
+export const updateTestStatus = async (test_id, status) => {
+  try {
+    const response = await api.patch(`/api/v1/lab/tests/${test_id}/status`, {
+      status,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("❌ updateTestStatus error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get test note details by ID
+ * @param {number} test_note_id - Test note ID
+ */
+export const getTestNoteDetails = async (test_note_id) => {
+  try {
+    const response = await api.get(`/api/v1/lab/test-notes/${test_note_id}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getTestNoteDetails error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get test results by test note ID
+ * @param {number} test_note_id - Test note ID
+ */
+export const getTestResults = async (test_note_id) => {
+  try {
+    const response = await api.get(`/api/v1/lab/test-results/${test_note_id}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getTestResults error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create test note
+ * @param {object} noteData - Test note data
+ */
+export const createTestNote = async (noteData) => {
+  try {
+    const response = await api.post("/api/v1/lab/test-notes", noteData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createTestNote error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update test note
+ * @param {number} test_note_id - Test note ID
+ * @param {object} updateData - Data to update
+ */
+export const updateTestNote = async (test_note_id, updateData) => {
+  try {
+    const response = await api.patch(
+      `/api/v1/lab/test-notes/${test_note_id}`,
+      updateData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ updateTestNote error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create test result
+ * @param {object} resultData - Test result data
+ */
+export const createTestResult = async (resultData) => {
+  try {
+    const response = await api.post("/api/v1/lab/test-results", resultData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createTestResult error:", error);
     throw error;
   }
 };

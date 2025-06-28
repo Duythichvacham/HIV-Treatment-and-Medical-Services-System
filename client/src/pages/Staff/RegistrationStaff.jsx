@@ -48,12 +48,30 @@ const RegistrationStaff = () => {
 
       if (activeTab === "process") {
         // Fetch pending test requests
+        console.log("Fetching pending test requests...");
         const pendingResponse = await getPendingTestRequests();
-        setTestRequests(pendingResponse.data || []);
+        console.log("Pending response:", pendingResponse);
+        console.log("Pending response data:", pendingResponse.data);
+        console.log(
+          "Is pendingResponse.data an array?",
+          Array.isArray(pendingResponse.data)
+        );
+
+        const requestsData = Array.isArray(pendingResponse.data)
+          ? pendingResponse.data
+          : [];
+        setTestRequests(requestsData);
+        console.log("Set testRequests to:", requestsData);
       } else if (activeTab === "history") {
         // Fetch payment history
+        console.log("Fetching payment history...");
         const historyResponse = await getPaymentHistory();
-        setCompletedRequests(historyResponse.data || []);
+        console.log("History response:", historyResponse);
+
+        const historyData = Array.isArray(historyResponse.data)
+          ? historyResponse.data
+          : [];
+        setCompletedRequests(historyData);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -105,7 +123,9 @@ const RegistrationStaff = () => {
   };
 
   // Filter completed requests based on search term
-  const filteredCompletedRequests = completedRequests.filter(
+  const filteredCompletedRequests = (
+    Array.isArray(completedRequests) ? completedRequests : []
+  ).filter(
     (request) =>
       request.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.doctor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -256,7 +276,9 @@ const RegistrationStaff = () => {
                   </p>
                 </div>
                 <div className="p-6">
-                  {testRequests.length === 0 ? (
+                  {!testRequests ||
+                  !Array.isArray(testRequests) ||
+                  testRequests.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <TestTube className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                       <p>
