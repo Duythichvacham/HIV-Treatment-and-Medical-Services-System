@@ -43,7 +43,23 @@ const validateAppointmentRules = async (
 
 exports.confirmPayment = async (invoiceId) => {
   const pool = await poolPromise;
-  await pool.request().input("invoiceId", invoiceId).query(`
+  
+  console.log("=== DEBUG confirmPayment ===");
+  console.log("Invoice ID:", invoiceId);
+  
+  // Kiểm tra invoice có tồn tại không trước khi update
+  const checkInvoice = await pool
+    .request()
+    .input("invoiceId", invoiceId)
+    .query("SELECT * FROM Invoices WHERE invoice_id = @invoiceId");
+  
+  console.log("Invoice trước khi update:", checkInvoice.recordset[0]);
+  
+  if (checkInvoice.recordset.length === 0) {
+    throw new Error(`Không tìm thấy invoice với ID: ${invoiceId}`);
+  }
+  
+  const result = await pool.request().input("invoiceId", invoiceId).query(`
       -- 1. Cập nhật trạng thái hóa đơn thành 'paid'
       UPDATE Invoices
       SET status = 'paid', issued_at = GETDATE()
@@ -57,7 +73,13 @@ exports.confirmPayment = async (invoiceId) => {
         FROM Invoices
         WHERE invoice_id = @invoiceId AND appointment_id IS NOT NULL
       );
+      
+      -- 3. Trả về thông tin invoice sau khi update
+      SELECT * FROM Invoices WHERE invoice_id = @invoiceId;
     `);
+
+  console.log("Kết quả update:", result.recordset);
+  console.log("Rows affected:", result.rowsAffected);
 
   return {
     success: true,

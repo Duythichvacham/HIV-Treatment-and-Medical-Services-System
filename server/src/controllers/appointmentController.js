@@ -163,6 +163,34 @@ exports.cancelPendingAppointments = async (req, res, next) => {
   }
 };
 
+// Lấy invoice_id từ appointment_id
+exports.getAppointmentInvoice = async (req, res, next) => {
+  try {
+    const { appointment_id } = req.params;
+
+    const invoice = await appointmentService.getInvoiceByAppointmentId(
+      appointment_id
+    );
+
+    if (!invoice) {
+      return res.status(404).json({
+        message: "Không tìm thấy hóa đơn cho lịch hẹn này",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Lấy thông tin hóa đơn thành công",
+      invoice_id: invoice.invoice_id,
+      status: invoice.status,
+      amount: invoice.amount,
+      created_at: invoice.created_at,
+      issued_at: invoice.issued_at,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Bỏ
  * exports.getLabTestQueue = async (req, res, next) => {

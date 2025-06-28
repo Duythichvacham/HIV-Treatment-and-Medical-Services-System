@@ -18,7 +18,9 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const storageKey = `appointmentForm_${serviceType}`;
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
+  const [invoiceId, setInvoiceId] = useState(null);
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
@@ -34,14 +36,14 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     setAppointmentData({
       serviceName,
       date,
-      time: isDoctor ? slotLabel : "Trong giờ làm việc",
+      time: isDoctor ? slotLabel : "7:30 - 9:30 or 13:30 - 15:30",
       fee:
         typeof price === "number"
           ? `${Number(price).toLocaleString()}đ`
           : price,
       isDoctor,
       room: "", // Will be set from API response
-      doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
+      doctorOrStaff: isDoctor ? user?.name : "",
       slotLabel,
     });
     setIsConfirmOpen(true);
@@ -74,6 +76,10 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       // Lấy appointment_id từ response
       const appointment_id =
         res?.appointment?.appointment_id || res?.appointment_id;
+      
+      // Lấy invoice_id từ response nếu có, hoặc query từ server
+      let invoice_id = res?.invoice_id || res?.appointment?.invoice_id;
+      
       // Gọi API lấy chi tiết lịch hẹn từ backend
       const token = localStorage.getItem("token");
       console.log("Token gửi lên BE:", token);
@@ -85,26 +91,48 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       });
       const detail = await detailRes.json();
 
+      // Nếu chưa có invoice_id từ response, cố gắng lấy từ database
+      if (!invoice_id && appointment_id) {
+        try {
+          const invoiceRes = await fetch(`/api/v1/appointments/${appointment_id}/invoice`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const invoiceData = await invoiceRes.json();
+          invoice_id = invoiceData?.data?.invoice_id;
+        } catch (err) {
+          console.warn("Could not fetch invoice_id:", err);
+        }
+      }
+
       // Debug dữ liệu trả về từ backend
       console.log("DEBUG chi tiết lịch hẹn từ BE:", detail);
+      console.log("DEBUG invoice_id:", invoice_id);
 
       // Map lại dữ liệu cho đúng format modal cần
       const mappedData = {
+        appointment_id,
         queueNumber: detail.data?.queue_number,
         serviceName: detail.data?.service_name || serviceName,
         room: detail.data?.room_id,
-
-        doctorOrStaff: detail.data?.doctor_name || detail.data?.staff_name || "Nhân viên xét nghiệm",
-        date: detail.data?.bookingDate ? detail.data.bookingDate.slice(0, 10) : '', // chỉ lấy YYYY-MM-DD
+        doctorOrStaff:
+          detail.data?.doctor_name ||
+          detail.data?.staff_name ||
+          "Nhân viên xét nghiệm",
+        date: detail.data?.bookingDate
+          ? detail.data.bookingDate.slice(0, 10)
+          : "", // chỉ lấy YYYY-MM-DD
         time: isDoctor
-          ? (
-              formatTimeStr(detail.data?.start_time) && formatTimeStr(detail.data?.end_time)
-                ? `${formatTimeStr(detail.data.start_time)} - ${formatTimeStr(detail.data.end_time)}`
-                : "Trong giờ làm việc"
-            )
+          ? formatTimeStr(detail.data?.start_time) &&
+            formatTimeStr(detail.data?.end_time)
+            ? `${formatTimeStr(detail.data.start_time)} - ${formatTimeStr(
+                detail.data.end_time
+              )}`
+            : "Trong giờ làm việc"
           : "Trong giờ làm việc",
         fee: price,
-
+        total_price: typeof price === "number" ? price : parseFloat(price.replace(/[^\d]/g, "")),
         isDoctor,
       };
 
@@ -112,9 +140,12 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       console.log("DEBUG dữ liệu truyền vào modal:", mappedData);
 
       setAppointmentData(mappedData);
+      setInvoiceId(invoice_id);
       setIsConfirmOpen(false);
-      setIsReceiptOpen(true);
-      sessionStorage.removeItem(storageKey);
+      
+      // Mở modal thanh toán thay vì modal thành công
+      setIsPaymentOpen(true);
+      
     } catch (err) {
       let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
       if (err?.response?.data?.message) {
@@ -127,6 +158,81 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       console.error("DEBUG lỗi đặt lịch:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Hàm xử lý khi thanh toán thành công
+  const handlePaymentComplete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      // Lấy invoice_id nếu chưa có
+      let currentInvoiceId = invoiceId;
+      if (!currentInvoiceId && appointmentData?.appointment_id) {
+        console.log("Không có invoice_id, đang fetch từ API...");
+        try {
+          const invoiceRes = await fetch(`/api/v1/appointments/${appointmentData.appointment_id}/invoice`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          if (invoiceRes.ok) {
+            const invoiceData = await invoiceRes.json();
+            currentInvoiceId = invoiceData.invoice_id;
+            setInvoiceId(currentInvoiceId);
+            console.log("Lấy được invoice_id:", currentInvoiceId);
+          }
+        } catch (fetchErr) {
+          console.error("Lỗi khi lấy invoice_id:", fetchErr);
+        }
+      }
+
+      // 1. Cập nhật invoice status thành 'paid' (nếu có invoiceId)
+      // API này cũng sẽ tự động cập nhật appointment status thành 'in_progress'
+      if (currentInvoiceId) {
+        console.log("Cập nhật invoice status thành paid, invoice_id:", currentInvoiceId);
+        console.log("Invoice ID type:", typeof currentInvoiceId);
+        
+        // Verify invoice exists trước khi thanh toán
+        const verifyResponse = await fetch(`/api/v1/appointments/${appointmentData.appointment_id}/invoice`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const verifyData = await verifyResponse.json();
+        console.log("Verify invoice data:", verifyData);
+        
+        const paymentResponse = await fetch(`/api/v1/booking/pay/${currentInvoiceId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        const paymentResult = await paymentResponse.json();
+        console.log("Payment API response:", paymentResult);
+        console.log("Payment response status:", paymentResponse.status);
+        
+        if (!paymentResponse.ok) {
+          console.error("Payment API error:", paymentResult);
+          throw new Error(paymentResult.message || "Lỗi thanh toán");
+        }
+        
+        console.log("Thanh toán thành công!");
+      } else {
+        console.warn("Không có invoice_id để cập nhật thanh toán");
+      }
+
+      setIsPaymentOpen(false);
+      setIsReceiptOpen(true);
+      sessionStorage.removeItem(storageKey);
+    } catch (err) {
+      console.error("Error processing payment:", err);
+      // Vẫn hiển thị modal thành công dù có lỗi cập nhật status
+      setIsPaymentOpen(false);
+      setIsReceiptOpen(true);
+      sessionStorage.removeItem(storageKey);
     }
   };
 
@@ -180,21 +286,21 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           d.getMinutes().toString().padStart(2, "0")
         );
       }
-
-    } catch {}
-    return '';
+    } catch (err) {
+      console.error("Error parsing time:", err);
+    }
+    return "";
   }
 
   // Hàm format an toàn cho giờ slot
   function formatTimeStr(t) {
-    if (!t) return '';
-    if (/^\d{2}:\d{2}/.test(t)) return t.slice(0,5);
-    if (typeof t === 'string' && t.includes('T')) {
+    if (!t) return "";
+    if (/^\d{2}:\d{2}/.test(t)) return t.slice(0, 5);
+    if (typeof t === "string" && t.includes("T")) {
       const match = t.match(/T(\d{2}:\d{2})/);
       if (match) return match[1];
     }
-    return '';
-
+    return "";
   }
 
   useEffect(() => {

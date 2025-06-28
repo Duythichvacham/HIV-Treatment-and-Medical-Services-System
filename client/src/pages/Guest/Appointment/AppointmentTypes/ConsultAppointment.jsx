@@ -93,9 +93,7 @@ const ConsultAppointment = () => {
             time_slot: `${startTime} - ${endTime}`,
             time: `${startTime} - ${endTime}`,
             available_slots: Number(slot.available_spots) || 0,
-            total_slots: Number(slot.max_patients_per_slot) || 6,
             available: Number(slot.available_spots) || 0,
-            total: Number(slot.max_patients_per_slot) || 6,
             status:
               slot.available_spots && slot.available_spots > 0
                 ? "available"

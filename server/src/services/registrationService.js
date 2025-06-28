@@ -94,9 +94,20 @@ const getPendingTestRequests = async () => {
  */
 const approveTestRequest = async (appointmentId) => {
   const query = `
+    -- 1. Cập nhật TestRequests status và approved_at
     UPDATE TestRequests 
     SET status = 'in_progress', approved_at = GETDATE() 
-    WHERE appointment_id = @appointmentId AND status = 'requested'
+    WHERE appointment_id = @appointmentId AND status = 'requested';
+    
+    -- 2. Cập nhật Invoice status từ 'pending' sang 'paid'
+    UPDATE Invoices 
+    SET status = 'paid', issued_at = GETDATE() 
+    WHERE appointment_id = @appointmentId AND status = 'pending';
+    
+    -- 3. Cập nhật Appointment status sang 'in_progress' 
+    UPDATE Appointments 
+    SET status = 'in_progress' 
+    WHERE appointment_id = @appointmentId AND status = 'requested';
   `;
 
   try {
