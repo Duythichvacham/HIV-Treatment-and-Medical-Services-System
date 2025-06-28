@@ -34,10 +34,8 @@ const LabProcess = () => {
         // Load notes hiện tại nếu có
         if (res.data.data && res.data.data.notes) {
           setNote(res.data.data.notes);
-          console.log('DEBUG: Đã load notes hiện tại:', res.data.data.notes);
         }
       } catch (err) {
-        console.error('DEBUG: Lỗi load TestNote detail:', err);
         setTestDetail(null);
       }
     };
@@ -63,7 +61,6 @@ const LabProcess = () => {
       
       alert('Lưu tạm thành công!');
     } catch (err) {
-      console.error('DEBUG: Lỗi lưu tạm:', err);
       alert('Không thể lưu tạm! ' + (err?.response?.data?.message || ''));
     }
   };
@@ -81,7 +78,6 @@ const LabProcess = () => {
         await axios.patch(`${API_BASE}/lab/test-notes/${test_note_id}/notes`, {
           notes: note
         }, { headers });
-        console.log('DEBUG: Đã cập nhật notes cho TestNote:', test_note_id);
       }
       
       // Gửi dữ liệu theo từng loại service
@@ -141,11 +137,9 @@ const LabProcess = () => {
         return;
       }
       
-      console.log('DEBUG: Đã gửi kết quả xét nghiệm thành công');
       alert('Gửi kết quả thành công!');
       navigate('/lab-staff');
     } catch (err) {
-      console.error('DEBUG: Lỗi gửi kết quả:', err);
       alert('Không thể gửi kết quả! ' + (err?.response?.data?.message || ''));
     }
     setSubmitting(false);

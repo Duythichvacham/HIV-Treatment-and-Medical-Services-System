@@ -205,7 +205,6 @@ exports.getLabFinished = async (req, res, next) => {
 
 // GET /api/v1/lab/lab-tests
 exports.getAllLabTests = async (req, res, next) => {
-  console.log("getAllLabTests called");
   try {
     const { status, date, lab_staff_id, room_id } = req.query;
     const tests = await testService.getAllLabTests(
@@ -285,14 +284,51 @@ exports.getCurrentLabStaffShift = async (req, res, next) => {
 exports.createTestNote = async (req, res, next) => {
   try {
     const { test_request_id, appointment_id, created_by_id, test_datetime } = req.body;
-    if (!test_request_id && !appointment_id) {
-      return res
-        .status(400)
-        .json({ message: "Thiếu test_request_id hoặc appointment_id" });
+    const { poolPromise } = require('../config/db');
+    const pool = await poolPromise;
+
+    // Kiểm tra trùng cho appointment_id (không kiểm tra status)
+    if (appointment_id) {
+      const check = await pool.request()
+        .input('appointment_id', appointment_id)
+        .query(`
+          SELECT TOP 1 * FROM TestNotes
+          WHERE appointment_id = @appointment_id
+        `);
+      if (check.recordset.length > 0) {
+        return res.status(200).json({
+          message: "Đã có phiếu xét nghiệm cho appointment này",
+          data: check.recordset[0]
+        });
+      }
+    }
+    // Kiểm tra trùng cho test_request_id (không kiểm tra status)
+    if (test_request_id) {
+      const check = await pool.request()
+        .input('test_request_id', test_request_id)
+        .query(`
+          SELECT TOP 1 * FROM TestNotes
+          WHERE test_request_id = @test_request_id
+        `);
+      if (check.recordset.length > 0) {
+        return res.status(200).json({
+          message: "Đã có phiếu xét nghiệm cho test request này",
+          data: check.recordset[0]
+        });
+      }
     }
     
     // Sử dụng test_datetime từ frontend hoặc tạo mới nếu không có
-    const noteDatetime = test_datetime ? new Date(test_datetime) : new Date();
+    // Chuyển đổi về giờ Việt Nam trước khi lưu
+    let noteDatetime;
+    if (test_datetime) {
+      noteDatetime = new Date(test_datetime);
+    } else {
+      // Tạo thời gian hiện tại theo giờ Việt Nam
+      const now = new Date();
+      const vietnamTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+      noteDatetime = vietnamTime;
+    }
     
     const note = await testService.createTestNote({
       test_request_id,
@@ -342,6 +378,17 @@ exports.updateTestNoteNotes = async (req, res, next) => {
       message: "Cập nhật ghi chú phiếu xét nghiệm thành công", 
       data: result 
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateTestNoteDatetime = async (req, res, next) => {
+  try {
+    const { test_note_id } = req.params;
+    const { test_datetime } = req.body;
+    const result = await require('../services/testService').updateTestNoteDatetime(test_note_id, test_datetime);
+    res.json({ message: "Cập nhật thời gian bắt đầu xét nghiệm thành công", data: result });
   } catch (error) {
     next(error);
   }
