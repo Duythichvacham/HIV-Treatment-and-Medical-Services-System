@@ -100,6 +100,55 @@ exports.getAppointmentDetail = async (req, res, next) => {
   }
 };
 
+exports.checkExistingAppointment = async (req, res, next) => {
+  try {
+    const { serviceId, bookingDate, doctorId } = req.query;
+    const accountId = req.user.userId; // Lấy từ token
+
+    // Validate đầu vào
+    if (!serviceId || !bookingDate) {
+      return res.status(400).json({
+        message: "serviceId và bookingDate là bắt buộc",
+      });
+    }
+
+    // Validate định dạng ngày
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(bookingDate)) {
+      return res.status(400).json({
+        message: "bookingDate phải có định dạng YYYY-MM-DD",
+      });
+    }
+
+    const result = await appointmentService.checkExistingAppointment(
+      accountId,
+      parseInt(serviceId),
+      bookingDate,
+      doctorId ? parseInt(doctorId) : null
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    // Handle specific errors
+    const errorMessages = {
+      PATIENT_NOT_FOUND: "Không tìm thấy bệnh nhân cho tài khoản này",
+      SERVICE_NOT_FOUND: "Không tìm thấy dịch vụ",
+    };
+
+    if (errorMessages[error.message]) {
+      return res.status(400).json({
+        success: false,
+        message: errorMessages[error.message],
+      });
+    }
+
+    next(error);
+  }
+};
+
 /**
  * Bỏ
  * exports.getLabTestQueue = async (req, res, next) => {

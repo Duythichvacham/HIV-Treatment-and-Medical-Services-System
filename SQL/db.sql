@@ -5,7 +5,7 @@ DROP DATABASE HIV_HEALTH_CARE
 GO
 CREATE DATABASE HIV_HEALTH_CARE
 GO
-USE HIV_HEATH_CARE
+USE HIV_HEALTH_CARE
 -- Accounts
 CREATE TABLE Accounts (
     account_id INT PRIMARY KEY IDENTITY(1,1),
@@ -106,7 +106,7 @@ CREATE TABLE Appointments (
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
     bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id, bookingDate)
+    -- thực hiện ràng buộc ở back-end
 
 );
 

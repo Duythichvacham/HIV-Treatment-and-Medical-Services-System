@@ -17,8 +17,8 @@ router.get("/finished", testController.getLabFinished);
 router.patch("/:id/status", testController.updateTestRequestExamStatus);
 
 // GET /api/v1/lab/test-notes/:test_note_id
+router.get("test-notes/:test_note_id", testController.getTestNoteDetail);
 router.get("/current-shift", testController.getCurrentLabStaffShift);
-router.get("/:test_note_id", testController.getTestNoteDetail);
 
 // Thêm routes mới cho phòng và ca làm việc
 router.get("/rooms", testController.getLabRooms);

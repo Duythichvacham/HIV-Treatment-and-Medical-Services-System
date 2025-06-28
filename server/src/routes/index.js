@@ -47,13 +47,13 @@ function route(app) {
    * API lab staff
    * Prefix: api/v1/lab
    */
-  app.use("/api/v1/lab", authMiddleware, labStaffRouter);
+  app.use("/api/v1/labs", authMiddleware, labStaffRouter);
   /**
    * API Registration staff
    * Prefix: api/v1/registration
    */
   // Registration Staff routes
-  app.use("/api/v1/registration", authMiddleware, registrationRouter);
+  app.use("/api/v1/registrations", authMiddleware, registrationRouter);
   /**
    * API booking
    * Prefix: api/v1/booking

@@ -56,8 +56,10 @@ const getCurrentExam = async (patientId, appointmentId = null) => {
     LEFT JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
     LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
     LEFT JOIN TestRequests r ON tn.request_id = r.request_id
-    LEFT JOIN Services s ON r.service_id = s.service_id AND s.test_type_id IS NOT NULL
-    LEFT JOIN TestTypes tt ON s.test_type_id = tt.test_type_id
+    LEFT JOIN TestRequestDetails trd ON r.request_id = trd.request_id
+    LEFT JOIN Services s ON trd.service_id = s.service_id
+    LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
+    LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
     WHERE a.patient_id = @patient_id
     ORDER BY tn.test_datetime DESC;
     IF NOT EXISTS (SELECT 1 FROM #LatestTests)
@@ -83,7 +85,8 @@ const getCurrentExam = async (patientId, appointmentId = null) => {
     LEFT JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
     LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
     LEFT JOIN TestRequests r ON tn.request_id = r.request_id
-    LEFT JOIN Services s ON r.service_id = s.service_id
+    LEFT JOIN TestRequestDetails trd ON r.request_id = trd.request_id
+    LEFT JOIN Services s ON trd.service_id = s.service_id
     LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
     LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
     WHERE a.patient_id = @patient_id

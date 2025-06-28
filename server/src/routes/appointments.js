@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const appointmentController = require("../controllers/appointmentController");
 
+// Kiểm tra lịch hẹn đã tồn tại (phải đặt trước các route có params)
+router.get("/check-existing", appointmentController.checkExistingAppointment);
+
 // Đặt lịch khám mới
 router.post("/", appointmentController.createAppointment);
 

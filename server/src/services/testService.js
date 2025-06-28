@@ -3,11 +3,12 @@ const { poolPromise, sql } = require("../config/db");
 //(PATCH, cập nhật status của TestRequests nếu service_type là "examination")
 exports.updateTestRequestExamStatus = async (request_id, status) => {
   const pool = await poolPromise;
-  // Kiểm tra service_type là 'examination' hoặc 'test'
+  // Kiểm tra service_type là 'examination' hoặc 'test' thông qua TestRequestDetails
   const check = await pool.request().input("request_id", request_id).query(`
       SELECT s.service_type
       FROM Services s
-      JOIN TestRequests tr ON s.service_id = tr.service_id
+      JOIN TestRequestDetails trd ON s.service_id = trd.service_id
+      JOIN TestRequests tr ON trd.request_id = tr.request_id
       WHERE tr.request_id = @request_id
     `);
 
@@ -69,7 +70,8 @@ exports.getTestNoteDetail = async (test_note_id) => {
       LEFT JOIN Patients p1 ON a.patient_id = p1.patient_id
       LEFT JOIN Appointments a2 ON tr.appointment_id = a2.appointment_id
       LEFT JOIN Patients p2 ON a2.patient_id = p2.patient_id
-      LEFT JOIN Services s ON tr.service_id = s.service_id
+      LEFT JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+      LEFT JOIN Services s ON trd.service_id = s.service_id
       LEFT JOIN ServicesTestTypes stt ON s.service_id = stt.service_id
       LEFT JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
       LEFT JOIN Services s2 ON a.service_id = s2.service_id
@@ -427,9 +429,10 @@ exports.getAllLabTests = async (
           WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
           ORDER BY tr3.created_at DESC) AS latest_viral_load
     FROM TestRequests tr
+    JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
-    JOIN Services s ON tr.service_id = s.service_id
+    JOIN Services s ON trd.service_id = s.service_id
     LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
     JOIN Invoices i ON tr.request_id = i.request_id AND i.status = 'paid'
     LEFT JOIN Rooms r ON a.room_id = r.room_id
