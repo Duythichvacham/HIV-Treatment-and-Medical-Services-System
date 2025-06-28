@@ -284,18 +284,24 @@ exports.getCurrentLabStaffShift = async (req, res, next) => {
 
 exports.createTestNote = async (req, res, next) => {
   try {
-    const { test_request_id, appointment_id, created_by_id } = req.body;
+    const { test_request_id, appointment_id, created_by_id, test_datetime } = req.body;
     if (!test_request_id && !appointment_id) {
       return res
         .status(400)
         .json({ message: "Thiếu test_request_id hoặc appointment_id" });
     }
+    
+    // Sử dụng test_datetime từ frontend hoặc tạo mới nếu không có
+    const noteDatetime = test_datetime ? new Date(test_datetime) : new Date();
+    
     const note = await testService.createTestNote({
       test_request_id,
       appointment_id,
       created_by_id,
-      test_datetime: new Date(),
+      test_datetime: noteDatetime,
     });
+    
+    console.log('DEBUG: Đã tạo TestNote:', note);
     res.json({ message: "Tạo phiếu xét nghiệm thành công", data: note });
   } catch (error) {
     next(error);
@@ -307,6 +313,35 @@ exports.getTestResultsByTestNoteId = async (req, res, next) => {
     const { test_note_id } = req.params;
     const results = await testService.getTestResultsByTestNoteId(test_note_id);
     res.json({ message: "Lấy kết quả xét nghiệm thành công", data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getTestNotesByAppointment = async (req, res, next) => {
+  try {
+    const { appointment_id } = req.params;
+    const notes = await testService.getTestNotesByAppointment(appointment_id);
+    res.json({ message: "Lấy danh sách phiếu xét nghiệm theo appointment thành công", data: notes });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateTestNoteNotes = async (req, res, next) => {
+  try {
+    const { test_note_id } = req.params;
+    const { notes } = req.body;
+    
+    if (!test_note_id) {
+      return res.status(400).json({ message: "Thiếu test_note_id" });
+    }
+    
+    const result = await testService.updateTestNoteNotes(test_note_id, notes);
+    res.json({ 
+      message: "Cập nhật ghi chú phiếu xét nghiệm thành công", 
+      data: result 
+    });
   } catch (error) {
     next(error);
   }

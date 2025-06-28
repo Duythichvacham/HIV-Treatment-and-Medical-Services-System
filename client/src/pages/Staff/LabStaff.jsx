@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { getAllLabTests, getCurrentLabStaffShift } from '../../services/api';
+import { getCurrentLabStaffShift } from '../../services/api';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api/v1';
@@ -135,19 +135,65 @@ const LabStaff = () => {
   const { user } = useAuth();
   const [hasShift, setHasShift] = useState(false);
 
+  // Hàm lấy danh sách chờ xét nghiệm
+  const getLabQueue = async (date, lab_staff_id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const params = { date };
+      if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+      
+      const response = await axios.get(`${API_BASE}/lab/queue`, { headers, params });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi lấy danh sách chờ xét nghiệm:', error);
+      return [];
+    }
+  };
+
+  // Hàm lấy danh sách đang xét nghiệm
+  const getLabInProgress = async (date, lab_staff_id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const params = { date };
+      if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+      
+      const response = await axios.get(`${API_BASE}/lab/in-progress`, { headers, params });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi lấy danh sách đang xét nghiệm:', error);
+      return [];
+    }
+  };
+
+  // Hàm lấy danh sách hoàn thành
+  const getLabFinished = async (date, lab_staff_id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const params = { date };
+      if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+      
+      const response = await axios.get(`${API_BASE}/lab/finished`, { headers, params });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi lấy danh sách hoàn thành:', error);
+      return [];
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Sử dụng API mới để lấy tất cả dữ liệu một lần
-      // Thêm lab_staff_id filter nếu user có lab_staff_id
       const lab_staff_id = user?.id;
-      const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
-      console.log('DEBUG allTests:', allTests);
       
-      // Phân loại dữ liệu theo status
-      const queue = allTests.filter(test => test.status === 'requested');
-      const inProgress = allTests.filter(test => test.status === 'in_progress');
-      const done = allTests.filter(test => test.status === 'completed');
+      // Gọi 3 API riêng biệt thay vì getAllLabTests
+      const [queue, inProgress, done] = await Promise.all([
+        getLabQueue(selectedDate, lab_staff_id),
+        getLabInProgress(selectedDate, lab_staff_id),
+        getLabFinished(selectedDate, lab_staff_id)
+      ]);
       
       console.log('DEBUG queue:', queue);
       console.log('DEBUG inProgress:', inProgress);
@@ -188,6 +234,8 @@ const LabStaff = () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
+
+      // 1. Đổi status sang in_progress
       if (card.source === 'doctor_request') {
         const url = `${API_BASE}/test-requests/${card.id}/status`;
         await axios.patch(url, { status: 'in_progress' }, { headers });
@@ -198,6 +246,23 @@ const LabStaff = () => {
         alert('Không xác định được loại mẫu xét nghiệm!');
         return;
       }
+
+      // 2. Tạo TestNote mới
+      const now = new Date();
+      const vietnamTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+      const payload = {
+        created_by_id: user.id,
+        test_datetime: vietnamTime.toISOString()
+      };
+      if (card.source === 'doctor_request') {
+        payload.test_request_id = card.id;
+        if (card.appointment_id) payload.appointment_id = card.appointment_id;
+      } else if (card.source === 'self_booking') {
+        payload.appointment_id = card.appointment_id;
+      }
+      await axios.post(`${API_BASE}/lab/test-notes`, payload, { headers });
+
+      // 3. Cập nhật lại danh sách
       await fetchData();
     } catch (err) {
       alert('Không thể bắt đầu xét nghiệm! ' + (err?.response?.data?.message || ''));
@@ -210,26 +275,40 @@ const LabStaff = () => {
       return;
     }
     try {
-      let test_note_id = card.test_note_id;
-      if (!test_note_id) {
-        const token = localStorage.getItem('token');
-        const headers = { Authorization: `Bearer ${token}` };
-        const payload = { created_by_id: user.id };
-        if (card.source === 'doctor_request') {
-          payload.test_request_id = card.id;
-          if (card.appointment_id) payload.appointment_id = card.appointment_id;
-        } else if (card.source === 'self_booking') {
-          payload.appointment_id = card.appointment_id;
-        }
-        const testNoteRes = await axios.post(
-          `${API_BASE}/lab/test-notes`,
-          payload,
-          { headers }
-        );
-        test_note_id = testNoteRes.data.data.test_note_id;
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      // Luôn tạo TestNote mới khi bấm "Bắt đầu xét nghiệm"
+      const payload = { 
+        created_by_id: user.id,
+        test_datetime: new Date().toISOString() // Thêm thời gian bắt đầu xét nghiệm
+      };
+      
+      if (card.source === 'doctor_request') {
+        payload.test_request_id = card.id;
+        if (card.appointment_id) payload.appointment_id = card.appointment_id;
+      } else if (card.source === 'self_booking') {
+        payload.appointment_id = card.appointment_id;
+      } else {
+        alert('Không xác định được loại mẫu xét nghiệm!');
+        return;
       }
+      
+      console.log('DEBUG: Tạo TestNote với payload:', payload);
+      
+      const testNoteRes = await axios.post(
+        `${API_BASE}/lab/test-notes`,
+        payload,
+        { headers }
+      );
+      
+      const test_note_id = testNoteRes.data.data.test_note_id;
+      console.log('DEBUG: Đã tạo TestNote với ID:', test_note_id);
+      
+      // Chuyển đến trang nhập kết quả với test_note_id mới
       navigate('/lab-process', { state: { ...card, test_note_id } });
     } catch (err) {
+      console.error('DEBUG: Lỗi tạo TestNote:', err);
       alert('Không thể tạo phiếu xét nghiệm! ' + (err?.response?.data?.message || ''));
     }
   };

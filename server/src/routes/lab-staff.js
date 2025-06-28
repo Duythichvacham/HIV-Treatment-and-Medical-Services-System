@@ -32,5 +32,11 @@ router.get(
   "/test-results/:test_note_id",
   testController.getTestResultsByTestNoteId
 );
-//
+
+// GET /test-notes/by-appointment/:appointment_id
+router.get('/test-notes/by-appointment/:appointment_id', testController.getTestNotesByAppointment);
+
+// PATCH /test-notes/:test_note_id/notes (cập nhật ghi chú phiếu xét nghiệm)
+router.patch('/test-notes/:test_note_id/notes', testController.updateTestNoteNotes);
+
 module.exports = router;
