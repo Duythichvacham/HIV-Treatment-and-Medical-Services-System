@@ -34,10 +34,10 @@ const LabResult = () => {
   }, []);
   
   // Thời gian trả kết quả: lấy thời gian tạo kết quả mới nhất
-  const resultTime = latestResults.length > 0 ? new Date(latestResults[latestResults.length - 1].created_at).toLocaleString() : '-';
+  const resultTime = latestResults.length > 0 ? new Date(latestResults[latestResults.length - 1].created_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '-';
   
   // Thời gian nhận mẫu: test_datetime là thời gian bắt đầu xét nghiệm
-  const sampleTime = note.test_datetime ? new Date(note.test_datetime).toLocaleString() : '-';
+  const sampleTime = note.test_datetime ? new Date(note.test_datetime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '-';
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">

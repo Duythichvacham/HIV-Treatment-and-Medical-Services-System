@@ -176,6 +176,8 @@ const LabStaff = () => {
     try {
       // Sử dụng API mới để lấy tất cả dữ liệu một lần
       // Thêm lab_staff_id filter nếu user có lab_staff_id
+      // Sử dụng API mới để lấy tất cả dữ liệu một lần
+      // Thêm lab_staff_id filter nếu user có lab_staff_id
       const lab_staff_id = user?.id;
       const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
       console.log("DEBUG allTests:", allTests);

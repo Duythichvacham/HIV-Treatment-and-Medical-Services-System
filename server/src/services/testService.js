@@ -86,7 +86,6 @@ exports.getTestNoteDetail = async (test_note_id) => {
       detail.doctor_name = null;
     }
   }
-  console.log("[DEBUG][getTestNoteDetail] result:", result.recordset);
   return detail;
 };
 
@@ -108,7 +107,6 @@ exports.createTestResultAndComplete = async ({
       .input('test_note_id', test_note_id)
       .input('notes', notes)
       .query('UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id');
-    console.log('[DEBUG] Đã update notes cho test_note_id:', test_note_id);
   }
 
   // Nếu có test_type_id và result_value KHÔNG phải object, chỉ lưu 1 chỉ số
@@ -135,7 +133,6 @@ exports.createTestResultAndComplete = async ({
           "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
         );
       result = update.recordset[0];
-      console.log('[DEBUG] Đã update TestResults:', result);
     } else {
       // INSERT
       const insert = await pool
@@ -149,7 +146,6 @@ exports.createTestResultAndComplete = async ({
           "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range)"
         );
       result = insert.recordset[0];
-      console.log('[DEBUG] Đã insert TestResults:', result);
     }
     // Không return ở đây, tiếp tục kiểm tra completion phía dưới
   }
@@ -162,9 +158,7 @@ exports.createTestResultAndComplete = async ({
       "SELECT appointment_id FROM TestNotes WHERE test_note_id = @test_note_id"
     );
   const appointment_id = testNoteRes.recordset[0]?.appointment_id;
-  console.log("[DEBUG] Sau khi lấy appointment_id:", appointment_id);
   if (!appointment_id) {
-    console.log("[ERROR] Không tìm thấy appointment_id cho test_note_id này");
     throw new Error("Không tìm thấy appointment_id cho test_note_id này");
   }
 
@@ -176,9 +170,7 @@ exports.createTestResultAndComplete = async ({
       "SELECT service_id FROM Appointments WHERE appointment_id = @appointment_id"
     );
   const service_id = appRes.recordset[0]?.service_id;
-  console.log("[DEBUG] Sau khi lấy service_id:", service_id);
   if (!service_id) {
-    console.log("[ERROR] Không tìm thấy service_id cho appointment_id này");
     throw new Error("Không tìm thấy service_id cho appointment_id này");
   }
 
@@ -190,7 +182,6 @@ exports.createTestResultAndComplete = async ({
       "SELECT test_type_id FROM ServicesTestTypes WHERE service_id = @service_id"
     );
   const testTypeIds = sttRes.recordset.map((r) => r.test_type_id);
-  console.log("[DEBUG] testTypeIds:", testTypeIds);
 
   // 5. Kiểm tra đã đủ kết quả cho tất cả test_type_id chưa (trên toàn bộ test_note_id của appointment)
   const countResult = await pool
@@ -203,10 +194,7 @@ exports.createTestResultAndComplete = async ({
       WHERE tn.appointment_id = @appointment_id
     `);
   const resultCount = countResult.recordset[0]?.count || 0;
-  console.log("[DEBUG] resultCount:", resultCount, "testTypeIds.length:", testTypeIds.length);
-  console.log("[DEBUG] appointment_id:", appointment_id, "test_note_id:", test_note_id);
   if (resultCount === testTypeIds.length) {
-    console.log("[DEBUG] Điều kiện đủ, chuẩn bị update status...");
     // Cập nhật tất cả TestNotes của appointment này
     // await pool.request()
     //   .input("appointment_id", appointment_id)
@@ -221,13 +209,9 @@ exports.createTestResultAndComplete = async ({
     }
 
     // Cập nhật tất cả TestRequests của appointment này
-    console.log("[DEBUG] Chuẩn bị update TestRequests cho appointment_id:", appointment_id);
     await pool.request()
       .input("appointment_id", appointment_id)
       .query("UPDATE TestRequests SET status = 'completed' WHERE appointment_id = @appointment_id");
-    console.log("[DEBUG] Đã update TestRequests xong cho appointment_id:", appointment_id);
-
-    console.log("[DEBUG] Đã update status xong!");
   }
 
   // Debug toàn bộ TestResults và TestNotes liên quan test_note_id
@@ -235,12 +219,10 @@ exports.createTestResultAndComplete = async ({
     .request()
     .input("test_note_id", test_note_id)
     .query("SELECT * FROM TestResults WHERE test_note_id = @test_note_id");
-  console.log("[DEBUG][ALL TestResults]", allResults.recordset);
   const testNote = await pool
     .request()
     .input("test_note_id", test_note_id)
     .query("SELECT * FROM TestNotes WHERE test_note_id = @test_note_id");
-  console.log("[DEBUG][TestNote]", testNote.recordset[0]);
 
   return true;
 };
@@ -559,16 +541,6 @@ exports.getAllLabTests = async (
   room_id = null
 ) => {
   const pool = await poolPromise;
-  console.log(
-    "[DEBUG][getAllLabTests] called with status:",
-    status,
-    "date:",
-    date,
-    "lab_staff_id:",
-    lab_staff_id,
-    "room_id:",
-    room_id
-  );
 
   // Nếu có lab_staff_id nhưng không có room_id, tự động lấy room_id từ WorkingShifts
   if (lab_staff_id && !room_id) {
@@ -585,7 +557,6 @@ exports.getAllLabTests = async (
     
     if (shiftResult.recordset.length > 0) {
       room_id = shiftResult.recordset[0].room_id;
-      console.log("[DEBUG][getAllLabTests] Auto-detected room_id:", room_id);
     }
   }
 
@@ -707,7 +678,6 @@ exports.getAllLabTests = async (
   if (date) request.input("date", date);
   if (room_id) request.input("room_id", room_id);
   const result = await request.query(query);
-  console.log("[DEBUG][getAllLabTests] result:", result.recordset);
   return result.recordset;
 };
 
@@ -868,6 +838,14 @@ exports.updateTestNoteNotes = async (test_note_id, notes) => {
       SELECT * FROM TestNotes WHERE test_note_id = @test_note_id;
     `);
   
-  console.log('[DEBUG] Đã cập nhật notes cho TestNote:', test_note_id, 'Notes:', notes);
   return result.recordset[0];
+};
+
+exports.updateTestNoteDatetime = async (test_note_id, test_datetime) => {
+  const pool = await poolPromise;
+  await pool.request()
+    .input('test_note_id', test_note_id)
+    .input('test_datetime', test_datetime)
+    .query('UPDATE TestNotes SET test_datetime = @test_datetime WHERE test_note_id = @test_note_id');
+  return { test_note_id, test_datetime };
 };

@@ -20,7 +20,7 @@ router.patch(
 );
 
 // GET /api/v1/lab/test-notes/:test_note_id
-router.get("test-notes/:test_note_id", testController.getTestNoteDetail);
+router.get("/test-notes/:test_note_id", testController.getTestNoteDetail);
 router.get("/current-shift", testController.getCurrentLabStaffShift);
 
 // Thêm routes mới cho phòng và ca làm việc
@@ -41,5 +41,8 @@ router.get('/test-notes/by-appointment/:appointment_id', testController.getTestN
 
 // PATCH /test-notes/:test_note_id/notes (cập nhật ghi chú phiếu xét nghiệm)
 router.patch('/test-notes/:test_note_id/notes', testController.updateTestNoteNotes);
+
+// PATCH /test-notes/:test_note_id/datetime (cập nhật thời gian bắt đầu xét nghiệm)
+router.patch('/test-notes/:test_note_id/datetime', testController.updateTestNoteDatetime);
 
 module.exports = router;
