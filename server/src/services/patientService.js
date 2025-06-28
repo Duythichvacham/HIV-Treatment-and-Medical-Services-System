@@ -1,14 +1,12 @@
-const { sql, poolPromise } = require('../config/db'); // điều chỉnh đường dẫn đúng
+const { sql, poolPromise } = require("../config/db"); // điều chỉnh đường dẫn đúng
 
 //GET, search bệnh nhân dựa vào sdt và tên
-
-
 exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .input('name', sql.NVarChar, name)
-    .input('phone', sql.VarChar, phone)
-    .query(`
+  const result = await pool
+    .request()
+    .input("name", sql.NVarChar, name)
+    .input("phone", sql.VarChar, phone).query(`
       SELECT [patient_id],
              [account_id],
              [full_name],
@@ -25,13 +23,12 @@ exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
   return result.recordset;
 };
 
- 
 exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .input('name', sql.NVarChar, name)
-    .input('phone', sql.VarChar, phone)
-    .query(`
+  const result = await pool
+    .request()
+    .input("name", sql.NVarChar, name)
+    .input("phone", sql.VarChar, phone).query(`
       SELECT [patient_id],
              [account_id],
              [full_name],
@@ -47,12 +44,6 @@ exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
     `);
   return result.recordset;
 };
-
-
-
-
-  
-  
 
 //
 // exports.updateTestRequestStatus = async (appointment_id, doctor_id, status) => {
@@ -65,12 +56,10 @@ exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
 //   return result.recordset[0];
 // };
 
-
 //GET, lấy bệnh nhân chờ xét nghiệm với service_type='test' /api/v1/lab/appointments/queue
 exports.getLabTestQueue = async () => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .query(`
+  const result = await pool.request().query(`
       SELECT 
         a.appointment_id,
         a.queue_number,
@@ -97,8 +86,7 @@ exports.getLabTestQueue = async () => {
 // Lấy danh sách bệnh nhân đang xét nghiệm (status = 'in_progress')
 exports.getLabTestInProgress = async () => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .query(`
+  const result = await pool.request().query(`
       SELECT 
         a.appointment_id,
         a.queue_number,
@@ -125,8 +113,7 @@ exports.getLabTestInProgress = async () => {
 ///api/v1/lab/appointments/finished (GET, lấy bệnh nhân hoàn thành XN)
 exports.getLabTestFinished = async () => {
   const pool = await poolPromise;
-  const result = await pool.request()
-    .query(`
+  const result = await pool.request().query(`
       SELECT 
         a.appointment_id,
         a.queue_number,
@@ -148,4 +135,4 @@ exports.getLabTestFinished = async () => {
       ORDER BY a.created_at ASC
     `);
   return result.recordset;
-}
+};

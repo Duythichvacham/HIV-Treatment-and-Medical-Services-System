@@ -19,7 +19,7 @@ import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
 import RegistrationStaff from "./pages/Staff/RegistrationStaff";
-import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboardRefactored";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";

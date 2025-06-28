@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 
-const users = [{ username: "admin01" }];
+const users = [{ username: "doctor01" }];
 
 const saltRounds = 10;
 

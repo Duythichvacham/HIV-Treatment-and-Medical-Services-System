@@ -1,0 +1,450 @@
+import { useState, useCallback } from "react";
+import { examApi } from "../services/examApi";
+import { prescriptionApi } from "../services/testRequestApi";
+import { VITAL_SIGNS_DEFAULTS } from "../utils/constants";
+import {
+  validateVitalSigns,
+  validateDiagnosis,
+  validatePrescription,
+  validateExamCompletion,
+} from "../utils/validators";
+
+export const useExamForm = (patientId, appointmentId, patientData = null) => {
+  const [examData, setExamData] = useState({
+    vital_signs: { ...VITAL_SIGNS_DEFAULTS },
+    clinical_signs: "",
+    diagnosis_primary: "",
+    diagnosis_secondary: "",
+    // test_requests removed - now managed independently
+    follow_up_date: "",
+    prescription: {
+      arv_regimen_id: null,
+      support_drugs: [],
+      counseling_notes: "",
+      follow_up_plan: "",
+      doctor_notes: "",
+    },
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  // availableTests and ongoingTests removed - now managed in IndependentTestRequests component
+  const [arvRegimens, setARVRegimens] = useState([]);
+
+  // Load initial data
+  const loadInitialData = useCallback(async () => {
+    if (!patientId || !appointmentId) return;
+
+    setLoading(true);
+    try {
+      const [examRes, arvRes] = await Promise.all([
+        examApi.getCurrent(patientId, appointmentId),
+        prescriptionApi.getARVRegimens(),
+      ]);
+
+      if (examRes.data?.exam_data) {
+        const serverExamData = examRes.data.exam_data;
+        console.log("[useExamForm] Initial exam data loaded:", serverExamData);
+
+        // Parse vitals từ server về dạng object
+        const parseVitals = (vitalsString, weight, height, bmi) => {
+          const vitals = { ...VITAL_SIGNS_DEFAULTS };
+
+          // Parse vitals string nếu có
+          if (vitalsString && vitalsString !== "Chưa có thông tin") {
+            // Parse string như "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
+            const bloodPressureMatch =
+              vitalsString.match(/Huyết áp:\s*([^,]+)/);
+            const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
+            const temperatureMatch = vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+
+            if (bloodPressureMatch)
+              vitals.bloodPressure = bloodPressureMatch[1].trim();
+            if (heartRateMatch) vitals.heartRate = heartRateMatch[1];
+            if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+          }
+
+          // Set physical measurements
+          vitals.weight = weight || 0;
+          vitals.height = height || 0;
+          vitals.bmi = bmi || 0;
+
+          return vitals;
+        };
+
+        // Parse support drugs từ prescription details
+        let supportDrugs = [];
+        if (
+          serverExamData.prescription_details &&
+          Array.isArray(serverExamData.prescription_details)
+        ) {
+          supportDrugs = serverExamData.prescription_details.map((detail) => ({
+            drug_name: detail.drug_name || "",
+            dosage: detail.dosage || "",
+            frequency: detail.frequency || "",
+            duration_days: detail.duration_days || "",
+            usage_instructions: detail.usage_instructions || "",
+            notes: detail.notes || "",
+          }));
+        }
+
+        setExamData({
+          vital_signs: parseVitals(
+            serverExamData.vitals,
+            serverExamData.weight,
+            serverExamData.height,
+            serverExamData.bmi
+          ),
+          clinical_signs: serverExamData.clinical_signs || "",
+          diagnosis_primary: serverExamData.diagnosis_primary || "",
+          diagnosis_secondary: serverExamData.diagnosis_secondary || "",
+          follow_up_date: "",
+          prescription: {
+            arv_regimen_id: serverExamData.arv_regimen_id || null,
+            support_drugs: supportDrugs,
+            counseling_notes: serverExamData.counseling_notes || "",
+            follow_up_plan: serverExamData.follow_up_plan || "",
+            doctor_notes: serverExamData.doctor_notes || "",
+          },
+        });
+      }
+
+      setARVRegimens(arvRes.data || []);
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [patientId, appointmentId]);
+
+  // Update vital signs
+  const updateVitalSigns = useCallback(
+    (field, value) => {
+      setExamData((prev) => ({
+        ...prev,
+        vital_signs: {
+          ...prev.vital_signs,
+          [field]: value,
+        },
+      }));
+
+      // Calculate BMI if weight and height are available
+      if (field === "weight" || field === "height") {
+        setExamData((prev) => {
+          const weight =
+            field === "weight"
+              ? parseFloat(value)
+              : parseFloat(prev.vital_signs.weight);
+          const height =
+            field === "height"
+              ? parseFloat(value)
+              : parseFloat(prev.vital_signs.height);
+
+          if (weight && height) {
+            const bmi = (weight / Math.pow(height / 100, 2)).toFixed(1);
+            return {
+              ...prev,
+              vital_signs: {
+                ...prev.vital_signs,
+                [field]: value,
+                bmi: bmi,
+              },
+            };
+          }
+
+          return prev;
+        });
+      }
+
+      // Clear related errors
+      if (errors.vital_signs?.[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          vital_signs: {
+            ...prev.vital_signs,
+            [field]: undefined,
+          },
+        }));
+      }
+    },
+    [errors.vital_signs]
+  );
+
+  // Update clinical signs
+  const updateClinicalSigns = useCallback((value) => {
+    setExamData((prev) => ({
+      ...prev,
+      clinical_signs: value,
+    }));
+  }, []);
+
+  // Update diagnosis
+  const updateDiagnosis = useCallback(
+    (field, value) => {
+      setExamData((prev) => ({
+        ...prev,
+        [`diagnosis_${field}`]: value,
+      }));
+
+      // Clear related errors
+      if (errors[`diagnosis_${field}`]) {
+        setErrors((prev) => ({
+          ...prev,
+          [`diagnosis_${field}`]: undefined,
+        }));
+      }
+    },
+    [errors]
+  );
+
+  // Update prescription
+  const updatePrescription = useCallback((field, value) => {
+    setExamData((prev) => ({
+      ...prev,
+      prescription: {
+        ...prev.prescription,
+        [field]: value,
+      },
+    }));
+  }, []);
+
+  // Add support drug
+  const addSupportDrug = useCallback(() => {
+    setExamData((prev) => ({
+      ...prev,
+      prescription: {
+        ...prev.prescription,
+        support_drugs: [
+          ...prev.prescription.support_drugs,
+          {
+            drug_name: "",
+            dosage: "",
+            frequency: "",
+            duration_days: "",
+            usage_instructions: "",
+            notes: "",
+          },
+        ],
+      },
+    }));
+  }, []);
+
+  // Update support drug
+  const updateSupportDrug = useCallback((index, field, value) => {
+    setExamData((prev) => ({
+      ...prev,
+      prescription: {
+        ...prev.prescription,
+        support_drugs: prev.prescription.support_drugs.map((drug, i) =>
+          i === index ? { ...drug, [field]: value } : drug
+        ),
+      },
+    }));
+  }, []);
+
+  // Remove support drug
+  const removeSupportDrug = useCallback((index) => {
+    setExamData((prev) => ({
+      ...prev,
+      prescription: {
+        ...prev.prescription,
+        support_drugs: prev.prescription.support_drugs.filter(
+          (_, i) => i !== index
+        ),
+      },
+    }));
+  }, []);
+
+  // Validate form
+  const validateForm = useCallback(
+    (forCompletion = false) => {
+      const newErrors = {};
+
+      // Validate vital signs
+      const vitalValidation = validateVitalSigns(examData.vital_signs);
+      if (!vitalValidation.isValid) {
+        newErrors.vital_signs = vitalValidation.errors;
+      }
+
+      // Validate diagnosis
+      const diagnosisValidation = validateDiagnosis({
+        primary: examData.diagnosis_primary,
+        secondary: examData.diagnosis_secondary,
+      });
+      if (!diagnosisValidation.isValid) {
+        Object.assign(newErrors, diagnosisValidation.errors);
+      }
+
+      // Validate prescription
+      const prescriptionValidation = validatePrescription(
+        examData.prescription
+      );
+      if (!prescriptionValidation.isValid) {
+        newErrors.prescription = prescriptionValidation.errors;
+      }
+
+      // Additional validation for completion
+      if (forCompletion) {
+        const completionValidation = validateExamCompletion(examData);
+        if (!completionValidation.isValid) {
+          Object.assign(newErrors, completionValidation.errors);
+        }
+      }
+
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    },
+    [examData]
+  );
+
+  // Save exam (draft)
+  const saveExam = useCallback(async () => {
+    if (!appointmentId)
+      return { success: false, error: "Không có thông tin lịch hẹn" };
+
+    setSaving(true);
+    try {
+      console.log("[useExamForm] Saving exam data:", examData);
+      await examApi.save(appointmentId, examData, patientData);
+
+      // Sau khi lưu thành công, reload lại dữ liệu từ server
+      console.log("[useExamForm] Save successful, reloading data...");
+      const examRes = await examApi.getCurrent(patientId, appointmentId);
+
+      if (examRes.data?.exam_data) {
+        const serverExamData = examRes.data.exam_data;
+        console.log("[useExamForm] Reloaded exam data:", serverExamData);
+
+        // Parse vitals từ server về dạng object
+        const parseVitals = (vitalsString, weight, height, bmi) => {
+          const vitals = { ...VITAL_SIGNS_DEFAULTS };
+
+          // Parse vitals string nếu có
+          if (vitalsString && vitalsString !== "Chưa có thông tin") {
+            // Parse string như "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
+            const bloodPressureMatch =
+              vitalsString.match(/Huyết áp:\s*([^,]+)/);
+            const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
+            const temperatureMatch = vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+
+            if (bloodPressureMatch)
+              vitals.bloodPressure = bloodPressureMatch[1].trim();
+            if (heartRateMatch) vitals.heartRate = heartRateMatch[1];
+            if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+          }
+
+          // Set physical measurements
+          vitals.weight = weight || 0;
+          vitals.height = height || 0;
+          vitals.bmi = bmi || 0;
+
+          return vitals;
+        };
+
+        // Parse support drugs từ prescription details
+        let supportDrugs = [];
+        if (
+          serverExamData.prescription_details &&
+          Array.isArray(serverExamData.prescription_details)
+        ) {
+          supportDrugs = serverExamData.prescription_details.map((detail) => ({
+            drug_name: detail.drug_name || "",
+            dosage: detail.dosage || "",
+            frequency: detail.frequency || "",
+            duration_days: detail.duration_days || "",
+            usage_instructions: detail.usage_instructions || "",
+            notes: detail.notes || "",
+          }));
+        }
+
+        const newExamData = {
+          vital_signs: parseVitals(
+            serverExamData.vitals,
+            serverExamData.weight,
+            serverExamData.height,
+            serverExamData.bmi
+          ),
+          clinical_signs: serverExamData.clinical_signs || "",
+          diagnosis_primary: serverExamData.diagnosis_primary || "",
+          diagnosis_secondary: serverExamData.diagnosis_secondary || "",
+          follow_up_date: "",
+          prescription: {
+            arv_regimen_id: serverExamData.arv_regimen_id || null,
+            support_drugs: supportDrugs,
+            counseling_notes: serverExamData.counseling_notes || "",
+            follow_up_plan: serverExamData.follow_up_plan || "",
+            doctor_notes: serverExamData.doctor_notes || "",
+          },
+        };
+
+        // Update exam data với dữ liệu từ server
+        console.log("[useExamForm] Updating exam data with:", newExamData);
+        setExamData(newExamData);
+
+        console.log("[useExamForm] Exam data updated with server data");
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error saving exam:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.message || "Có lỗi xảy ra khi lưu phiếu khám",
+      };
+    } finally {
+      setSaving(false);
+    }
+  }, [appointmentId, examData, patientData, patientId]);
+
+  // Complete exam
+  const completeExam = useCallback(async () => {
+    if (!appointmentId)
+      return { success: false, error: "Không có thông tin lịch hẹn" };
+
+    // Validate for completion
+    if (!validateForm(true)) {
+      return {
+        success: false,
+        error: "Vui lòng nhập đầy đủ thông tin bắt buộc",
+      };
+    }
+
+    setSaving(true);
+    try {
+      await examApi.complete(appointmentId, examData, patientData);
+      return { success: true };
+    } catch (error) {
+      console.error("Error completing exam:", error);
+      return {
+        success: false,
+        error:
+          error.response?.data?.message || "Có lỗi xảy ra khi hoàn thành khám",
+      };
+    } finally {
+      setSaving(false);
+    }
+  }, [appointmentId, examData, validateForm, patientData]);
+
+  return {
+    examData,
+    loading,
+    saving,
+    errors,
+    // availableTests and ongoingTests removed - now managed in IndependentTestRequests
+    arvRegimens,
+    loadInitialData,
+    updateVitalSigns,
+    updateClinicalSigns,
+    updateDiagnosis,
+    // addTestRequest and removeTestRequest removed - now managed in IndependentTestRequests
+    updatePrescription,
+    addSupportDrug,
+    updateSupportDrug,
+    removeSupportDrug,
+    validateForm,
+    saveExam,
+    completeExam,
+  };
+};

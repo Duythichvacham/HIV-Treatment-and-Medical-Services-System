@@ -36,11 +36,8 @@ function route(app) {
   ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
   app.use("/api/v1/lab", testRouter);
 
-  ///api/v1/doctor/appointments/finished||in-progress||queue
-  app.use("/api/v1/doctor/appointments", doctorRouter);
-
-  ///api/patient/:patientId/exam-history||current-exam
-  app.use("/api/v1/doctor/patient", doctorRouter);
+  ///api/v1/doctor/
+  //app.use(`${process.env.API_PREFIX}/doctor`, doctorRouter);
 
   //POST, cập nhật status cho appointments
   app.use(`${process.env.API_PREFIX}/appointments`, appointmentRouter);
