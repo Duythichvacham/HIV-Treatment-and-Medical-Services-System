@@ -144,7 +144,7 @@ const PatientRegister = () => {
               </svg>
               Thông tin đăng nhập
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tên đăng nhập <span className="text-red-500">*</span>

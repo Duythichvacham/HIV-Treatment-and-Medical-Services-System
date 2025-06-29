@@ -22,7 +22,7 @@ exports.login = async (req, res) => {
         ...(user.manager_id && { manager_id: user.manager_id }),
         ...(user.patient_id && { patient_id: user.patient_id })
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'default-secret-key-change-in-production',
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
 
@@ -46,9 +46,17 @@ exports.registerPatient = async (req, res) => {
     }
 
     // Validate password length
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res.status(400).json({ 
-        message: 'Mật khẩu phải có ít nhất 6 ký tự' 
+        message: 'Mật khẩu phải có ít nhất 8 ký tự' 
+      });
+    }
+
+    // Validate strong password requirements
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ 
+        message: 'Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&)' 
       });
     }
 
@@ -93,19 +101,25 @@ exports.registerPatient = async (req, res) => {
 
   } catch (err) {
     console.error('Registration error:', err);
-    
-    if (err.message.includes('duplicate') || err.message.includes('already exists')) {
-      if (err.message.includes('username')) {
+    // Check for SQL Server unique constraint violation
+    if (
+      err.message.includes('duplicate') ||
+      err.message.includes('already exists') ||
+      err.message.includes('UNIQUE KEY constraint') ||
+      err.message.includes('Cannot insert duplicate key')
+    ) {
+      if (err.message.toLowerCase().includes('username')) {
         return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
       }
-      if (err.message.includes('email')) {
+      if (err.message.toLowerCase().includes('email')) {
         return res.status(400).json({ message: 'Email đã được sử dụng' });
       }
-      if (err.message.includes('phone')) {
+      if (err.message.toLowerCase().includes('phone')) {
         return res.status(400).json({ message: 'Số điện thoại đã được sử dụng' });
       }
+      // Nếu không xác định được trường, trả về lỗi chung
+      return res.status(400).json({ message: 'Thông tin đã tồn tại' });
     }
-
     res.status(500).json({ message: 'Lỗi server khi đăng ký' });
   }
 };

@@ -22,10 +22,12 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "all": "^0.0.0",
     "bcryptjs": "^3.0.2",
     "express": "^5.1.0",
     "handlebar": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
-    "node-cron": "^4.1.1"
+    "node-cron": "^4.1.1",
+    "node-fetch": "^3.3.2"
   }
 }

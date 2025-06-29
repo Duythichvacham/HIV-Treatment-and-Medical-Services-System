@@ -5,7 +5,7 @@ const config = {
   user: process.env.DB_USER || "sa",
   password: process.env.DB_PASSWORD || "12345",
   server: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "HIV_HEATH_CARE",
+  database: process.env.DB_NAME || "HIV_HEALTH_CARE",
   port: parseInt(process.env.DB_PORT) || 1433,
   options: {
     encrypt: false, // Use encryption for data transfer
