@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const mockProfile = {
   name: "Nguyễn Văn A",
@@ -32,6 +33,18 @@ const PatientProfile = () => {
   const [profile, setProfile] = useState(mockProfile);
   const [edit, setEdit] = useState(false);
   const [editData, setEditData] = useState(profile);
+  
+  // Change password states
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  
+  const { user } = useAuth();
 
   const handleEdit = () => {
     setEditData(profile);
@@ -47,6 +60,90 @@ const PatientProfile = () => {
   };
   const handleChange = (field, value) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePasswordChange = (field, value) => {
+    setPasswordData(prev => ({ ...prev, [field]: value }));
+    // Clear errors when user starts typing
+    if (passwordError) setPasswordError('');
+    if (passwordSuccess) setPasswordSuccess('');
+  };
+
+  const validatePasswordForm = () => {
+    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('Vui lòng điền đầy đủ thông tin');
+      return false;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp');
+      return false;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
+      return false;
+    }
+
+    // Validate strong password requirements (matching backend)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+    if (!passwordRegex.test(passwordData.newPassword)) {
+      setPasswordError('Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&)');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!validatePasswordForm()) return;
+
+    setPasswordLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          oldPassword: passwordData.oldPassword,
+          newPassword: passwordData.newPassword
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Đổi mật khẩu thất bại');
+      }
+
+      setPasswordSuccess('Đổi mật khẩu thành công!');
+      
+      // Reset form
+      setPasswordData({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      // Hide form after 2 seconds
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess('');
+      }, 2000);
+
+    } catch (err) {
+      console.error('Change password error:', err);
+      setPasswordError(err.message);
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -134,19 +231,86 @@ const PatientProfile = () => {
           )}
           {showChangePassword && !edit && (
             <div className="mt-2 p-4 bg-gray-100 rounded-xl border">
-              <div className="mb-2">
+              <h4 className="font-semibold text-gray-800 mb-3">Đổi mật khẩu</h4>
+              
+              <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu cũ</label>
-                <input type="password" className="w-full px-3 py-2 rounded border" />
+                <input 
+                  type="password" 
+                  className="w-full px-3 py-2 rounded border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  value={passwordData.oldPassword}
+                  onChange={e => handlePasswordChange("oldPassword", e.target.value)}
+                  placeholder="Nhập mật khẩu hiện tại"
+                />
               </div>
-              <div className="mb-2">
+              
+              <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu mới</label>
-                <input type="password" className="w-full px-3 py-2 rounded border" />
+                <input 
+                  type="password" 
+                  className="w-full px-3 py-2 rounded border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  value={passwordData.newPassword}
+                  onChange={e => handlePasswordChange("newPassword", e.target.value)}
+                  placeholder="Nhập mật khẩu mới"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt (@$!%*?&)
+                </p>
               </div>
-              <div className="mb-2">
+              
+              <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Nhập lại mật khẩu mới</label>
-                <input type="password" className="w-full px-3 py-2 rounded border" />
+                <input 
+                  type="password" 
+                  className="w-full px-3 py-2 rounded border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  value={passwordData.confirmPassword}
+                  onChange={e => handlePasswordChange("confirmPassword", e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
               </div>
-              <button className="w-full mt-2 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 transition">Xác nhận đổi mật khẩu</button>
+
+              {passwordError && (
+                <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+                  {passwordError}
+                </div>
+              )}
+
+              {passwordSuccess && (
+                <div className="mb-3 p-2 bg-green-50 border border-green-200 text-green-700 rounded text-sm">
+                  {passwordSuccess}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button 
+                  className="flex-1 bg-green-600 text-white py-2 rounded font-semibold hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  onClick={handleChangePassword}
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Đang xử lý...
+                    </div>
+                  ) : (
+                    'Xác nhận đổi mật khẩu'
+                  )}
+                </button>
+                <button 
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
+                >
+                  Hủy
+                </button>
+              </div>
             </div>
           )}
         </div>
