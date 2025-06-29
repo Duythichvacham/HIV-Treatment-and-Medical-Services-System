@@ -1,5 +1,4 @@
-
-use master
+USE master
 GO
 GO
 DROP DATABASE HIV_HEALTH_CARE
@@ -149,7 +148,7 @@ CREATE TABLE TestNotes(
    request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- có thể phát sinh không thông qua testrequest
    created_by_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- người xn và tạo phiếu này
-   test_datetime DATETIME NOT NULL,
+   created_at DATETIME NOT NULL DEFAULT GETDATE(),
    notes NVARCHAR(500) NULL, -- ghi chú của người làm xét nghiệm
    );
 -- TestResults
@@ -160,7 +159,7 @@ CREATE TABLE TestResults (
     result_value VARCHAR(100) NULL,
     unit VARCHAR(20) NULL,
     reference_range VARCHAR(100) NULL, -- khoảng tham chiếu
-    created_at DATETIME NOT NULL DEFAULT GETDATE()
+    finished_at DATETIME NOT NULL DEFAULT GETDATE() -- thời gian có kết quả
 );
 
 

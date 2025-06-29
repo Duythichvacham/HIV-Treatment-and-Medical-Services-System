@@ -1,5 +1,21 @@
 const { poolPromise } = require("../config/db");
 
+const getFullTimeSlots = async () => {
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request().query(`
+        SELECT 
+          slot_id,
+          CONVERT(VARCHAR(5), start_time, 108) + ' - ' + CONVERT(VARCHAR(5), end_time, 108) AS slot_time
+        FROM slots;
+        `);
+
+    return result.recordset;
+  } catch (err) {
+    console.error("Error fetching slots:", err);
+    throw err;
+  }
+};
 const getAllSlots = async () => {
   try {
     const pool = await poolPromise;
@@ -55,4 +71,5 @@ const getAvailableSlots = async (doctorId, date) => {
 module.exports = {
   getAllSlots,
   getAvailableSlots,
+  getFullTimeSlots,
 };

@@ -11,6 +11,7 @@ const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
 const registrationRouter = require("./registration");
 const queueRouter = require("./queue");
+const slotRouter = require("./slot");
 
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
@@ -35,7 +36,7 @@ function route(app) {
   app.use("/api/v1/auth", authRouter);
   /**
    * API doctor
-   * Prefix: api/v1/doctor
+   * Prefix: api/v1/doctors
    */
   app.use("/api/v1/doctors", authMiddleware, doctorRouter);
   /**
@@ -71,6 +72,11 @@ function route(app) {
    * Prefix: api/v1/queue
    */
   app.use("/api/v1/queue", authMiddleware, queueRouter);
+  /**
+   * API public
+   * Prefix: api/public/
+   */
+  app.use("/api/slots", slotRouter);
 }
 
 module.exports = route;
