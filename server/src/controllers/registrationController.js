@@ -17,7 +17,11 @@ exports.getPendingTestRequests = async (req, res, next) => {
 exports.approveTestRequest = async (req, res, next) => {
   try {
     const { id } = req.params; // appointment_id
-    const result = await registrationService.approveTestRequest(id);
+    const { payment_method = "cash" } = req.body; // Phương thức thanh toán
+    const result = await registrationService.approveTestRequest(
+      id,
+      payment_method
+    );
 
     res.json({
       message: "Đã thu tiền và cập nhật đơn xét nghiệm thành công",

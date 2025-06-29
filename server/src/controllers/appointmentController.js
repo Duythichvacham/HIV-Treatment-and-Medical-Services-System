@@ -1,4 +1,6 @@
 const appointmentService = require("../services/appointmentService");
+const queueService = require("../services/queueService");
+const paymentService = require("../services/paymentService");
 const { autoCancelPendingAppointments } = require("../utils/scheduler");
 
 exports.updateStatus = async (req, res, next) => {
@@ -61,9 +63,32 @@ exports.createAppointment = async (req, res, next) => {
       req.body
     );
 
-    return res
-      .status(201)
-      .json({ message: "Đặt lịch thành công", appointment });
+    // Tự động cấp số thứ tự cho appointment mới tạo
+    let queueInfo = null;
+    try {
+      queueInfo = await queueService.createQueueForAppointment(
+        appointment.appointment_id,
+        appointment.doctor_id,
+        appointment.slot_id,
+        new Date(appointment.bookingDate)
+      );
+      console.log(
+        `✅ Đã cấp số thứ tự ${queueInfo.queue_number} cho appointment ${appointment.appointment_id}`
+      );
+    } catch (queueError) {
+      // Log lỗi nhưng không fail toàn bộ request
+      console.error(
+        `❌ Lỗi khi cấp số thứ tự cho appointment ${appointment.appointment_id}:`,
+        queueError.message
+      );
+      // Có thể thông báo cho frontend biết để xử lý sau
+    }
+
+    return res.status(201).json({
+      message: "Đặt lịch thành công",
+      appointment,
+      queue_info: queueInfo, // Trả về thông tin số thứ tự nếu có
+    });
   } catch (error) {
     // Handle specific errors
     const errorMessages = {
@@ -163,70 +188,32 @@ exports.cancelPendingAppointments = async (req, res, next) => {
   }
 };
 
-// Lấy invoice_id từ appointment_id
-exports.getAppointmentInvoice = async (req, res, next) => {
+/**
+ * Confirm payment for appointment and update invoice status to 'paid'
+ */
+exports.confirmPayment = async (req, res, next) => {
   try {
-    const { appointment_id } = req.params;
+    const { appointmentId } = req.params;
+    const { paymentMethod } = req.body; // Optional, for logging/tracking
 
-    const invoice = await appointmentService.getInvoiceByAppointmentId(
-      appointment_id
+    // Update invoice status to paid
+    const result = await paymentService.markInvoiceAsPaidByAppointment(
+      appointmentId
     );
 
-    if (!invoice) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({
-        message: "Không tìm thấy hóa đơn cho lịch hẹn này",
+        message: "Không tìm thấy hóa đơn hoặc hóa đơn đã được thanh toán",
       });
     }
 
-    return res.status(200).json({
-      message: "Lấy thông tin hóa đơn thành công",
-      invoice_id: invoice.invoice_id,
-      status: invoice.status,
-      amount: invoice.amount,
-      created_at: invoice.created_at,
-      issued_at: invoice.issued_at,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Bỏ
- * exports.getLabTestQueue = async (req, res, next) => {
-  try {
-    const queue = await appointmentService.getLabTestQueue();
     res.json({
-      message: "Lấy danh sách bệnh nhân chờ xét nghiệm thành công",
-      data: queue,
+      message: "Thanh toán thành công",
+      success: true,
+      paymentMethod: paymentMethod || "unknown",
     });
   } catch (error) {
+    console.error("Error confirming payment:", error);
     next(error);
   }
 };
-
-exports.getLabTestInProgress = async (req, res, next) => {
-  try {
-    const inProgress = await appointmentService.getLabTestInProgress();
-    res.json({
-      message: "Lấy danh sách bệnh nhân đang xét nghiệm thành công",
-      data: inProgress,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getLabTestFinished = async (req, res, next) => {
-  try {
-    const finished = await appointmentService.getLabTestFinished();
-    res.json({
-      message: "Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công",
-      data: finished,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
- */

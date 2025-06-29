@@ -9,12 +9,12 @@ router.get("/test", (req, res) => {
 });
 
 // PATCH /booking/pay/:invoiceId – xác nhận thanh toán
-router.patch("/pay/:invoiceId", authenticateToken, bookingController.confirmPayment);
+router.patch("/pay/:invoiceId", bookingController.confirmPayment);
 
 // PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
-router.patch("/cancel/:invoiceId", authenticateToken, bookingController.cancelBooking);
+router.patch("/cancel/:invoiceId", bookingController.cancelBooking);
 
 // POST /booking – tạo appointment + invoice
-router.post("/", authenticateToken, bookingController.createBooking);
+router.post("/", bookingController.createBooking);
 
 module.exports = router;

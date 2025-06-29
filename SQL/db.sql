@@ -237,14 +237,13 @@ CREATE TABLE Invoices (
 -- QueueNumbers - Bảng quản lý số thứ tự - không liên quan logic nên không cần liên kết
 CREATE TABLE QueueNumbers (
     queue_id INT PRIMARY KEY IDENTITY(1,1),
+    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id),
+    request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
     queue_type VARCHAR(20) NOT NULL CHECK (queue_type IN ('examination', 'test','consultation')), -- loại hàng đợi: khám, xét nghiệm, tư vấn
     slot_id INT NULL FOREIGN KEY REFERENCES Slots(slot_id), -- NULL cho xét nghiệm
     doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- NULL cho xét nghiệm
     current_number INT NOT NULL DEFAULT 0 CHECK (current_number >= 0),
+    queue_date DATE NOT NULL DEFAULT GETDATE(), -- ngày áp dụng hàng đợi
     max_number INT NOT NULL CHECK (max_number > 0), -- 8 cho khám, 1000 cho xét nghiệm
-    CONSTRAINT uq_queue_type_slot_doctor UNIQUE (queue_type, slot_id, doctor_id)
 );
 
--- Khởi tạo queue mặc định cho xét nghiệm
-INSERT INTO QueueNumbers (queue_type, current_number, max_number)
-VALUES ('test', 0, 1000);
