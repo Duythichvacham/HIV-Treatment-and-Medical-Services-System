@@ -1159,45 +1159,6 @@ const getAvailableTests = async () => {
     `);
 
     // Nếu không có dữ liệu thực, trả về dữ liệu mẫu
-    if (result.recordset.length === 0) {
-      return [
-        {
-          service_id: 1,
-          name: "Xét nghiệm máu tổng quát",
-          description: "Đếm tế bào máu, hemoglobin, hematocrit",
-          price: 150000,
-          type: "test",
-        },
-        {
-          service_id: 2,
-          name: "Xét nghiệm CD4",
-          description: "Đếm số lượng tế bào CD4",
-          price: 350000,
-          type: "test",
-        },
-        {
-          service_id: 3,
-          name: "Tải lượng virus HIV",
-          description: "Đo lường RNA virus HIV trong máu",
-          price: 800000,
-          type: "test",
-        },
-        {
-          service_id: 4,
-          name: "Xét nghiệm chức năng gan",
-          description: "AST, ALT, Bilirubin",
-          price: 200000,
-          type: "test",
-        },
-        {
-          service_id: 5,
-          name: "Xét nghiệm chức năng thận",
-          description: "Creatinine, BUN",
-          price: 180000,
-          type: "test",
-        },
-      ];
-    }
 
     return result.recordset;
   } catch (error) {
