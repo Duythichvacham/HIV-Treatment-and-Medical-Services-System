@@ -22,11 +22,16 @@ function route(app) {
    */
   app.use("/api/public", publicRouter);
   /**
+   * API auth
+   * Prefix: api/auth
+   */
+  app.use("/api/auth", authRouter);
+  /**
    * API users
    * Prefix: api/v1/users
    */
   //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register
-  app.use("/api/auth", authRouter);
+  app.use("/api/v1/auth", authRouter);
   /**
    * API doctor
    * Prefix: api/v1/doctor

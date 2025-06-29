@@ -62,7 +62,7 @@ exports.confirmPayment = async (invoiceId) => {
   const result = await pool.request().input("invoiceId", invoiceId).query(`
       -- 1. Cập nhật trạng thái hóa đơn thành 'paid'
       UPDATE Invoices
-      SET status = 'paid', issued_at = GETDATE()
+      SET status = 'paid', issued_at = SWITCHOFFSET(GETDATE(), '+07:00')
       WHERE invoice_id = @invoiceId;
 
       -- 2. Cập nhật luôn trạng thái Appointment nếu tồn tại

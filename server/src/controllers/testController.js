@@ -1,4 +1,5 @@
 const testService = require("../services/testService");
+const { getVietnamTime } = require("../utils/dateUtil");
 
 // ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "exam")
 // exports.updateTestRequestExamStatus = async (req, res) => {
@@ -188,11 +189,11 @@ exports.getLabInProgress = async (req, res, next) => {
   }
 };
 
-/// GET /api/v1/lab/done
+/// GET /api/v1/lab/finished
 exports.getLabFinished = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    // Gọi service mới chỉ lấy bệnh nhân đã hoàn thành xét nghiệm
+    // Gọi service mới chỉ lấy bệnh nhân đã hoàn thành xét nghiệm, đã có trường results
     const finished = await testService.getLabTestFinished(date, lab_staff_id, room_id);
     res.json({
       message: "Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công",
@@ -325,9 +326,7 @@ exports.createTestNote = async (req, res, next) => {
       noteDatetime = new Date(test_datetime);
     } else {
       // Tạo thời gian hiện tại theo giờ Việt Nam
-      const now = new Date();
-      const vietnamTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
-      noteDatetime = vietnamTime;
+      noteDatetime = getVietnamTime();
     }
     
     const note = await testService.createTestNote({

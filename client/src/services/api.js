@@ -580,4 +580,19 @@ export const createTestResult = async (resultData) => {
   }
 };
 
+/**
+ * Get lab finished (danh sách hoàn thành, đã có trường results)
+ * @param {string} date - Filter by date (YYYY-MM-DD format)
+ * @param {number} lab_staff_id - Filter by lab staff ID
+ * @param {number} room_id - Filter by room ID
+ */
+export const getLabFinished = async (date = null, lab_staff_id = null, room_id = null) => {
+  const params = {};
+  if (date) params.date = date;
+  if (lab_staff_id) params.lab_staff_id = lab_staff_id;
+  if (room_id) params.room_id = room_id;
+  const response = await api.get("/api/v1/lab/finished", { params });
+  return response.data.data;
+};
+
 export default api;
