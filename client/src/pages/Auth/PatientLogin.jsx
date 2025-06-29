@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const PatientLogin = () => {
@@ -66,7 +66,18 @@ const PatientLogin = () => {
           } text-white`}
         >
           {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-        </button>        <div className="mt-4 text-xs text-gray-500">
+        </button>
+        
+        <div className="mt-4 text-center">
+          <p className="text-gray-600 mb-3">
+            Chưa có tài khoản?{' '}
+            <Link to="/register" className="text-green-600 hover:text-green-700 font-medium">
+              Đăng ký ngay
+            </Link>
+          </p>
+        </div>
+        
+        <div className="mt-4 text-xs text-gray-500">
           <div><b>Bệnh nhân</b>: patient01 / hash_patient1_password</div>
           <div><b>Bệnh nhân</b>: patient02 / hash_patient2_password</div>
           <div><b>Bệnh nhân</b>: patient03 / hash_patient3_password</div>

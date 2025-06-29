@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getAllLabTests, getCurrentLabStaffShift } from "../../services/api";
+import { getAllLabTests, getCurrentLabStaffShift, getLabFinished } from "../../services/api";
 import axios from "axios";
 
 const API_BASE = "http://localhost:5000/api/v1";
@@ -115,9 +115,33 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
     {section === "Hoàn thành" && (
       <>
         <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-green-700">
-          Kết quả: <b>{data.result}</b>
-          <br />
-          Hoàn thành: {data.doneTime}
+          {/* Thời gian hoàn thành */}
+          {(() => {
+            const results = data.results || [];
+            let doneTime = "-";
+            if (results.length > 0) {
+              const latest = results.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b);
+              doneTime = new Date(latest.created_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+            }
+            return <div>Hoàn thành: {doneTime}</div>;
+          })()}
+          {/* Kết quả */}
+          {data.service_id === 4 || data.service_id === 5 ? (
+            <>
+              {data.results && data.results.map((r) => {
+                // Sàng lọc
+                if (data.service_id === 4 && r.test_type_name?.toLowerCase().includes("sàng lọc")) {
+                  return <div key={r.result_id}>Sàng lọc: <b>{r.result_value}</b></div>;
+                }
+                // Khẳng định
+                if (data.service_id === 5 && r.test_type_name?.toLowerCase().includes("khẳng định")) {
+                  return <div key={r.result_id}>Khẳng định: <b>{r.result_value}</b></div>;
+                }
+                return null;
+              })}
+            </>
+          ) : null}
+          {/* Nếu là CD4 và Viral Load thì ẩn kết quả */}
         </div>
         <button
           onClick={() => onResult && onResult(data)}
@@ -174,21 +198,13 @@ const LabStaff = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Sử dụng API mới để lấy tất cả dữ liệu một lần
-      // Thêm lab_staff_id filter nếu user có lab_staff_id
-      // Sử dụng API mới để lấy tất cả dữ liệu một lần
-      // Thêm lab_staff_id filter nếu user có lab_staff_id
       const lab_staff_id = user?.id;
+      // Lấy danh sách hoàn thành đã có trường results
+      const done = await getLabFinished(selectedDate, lab_staff_id);
+      // Lấy các trạng thái khác như cũ
       const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
-      console.log("DEBUG allTests:", allTests);
-
-      // Phân loại dữ liệu theo status
       const queue = allTests.filter((test) => test.status === "requested");
-      const inProgress = allTests.filter(
-        (test) => test.status === "in_progress"
-      );
-      const done = allTests.filter((test) => test.status === "completed");
-
+      const inProgress = allTests.filter((test) => test.status === "in_progress");
       // Tính toán summary từ dữ liệu thật
       const screening = allTests.filter(
         (test) =>
@@ -208,13 +224,7 @@ const LabStaff = () => {
           (test.service_name &&
             test.service_name.toLowerCase().includes("định kỳ"))
       ).length;
-
       setSummary({ screening, confirmation, periodic });
-
-      console.log("DEBUG queue:", queue);
-      console.log("DEBUG inProgress:", inProgress);
-      console.log("DEBUG done:", done);
-
       setSections((prevSections) => [
         { ...prevSections[0], cards: queue || [], count: (queue || []).length },
         {
@@ -260,7 +270,7 @@ const LabStaff = () => {
         await axios.patch(url, { status: "in_progress" }, { headers });
       } else if (card.source === "self_booking") {
         const url = `${API_BASE}/appointments/${card.appointment_id}/status`;
-        await axios.post(url, { status: "in_progress" }, { headers });
+        await axios.patch(url, { status: "in_progress" }, { headers });
       } else {
         alert("Không xác định được loại mẫu xét nghiệm!");
         return;

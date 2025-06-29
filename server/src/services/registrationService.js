@@ -96,12 +96,12 @@ const approveTestRequest = async (appointmentId) => {
   const query = `
     -- 1. Cập nhật TestRequests status và approved_at
     UPDATE TestRequests 
-    SET status = 'in_progress', approved_at = GETDATE() 
+    SET status = 'in_progress', approved_at = SWITCHOFFSET(GETDATE(), '+07:00') 
     WHERE appointment_id = @appointmentId AND status = 'requested';
     
     -- 2. Cập nhật Invoice status từ 'pending' sang 'paid'
     UPDATE Invoices 
-    SET status = 'paid', issued_at = GETDATE() 
+    SET status = 'paid', issued_at = SWITCHOFFSET(GETDATE(), '+07:00') 
     WHERE appointment_id = @appointmentId AND status = 'pending';
     
     -- 3. Cập nhật Appointment status sang 'in_progress' 

@@ -111,24 +111,32 @@ const LabProcess = () => {
           notes: note
         }, { headers });
       } else if (serviceId === 5) {
-        // Khẳng định: gửi 1 lần duy nhất với object result_value, unit, reference_range cho từng chỉ số
+        // Khẳng định: gửi từng chỉ số một
+        // CD4
         await axios.post(`${API_BASE}/lab/test-results`, {
           test_note_id,
-          result_value: {
-            cd4: cd4Value,
-            viral_load: viralLoadValue,
-            confirm: review
-          },
-          unit: {
-            cd4: 'cells/mm³',
-            viral_load: 'copies/ml',
-            confirm: ''
-          },
-          reference_range: {
-            cd4: '500-1500',
-            viral_load: '<50',
-            confirm: ''
-          },
+          test_type_id: 1,
+          result_value: cd4Value,
+          unit: 'cells/mm³',
+          reference_range: '500-1500',
+          notes: note
+        }, { headers });
+        // Viral Load
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          test_type_id: 2,
+          result_value: viralLoadValue,
+          unit: 'copies/ml',
+          reference_range: '<50',
+          notes: note
+        }, { headers });
+        // Khẳng định
+        await axios.post(`${API_BASE}/lab/test-results`, {
+          test_note_id,
+          test_type_id: 4,
+          result_value: review, // "Dương tính" hoặc "Âm tính"
+          unit: '',
+          reference_range: '',
           notes: note
         }, { headers });
       } else {
