@@ -35,7 +35,10 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
   };
 
   const formatDateTime = (dateTime) => {
-    return new Date(dateTime).toLocaleString("vi-VN");
+    const date = new Date(dateTime);
+    // Thêm 7 giờ để chuyển từ UTC sang múi giờ Việt Nam
+    date.setHours(date.getHours() + 7);
+    return date.toLocaleString("vi-VN");
   };
 
   const handlePayment = async () => {
@@ -117,7 +120,12 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Ngày giờ:</span>
-                <span>{new Date().toLocaleString("vi-VN")}</span>
+                <span>{(() => {
+                  const now = new Date();
+                  // Thêm 7 giờ để chuyển từ UTC sang múi giờ Việt Nam
+                  now.setHours(now.getHours() + 7);
+                  return now.toLocaleString("vi-VN");
+                })()}</span>
               </div>
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-2">Thông tin bệnh nhân:</h3>

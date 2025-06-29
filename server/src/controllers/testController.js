@@ -1,77 +1,7 @@
 const testService = require("../services/testService");
-const { getVietnamTime } = require("../utils/dateUtil");
+const { getVietnamTime, formatVietnamTime, formatDateTimeWithoutTimezone } = require("../utils/dateUtil");
 
-// ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "exam")
-// exports.updateTestRequestExamStatus = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { status } = req.body;
-
-//     const validStatus = ['requested', 'in_progress', 'completed', 'cancelled'];
-//     if (!validStatus.includes(status)) {
-//       return res.status(400).json({ message: 'Invalid status' });
-//     }
-
-//     const updated = await testService.updateTestRequestExamStatus(id, status);
-//     if (!updated) {
-//       return res.status(404).json({ message: 'TestRequest không tồn tại hoặc không phải loại "examination"' });
-//     }
-
-//     res.json({
-//       message: 'Cập nhật trạng thái TestRequest thành công',
-//       testRequest: updated
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// //POST, nhập kết quả xét nghiệm và hoàn thành
-// exports.getTestNoteDetail = async (req, res) => {
-//   try {
-//     const { test_note_id } = req.params;
-//     const detail = await testService.getTestNoteDetail(test_note_id);
-
-//     if (!detail) {
-//       return res.status(404).json({ message: 'Không tìm thấy phiếu xét nghiệm' });
-//     }
-
-//     res.json({
-//       message: 'Lấy chi tiết phiếu xét nghiệm thành công',
-//       data: detail
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-// ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành);
-// exports.createTestResultAndComplete = async (req, res) => {
-//   try {
-//     const { test_note_id, result_value, unit, reference_range, notes } = req.body;
-
-//     if (!test_note_id || !result_value) {
-//       return res.status(400).json({ message: 'Thiếu thông tin bắt buộc!' });
-//     }
-
-//     const result = await testService.createTestResultAndComplete({
-//       test_note_id,
-//       result_value,
-//       unit,
-//       reference_range,
-//       notes
-//     });
-
-//     res.json({
-//       message: 'Nhập kết quả xét nghiệm và hoàn thành thành công',
-//       data: result
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
-
-/// PATCH /api/v1/test-requests/:id/status
+///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "exam")
 exports.updateTestRequestExamStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -93,6 +23,11 @@ exports.updateTestRequestExamStatus = async (req, res, next) => {
       throw err;
     }
 
+    // Format request_date sang giờ Việt Nam
+    if (updated.request_date) {
+      updated.request_date = formatVietnamTime(updated.request_date);
+    }
+
     res.json({
       message: "Cập nhật trạng thái TestRequest thành công",
       testRequest: updated,
@@ -112,6 +47,11 @@ exports.getTestNoteDetail = async (req, res, next) => {
       const err = new Error("Không tìm thấy phiếu xét nghiệm");
       err.statusCode = 404;
       throw err;
+    }
+
+    // Format test_datetime sang giờ Việt Nam cho response
+    if (detail && detail.test_datetime) {
+      detail.test_datetime = formatDateTimeWithoutTimezone(detail.test_datetime);
     }
 
     res.json({
@@ -150,9 +90,19 @@ exports.createTestResultAndComplete = async (req, res, next) => {
       notes,
     });
 
+    // Lấy kết quả mới nhất để format created_at
+    const latestResults = await testService.getTestResultsByTestNoteId(test_note_id);
+    const formattedResults = latestResults.map(result => ({
+      ...result,
+      created_at: formatDateTimeWithoutTimezone(result.created_at)
+    }));
+
     res.json({
       message: "Nhập kết quả xét nghiệm và hoàn thành thành công",
-      data: result,
+      data: {
+        success: result,
+        results: formattedResults
+      },
     });
   } catch (error) {
     next(error);
@@ -163,8 +113,8 @@ exports.createTestResultAndComplete = async (req, res, next) => {
 exports.getLabQueue = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    // Gọi service mới chỉ lấy queue xét nghiệm
-    const queue = await testService.getLabTestQueue(date, lab_staff_id, room_id);
+    // Sử dụng getAllLabTests với status filter
+    const queue = await testService.getAllLabTests("requested", date, lab_staff_id, room_id);
     res.json({
       message: "Lấy danh sách bệnh nhân chờ xét nghiệm thành công",
       data: queue,
@@ -178,11 +128,18 @@ exports.getLabQueue = async (req, res, next) => {
 exports.getLabInProgress = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
-    // Gọi service mới chỉ lấy bệnh nhân đang xét nghiệm
-    const inProgress = await testService.getLabTestInProgress(date, lab_staff_id, room_id);
+    // Sử dụng getAllLabTests với status filter
+    const inProgress = await testService.getAllLabTests("in_progress", date, lab_staff_id, room_id);
+    
+    // Format bookTime sang giờ Việt Nam
+    const formattedInProgress = inProgress.map(record => ({
+      ...record,
+      bookTime: formatDateTimeWithoutTimezone(record.bookTime)
+    }));
+    
     res.json({
       message: "Lấy danh sách bệnh nhân đang xét nghiệm thành công",
-      data: inProgress,
+      data: formattedInProgress,
     });
   } catch (error) {
     next(error);
@@ -190,19 +147,30 @@ exports.getLabInProgress = async (req, res, next) => {
 };
 
 /// GET /api/v1/lab/finished
-exports.getLabFinished = async (req, res, next) => {
-  try {
-    const { date, lab_staff_id, room_id } = req.query;
-    // Gọi service mới chỉ lấy bệnh nhân đã hoàn thành xét nghiệm, đã có trường results
-    const finished = await testService.getLabTestFinished(date, lab_staff_id, room_id);
-    res.json({
-      message: "Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công",
-      data: finished,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+// exports.getLabFinished = async (req, res, next) => {
+//   try {
+//     const { date, lab_staff_id, room_id } = req.query;
+//     // Gọi service mới chỉ lấy bệnh nhân đã hoàn thành xét nghiệm, đã có trường results
+//     const finished = await testService.getLabTestFinished(date, lab_staff_id, room_id);
+//     
+//     // Format các trường thời gian sang giờ Việt Nam
+//     const formattedFinished = finished.map(record => ({
+//       ...record,
+//       bookTime: formatVietnamTime(record.bookTime),
+//       results: record.results.map(result => ({
+//         ...result,
+//         created_at: formatVietnamTime(result.created_at)
+//       }))
+//     }));
+//     
+//     res.json({
+//       message: "Lấy danh sách bệnh nhân đã hoàn thành xét nghiệm thành công",
+//       data: formattedFinished,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 // GET /api/v1/lab/lab-tests
 exports.getAllLabTests = async (req, res, next) => {
@@ -215,13 +183,30 @@ exports.getAllLabTests = async (req, res, next) => {
       room_id
     );
 
-    // Gắn trường assigned_by
-    const data = tests.map((item) => ({
-      ...item,
-      assigned_by: item.doctor
-        ? `Bác sĩ ${item.doctor} chỉ định`
-        : "Đăng ký xét nghiệm",
-    }));
+    // Gắn trường assigned_by và format bookTime
+    let data = tests.map((item) => {
+      console.log('[DEBUG] Original bookTime:', item.bookTime);
+      const formattedBookTime = formatDateTimeWithoutTimezone(item.bookTime);
+      console.log('[DEBUG] Formatted bookTime:', formattedBookTime);
+      return {
+        ...item,
+        assigned_by: item.doctor
+          ? `Bác sĩ ${item.doctor} chỉ định`
+          : "Đăng ký xét nghiệm",
+        bookTime: formattedBookTime
+      };
+    });
+
+    // Nếu status là 'completed', format thêm results
+    if (status === 'completed') {
+      data = data.map(record => ({
+        ...record,
+        results: record.results ? record.results.map(result => ({
+          ...result,
+          created_at: formatDateTimeWithoutTimezone(result.created_at)
+        })) : []
+      }));
+    }
 
     res.json({
       message: "Lấy danh sách xét nghiệm thành công",
@@ -250,9 +235,16 @@ exports.getLabStaffShifts = async (req, res, next) => {
   try {
     const { date, lab_staff_id } = req.query;
     const shifts = await testService.getLabStaffShifts(date, lab_staff_id);
+    
+    // Format created_at sang giờ Việt Nam
+    const formattedShifts = shifts.map(shift => ({
+      ...shift,
+      created_at: formatVietnamTime(shift.created_at)
+    }));
+    
     res.json({
       message: "Lấy danh sách ca làm việc thành công",
-      data: shifts,
+      data: formattedShifts,
     });
   } catch (error) {
     next(error);
@@ -325,8 +317,8 @@ exports.createTestNote = async (req, res, next) => {
     if (test_datetime) {
       noteDatetime = new Date(test_datetime);
     } else {
-      // Tạo thời gian hiện tại theo giờ Việt Nam
-      noteDatetime = getVietnamTime();
+      // Tạo thời gian hiện tại (SQL Server đã là giờ Việt Nam)
+      noteDatetime = new Date();
     }
     
     const note = await testService.createTestNote({
@@ -335,6 +327,11 @@ exports.createTestNote = async (req, res, next) => {
       created_by_id,
       test_datetime: noteDatetime,
     });
+    
+    // Format test_datetime sang giờ Việt Nam cho response
+    if (note && note.test_datetime) {
+      note.test_datetime = formatDateTimeWithoutTimezone(note.test_datetime);
+    }
     
     console.log('DEBUG: Đã tạo TestNote:', note);
     res.json({ message: "Tạo phiếu xét nghiệm thành công", data: note });
@@ -357,7 +354,14 @@ exports.getTestNotesByAppointment = async (req, res, next) => {
   try {
     const { appointment_id } = req.params;
     const notes = await testService.getTestNotesByAppointment(appointment_id);
-    res.json({ message: "Lấy danh sách phiếu xét nghiệm theo appointment thành công", data: notes });
+    
+    // Format test_datetime sang giờ Việt Nam
+    const formattedNotes = notes.map(note => ({
+      ...note,
+      test_datetime: formatDateTimeWithoutTimezone(note.test_datetime)
+    }));
+    
+    res.json({ message: "Lấy danh sách phiếu xét nghiệm theo appointment thành công", data: formattedNotes });
   } catch (error) {
     next(error);
   }
@@ -373,6 +377,12 @@ exports.updateTestNoteNotes = async (req, res, next) => {
     }
     
     const result = await testService.updateTestNoteNotes(test_note_id, notes);
+    
+    // Format test_datetime sang giờ Việt Nam
+    if (result && result.test_datetime) {
+      result.test_datetime = formatDateTimeWithoutTimezone(result.test_datetime);
+    }
+    
     res.json({ 
       message: "Cập nhật ghi chú phiếu xét nghiệm thành công", 
       data: result 
@@ -387,6 +397,12 @@ exports.updateTestNoteDatetime = async (req, res, next) => {
     const { test_note_id } = req.params;
     const { test_datetime } = req.body;
     const result = await require('../services/testService').updateTestNoteDatetime(test_note_id, test_datetime);
+    
+    // Format test_datetime sang giờ Việt Nam
+    if (result && result.test_datetime) {
+      result.test_datetime = formatDateTimeWithoutTimezone(result.test_datetime);
+    }
+    
     res.json({ message: "Cập nhật thời gian bắt đầu xét nghiệm thành công", data: result });
   } catch (error) {
     next(error);

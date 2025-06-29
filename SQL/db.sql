@@ -1,3 +1,4 @@
+
 use master
 GO
 GO
@@ -246,4 +247,3 @@ CREATE TABLE QueueNumbers (
     queue_date DATE NOT NULL DEFAULT GETDATE(), -- ngày áp dụng hàng đợi
     max_number INT NOT NULL CHECK (max_number > 0), -- 8 cho khám, 1000 cho xét nghiệm
 );
-

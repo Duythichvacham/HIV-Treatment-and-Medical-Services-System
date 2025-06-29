@@ -1,6 +1,43 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 
+// Hàm format thời gian
+function formatDateTime(str) {
+  if (!str) return "-";
+  // Nếu là dạng "YYYY-MM-DD HH:mm:ss.SSS" hoặc "YYYY-MM-DD HH:mm:ss"
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(str)) {
+    const [date, time] = str.split(' ');
+    const [year, month, day] = date.split('-');
+    const [hour, min] = time.split(':');
+    return `${hour}:${min} ${day}/${month}/${year}`;
+  }
+  // Nếu là dạng "HH:mm:ss DD/MM/YYYY" hoặc "HH:mm:ss DD/M/YYYY"
+  if (/^\d{2}:\d{2}:\d{2} \d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    const [time, date] = str.split(' ');
+    const [hour, min] = time.split(':');
+    const [day, month, year] = date.split('/');
+    const paddedDay = day.padStart(2, '0');
+    const paddedMonth = month.padStart(2, '0');
+    return `${hour}:${min} ${paddedDay}/${paddedMonth}/${year}`;
+  }
+  // Nếu là ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(str)) {
+    const [date, time] = str.split('T');
+    const [year, month, day] = date.split('-');
+    const [hour, min] = time.split(':');
+    return `${hour}:${min} ${day}/${month}/${year}`;
+  }
+  // Nếu là ISO hoặc dạng khác, fallback về cũ
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return str;
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = (d.getMonth() + 1).toString().padStart(2, "0");
+  const year = d.getFullYear();
+  const hour = d.getHours().toString().padStart(2, "0");
+  const min = d.getMinutes().toString().padStart(2, "0");
+  return `${hour}:${min} ${day}/${month}/${year}`;
+}
+
 const LabResult = () => {
   const { state } = useLocation();
   const { note, results, patient, testType, room } = state || {};
@@ -33,11 +70,12 @@ const LabResult = () => {
     return acc;
   }, []);
   
-  // Thời gian trả kết quả: lấy thời gian tạo kết quả mới nhất
-  const resultTime = latestResults.length > 0 ? new Date(latestResults[latestResults.length - 1].created_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '-';
+  // Thời gian trả kết quả: lấy thời gian tạo kết quả mới nhất (đã format từ backend)
+  const resultTime = latestResults.length > 0 ? 
+    latestResults[latestResults.length - 1].created_at : '-';
   
-  // Thời gian nhận mẫu: test_datetime là thời gian bắt đầu xét nghiệm
-  const sampleTime = note.test_datetime ? new Date(note.test_datetime).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '-';
+  // Thời gian nhận mẫu: test_datetime đã được format từ backend
+  const sampleTime = note.test_datetime || '-';
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">
@@ -56,8 +94,8 @@ const LabResult = () => {
             <div><b>Phòng:</b> {note?.room_name || '-'}</div>
             <div><b>Bác sĩ chỉ định:</b> {note?.source === 'self_booking' ? 'Bệnh nhân tự đăng ký' : (note?.doctor_name || '-')}</div>
             <div><b>Người thực hiện:</b> {note?.created_by_id || '-'}</div>
-            <div><b>Thời gian nhận mẫu:</b> {sampleTime}</div>
-            <div><b>Thời gian trả kết quả:</b> {resultTime}</div>
+            <div><b>Thời gian nhận mẫu:</b> {formatDateTime(sampleTime)}</div>
+            <div><b>Thời gian trả kết quả:</b> {formatDateTime(resultTime)}</div>
           </div>
         </div>
 

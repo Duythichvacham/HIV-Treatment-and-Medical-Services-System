@@ -11,38 +11,35 @@ router.get("/lab-tests", testController.getAllLabTests);
 // Thêm các route cho lab queue, in-progress, done
 router.get("/queue", testController.getLabQueue);
 router.get("/in-progress", testController.getLabInProgress);
-router.get("/finished", testController.getLabFinished);
-
-// PATCH /api/v1/lab/test-requests/:id/status
-router.patch(
-  "/test-requests/:id/status",
-  testController.updateTestRequestExamStatus
-);
 
 // GET /api/v1/lab/test-notes/:test_note_id
 router.get("/test-notes/:test_note_id", testController.getTestNoteDetail);
-router.get("/current-shift", testController.getCurrentLabStaffShift);
 
-// Thêm routes mới cho phòng và ca làm việc
+// GET /api/v1/lab/rooms
 router.get("/rooms", testController.getLabRooms);
+
+// GET /api/v1/lab/shifts
 router.get("/shifts", testController.getLabStaffShifts);
 
-// POST /lab/test-notes
+// GET /api/v1/lab/current-shift
+router.get("/current-shift", testController.getCurrentLabStaffShift);
+
+// PATCH /api/v1/test-requests/:id/status
+router.patch("/test-requests/:id/status", testController.updateTestRequestExamStatus);
+
+// POST /api/v1/lab/test-notes
 router.post("/test-notes", testController.createTestNote);
 
-// GET tất cả kết quả xét nghiệm theo test_note_id
-router.get(
-  "/test-results/:test_note_id",
-  testController.getTestResultsByTestNoteId
-);
+// GET /api/v1/lab/test-results/:test_note_id
+router.get("/test-results/:test_note_id", testController.getTestResultsByTestNoteId);
 
-// GET /test-notes/by-appointment/:appointment_id
-router.get('/test-notes/by-appointment/:appointment_id', testController.getTestNotesByAppointment);
+// GET /api/v1/lab/test-notes/appointment/:appointment_id
+router.get("/test-notes/appointment/:appointment_id", testController.getTestNotesByAppointment);
 
-// PATCH /test-notes/:test_note_id/notes (cập nhật ghi chú phiếu xét nghiệm)
-router.patch('/test-notes/:test_note_id/notes', testController.updateTestNoteNotes);
+// PATCH /api/v1/lab/test-notes/:test_note_id/notes
+router.patch("/test-notes/:test_note_id/notes", testController.updateTestNoteNotes);
 
-// PATCH /test-notes/:test_note_id/datetime (cập nhật thời gian bắt đầu xét nghiệm)
-router.patch('/test-notes/:test_note_id/datetime', testController.updateTestNoteDatetime);
+// PATCH /api/v1/lab/test-notes/:test_note_id/datetime
+router.patch("/test-notes/:test_note_id/datetime", testController.updateTestNoteDatetime);
 
 module.exports = router;

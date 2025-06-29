@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppointmentSuccessModal from "./AppointmentSuccessModal";
 import AppointmentConfirmModal from "./AppointmentConfirmModal";
-import { createAppointment, getSlots } from "../../services/api";
+import { createAppointment, getSlots, confirmAppointmentPayment } from "../../services/api";
 
 const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const [reason, setReason] = useState("");
@@ -18,10 +18,9 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const storageKey = `appointmentForm_${serviceType}`;
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
-  const [invoiceId, setInvoiceId] = useState(null);
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     const slotObj = slots.find((s) => String(s.value) === String(timeSlot));
@@ -33,20 +32,9 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       setError("Vui lòng chọn khung giờ khám!");
       return;
     }
-    setAppointmentData({
-      serviceName,
-      date,
-      time: isDoctor ? slotLabel : "7:30 - 9:30 or 13:30 - 15:30",
-      fee:
-        typeof price === "number"
-          ? `${Number(price).toLocaleString()}đ`
-          : price,
-      isDoctor,
-      room: "", // Will be set from API response
-      doctorOrStaff: isDoctor ? user?.name : "",
-      slotLabel,
-    });
-    setIsConfirmOpen(true);
+
+    // Gọi API ngay khi submit form (giống như trang /appointment)
+    await handleConfirmBooking();
   };
 
   // Hàm thực hiện gọi API khi user xác nhận ở modal
@@ -77,61 +65,27 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       const appointment_id =
         res?.appointment?.appointment_id || res?.appointment_id;
 
-      // Lấy invoice_id từ response nếu có
-      const invoice_id = res?.invoice_id || res?.appointment?.invoice_id;
-
-      // Gọi API lấy chi tiết lịch hẹn từ backend
-      const token = localStorage.getItem("token");
-      console.log("Token gửi lên BE:", token);
-
-      const detailRes = await fetch(`/api/v1/appointments/${appointment_id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const detail = await detailRes.json();
-
-      // Debug dữ liệu trả về từ backend
-      console.log("DEBUG chi tiết lịch hẹn từ BE:", detail);
-
-      // Map lại dữ liệu cho đúng format modal cần
+      // Tạo dữ liệu đầy đủ với appointmentId (giống như trang /appointment)
       const mappedData = {
-        appointment_id,
-        queueNumber: detail.data?.queue_number,
-        serviceName: detail.data?.service_name || serviceName,
-        room: detail.data?.room_id,
-        doctorOrStaff:
-          detail.data?.doctor_name ||
-          detail.data?.staff_name ||
-          "Nhân viên xét nghiệm",
-        date: detail.data?.bookingDate
-          ? detail.data.bookingDate.slice(0, 10)
-          : "", // chỉ lấy YYYY-MM-DD
-        time: isDoctor
-          ? formatTimeStr(detail.data?.start_time) &&
-            formatTimeStr(detail.data?.end_time)
-            ? `${formatTimeStr(detail.data.start_time)} - ${formatTimeStr(
-                detail.data.end_time
-              )}`
-            : "Trong giờ làm việc"
-          : "Trong giờ làm việc",
-        fee: price,
-        total_price:
-          typeof price === "number"
-            ? price
-            : parseFloat(price.replace(/[^\d]/g, "")),
-        isDoctor,
+        appointmentId: appointment_id,
+        queueNumber: res?.queue_info?.queue_number || res?.queue_number || 1,
+        serviceName: serviceName,
+        room: res?.room || (isDoctor ? "Chưa xác định" : "Phòng xét nghiệm"),
+        doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
+        date: date,
+        time: isDoctor ? (slots.find(s => String(s.value) === String(timeSlot))?.label || "") : "Không cần đặt giờ cụ thể",
+        fee: typeof price === "number" ? `${Number(price).toLocaleString()}đ` : price,
+        isDoctor: isDoctor,
       };
 
-      // Debug dữ liệu truyền vào modal
-      console.log("DEBUG dữ liệu truyền vào modal:", mappedData);
-
       setAppointmentData(mappedData);
-      setInvoiceId(invoice_id);
-      setIsConfirmOpen(false);
+      setIsConfirmOpen(true); // Show payment confirmation modal
 
-      // Mở modal thanh toán thay vì modal thành công
-      setIsPaymentOpen(true);
+      // Reset form after successful booking
+      setReason("");
+      setDate("");
+      setTimeSlot("");
+      sessionStorage.removeItem(storageKey);
     } catch (err) {
       let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
       if (err?.response?.data?.message) {
@@ -140,51 +94,42 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         msg = err.message;
       }
       setError(msg);
-      setIsConfirmOpen(false);
       console.error("DEBUG lỗi đặt lịch:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Hàm xử lý khi thanh toán thành công
-  const handlePaymentComplete = async () => {
+  // Hàm xử lý thanh toán (giống như trang /appointment)
+  const handlePaymentConfirmation = async (paymentMethod = "cash") => {
+    if (!appointmentData?.appointmentId) {
+      setError("Không tìm thấy thông tin đặt lịch");
+      return false;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-
-      // 1. Cập nhật invoice status thành 'paid' (nếu có invoiceId)
-      if (invoiceId) {
-        await fetch(`/api/v1/booking/${invoiceId}/confirm-payment`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      }
-
-      // 2. Cập nhật trạng thái appointment thành 'in_progress' (backup case)
-      await fetch(
-        `/api/v1/appointments/${appointmentData.appointment_id}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ status: "in_progress" }),
-        }
+      setLoading(true);
+      await confirmAppointmentPayment(
+        appointmentData.appointmentId,
+        paymentMethod
+      );
+      console.log(
+        "✅ Payment confirmed for appointment:",
+        appointmentData.appointmentId
       );
 
-      setIsPaymentOpen(false);
+      // Chuyển sang modal thành công sau khi thanh toán
+      setIsConfirmOpen(false);
       setIsReceiptOpen(true);
-      sessionStorage.removeItem(storageKey);
+
+      return true;
     } catch (err) {
-      console.error("Error processing payment:", err);
-      // Vẫn hiển thị modal thành công dù có lỗi cập nhật status
-      setIsPaymentOpen(false);
-      setIsReceiptOpen(true);
-      sessionStorage.removeItem(storageKey);
+      console.error("❌ Payment confirmation error:", err);
+      setError("Có lỗi xảy ra khi xác nhận thanh toán");
+      setAppointmentData(null);
+      return false;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -204,13 +149,6 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       }
     }
   }, [storageKey, isLoggedIn]);
-
-  // Khi đã đăng nhập, nếu có dữ liệu tạm trong sessionStorage thì xóa sau khi submit thành công
-  useEffect(() => {
-    if (isLoggedIn && appointmentData) {
-      sessionStorage.removeItem(storageKey);
-    }
-  }, [isLoggedIn, appointmentData, storageKey]);
 
   // Persist form state on change
   useEffect(() => {
@@ -363,7 +301,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
               className="bg-green-600 text-white w-full px-6 py-2 rounded-full hover:bg-green-700 transition disabled:opacity-50"
               disabled={!date || (isDoctor && !timeSlot) || loading}
             >
-              {loading ? "Đang xử lý..." : "Xác nhận đặt lịch"}
+              {loading ? "Đang xử lý..." : "Đặt lịch ngay"}
             </button>
           ) : (
             <Link
@@ -385,13 +323,23 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         <>
           <AppointmentConfirmModal
             isOpen={isConfirmOpen}
-            onCancel={() => setIsConfirmOpen(false)}
-            onConfirm={handleConfirmBooking}
+            onCancel={() => {
+              setIsConfirmOpen(false);
+              setAppointmentData(null);
+            }}
+            onConfirm={() => {
+              setIsConfirmOpen(false);
+              setIsReceiptOpen(true);
+            }}
             data={appointmentData}
+            onPaymentConfirm={handlePaymentConfirmation}
           />
           <AppointmentSuccessModal
             isOpen={isReceiptOpen}
-            onClose={() => setIsReceiptOpen(false)}
+            onClose={() => {
+              setIsReceiptOpen(false);
+              setAppointmentData(null);
+            }}
             appointmentData={appointmentData}
           />
         </>

@@ -1,31 +1,70 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getAllLabTests, getCurrentLabStaffShift, getLabFinished } from "../../services/api";
+import { getAllLabTests, getCurrentLabStaffShift } from "../../services/api";
 import axios from "axios";
 
 const API_BASE = "http://localhost:5000/api/v1";
 
 // Hàm format thời gian đẹp
-function formatDateTime(isoString) {
-  if (!isoString) return "";
-  const d = new Date(isoString);
-  if (isNaN(d.getTime())) return isoString;
+function formatDateTime(str) {
+  if (!str) return "";
+  // Nếu là dạng "YYYY-MM-DD HH:mm:ss.SSS" hoặc "YYYY-MM-DD HH:mm:ss"
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(str)) {
+    const [date, time] = str.split(' ');
+    const [year, month, day] = date.split('-');
+    const [hour, min] = time.split(':');
+    return `${hour}:${min} ${day}/${month}/${year}`;
+  }
+  // Nếu là dạng "HH:mm:ss DD/MM/YYYY" hoặc "HH:mm:ss DD/M/YYYY"
+  if (/^\d{2}:\d{2}:\d{2} \d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    const [time, date] = str.split(' ');
+    const [hour, min] = time.split(':');
+    const [day, month, year] = date.split('/');
+    const paddedDay = day.padStart(2, '0');
+    const paddedMonth = month.padStart(2, '0');
+    return `${hour}:${min} ${paddedDay}/${paddedMonth}/${year}`;
+  }
+  // Nếu là ISO format (YYYY-MM-DDTHH:mm:ss.sssZ)
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(str)) {
+    const [date, time] = str.split('T');
+    const [year, month, day] = date.split('-');
+    const [hour, min] = time.split(':');
+    return `${hour}:${min} ${day}/${month}/${year}`;
+  }
+  // Nếu là ISO hoặc dạng khác, fallback về cũ
+  const d = new Date(str);
+  if (isNaN(d.getTime())) return str;
   const day = d.getDate().toString().padStart(2, "0");
   const month = (d.getMonth() + 1).toString().padStart(2, "0");
   const year = d.getFullYear();
   const hour = d.getHours().toString().padStart(2, "0");
   const min = d.getMinutes().toString().padStart(2, "0");
-  return `${day}/${month}/${year} ${hour}:${min}`;
+  return `${hour}:${min} ${day}/${month}/${year}`;
 }
+
+const getResultByType = (results, typeId) => {
+  return (results || []).find(r => r.test_type_id === typeId);
+};
+
+const parseVNDateTime = (str) => {
+  if (!str) return null;
+  const [time, date] = str.split(' ');
+  if (!date) return null;
+  const [day, month, year] = date.split('/');
+  // Đảm bảo ngày và tháng có 2 chữ số
+  const paddedDay = day.padStart(2, '0');
+  const paddedMonth = month.padStart(2, '0');
+  return new Date(`${year}-${paddedMonth}-${paddedDay}T${time}`);
+};
 
 const Card = ({ data, section, onStart, onProcess, onResult }) => (
   <div className="bg-white rounded-xl p-5 shadow border mb-4">
     <div className="flex items-center mb-2">
-      {/* Bỏ avatar tròn, chỉ hiển thị STT/id/code dạng text */}
+      {/* Hiển thị số thứ tự từ queue_number */}
       <div className="font-bold text-blue-700 mr-2">
-        {data.stt !== undefined && data.stt !== null
-          ? `STT: ${data.stt}`
+        {data.queue_number !== undefined && data.queue_number !== null
+          ? `STT: ${data.queue_number}`
           : data.id || data.code}
       </div>
       <div className="font-semibold text-lg">
@@ -114,34 +153,40 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => (
     )}
     {section === "Hoàn thành" && (
       <>
+        {console.log("DEBUG completed card:", data)}
         <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-green-700">
           {/* Thời gian hoàn thành */}
           {(() => {
             const results = data.results || [];
+            console.log("DEBUG results for completed test:", results);
             let doneTime = "-";
             if (results.length > 0) {
-              const latest = results.reduce((a, b) => new Date(a.created_at) > new Date(b.created_at) ? a : b);
-              doneTime = new Date(latest.created_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+              const latest = results.reduce((a, b) => {
+                console.log("DEBUG comparing:", a.created_at, b.created_at);
+                // So sánh trực tiếp chuỗi thời gian
+                const aTime = a.created_at || "";
+                const bTime = b.created_at || "";
+                return aTime > bTime ? a : b;
+              });
+              console.log("DEBUG latest result:", latest);
+              // Sử dụng hàm formatDateTime đã được cập nhật
+              if (latest && latest.created_at) {
+                doneTime = formatDateTime(latest.created_at);
+              }
+              console.log("DEBUG formatted doneTime:", doneTime);
             }
             return <div>Hoàn thành: {doneTime}</div>;
           })()}
-          {/* Kết quả */}
-          {data.service_id === 4 || data.service_id === 5 ? (
-            <>
-              {data.results && data.results.map((r) => {
-                // Sàng lọc
-                if (data.service_id === 4 && r.test_type_name?.toLowerCase().includes("sàng lọc")) {
-                  return <div key={r.result_id}>Sàng lọc: <b>{r.result_value}</b></div>;
-                }
-                // Khẳng định
-                if (data.service_id === 5 && r.test_type_name?.toLowerCase().includes("khẳng định")) {
-                  return <div key={r.result_id}>Khẳng định: <b>{r.result_value}</b></div>;
-                }
-                return null;
-              })}
-            </>
-          ) : null}
-          {/* Nếu là CD4 và Viral Load thì ẩn kết quả */}
+          {/* Kết quả Sàng lọc */}
+          {(() => {
+            const r = getResultByType(data.results, 3); // 3 = Sàng lọc
+            return r ? <div>Kết quả sàng lọc: <b>{r.result_value}</b></div> : null;
+          })()}
+          {/* Kết quả Khẳng định */}
+          {(() => {
+            const r = getResultByType(data.results, 4); // 4 = Khẳng định
+            return r ? <div>Kết quả khẳng định: <b>{r.result_value}</b></div> : null;
+          })()}
         </div>
         <button
           onClick={() => onResult && onResult(data)}
@@ -199,30 +244,24 @@ const LabStaff = () => {
     setLoading(true);
     try {
       const lab_staff_id = user?.id;
-      // Lấy danh sách hoàn thành đã có trường results
-      const done = await getLabFinished(selectedDate, lab_staff_id);
-      // Lấy các trạng thái khác như cũ
+      // Lấy tất cả dữ liệu cho queue và inProgress
       const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
       const queue = allTests.filter((test) => test.status === "requested");
       const inProgress = allTests.filter((test) => test.status === "in_progress");
+      // Lấy completed với trường results đầy đủ
+      const completed = await getAllLabTests('completed', selectedDate, lab_staff_id);
       // Tính toán summary từ dữ liệu thật
       const screening = allTests.filter(
         (test) =>
-          test.service_id === 4 ||
-          (test.service_name &&
-            test.service_name.toLowerCase().includes("sàng lọc"))
+          test.type_name && test.type_name.toLowerCase().includes("sàng lọc")
       ).length;
       const confirmation = allTests.filter(
         (test) =>
-          test.service_id === 5 ||
-          (test.service_name &&
-            test.service_name.toLowerCase().includes("khẳng định"))
+          test.type_name && test.type_name.toLowerCase().includes("khẳng định")
       ).length;
       const periodic = allTests.filter(
         (test) =>
-          test.service_id === 3 ||
-          (test.service_name &&
-            test.service_name.toLowerCase().includes("định kỳ"))
+          test.type_name && test.type_name.toLowerCase().includes("cd4") && test.type_name.toLowerCase().includes("viral load")
       ).length;
       setSummary({ screening, confirmation, periodic });
       setSections((prevSections) => [
@@ -232,7 +271,7 @@ const LabStaff = () => {
           cards: inProgress || [],
           count: (inProgress || []).length,
         },
-        { ...prevSections[2], cards: done || [], count: (done || []).length },
+        { ...prevSections[2], cards: completed || [], count: (completed || []).length },
       ]);
     } catch (err) {
       console.error("Lỗi tải dữ liệu lab:", err);
@@ -265,12 +304,30 @@ const LabStaff = () => {
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
+      let test_note_id = card.test_note_id;
+      // Nếu chưa có test_note_id, tạo mới TestNote (ghi nhận test_datetime, notes=null)
+      if (!test_note_id) {
+        const payload = { created_by_id: user.id, notes: null };
+        if (card.source === "doctor_request") {
+          payload.test_request_id = card.id;
+          if (card.appointment_id) payload.appointment_id = card.appointment_id;
+        } else if (card.source === "self_booking") {
+          payload.appointment_id = card.appointment_id;
+        }
+        const testNoteRes = await axios.post(
+          `${API_BASE}/lab/test-notes`,
+          payload,
+          { headers }
+        );
+        test_note_id = testNoteRes.data.data.test_note_id;
+      }
+      // Sau đó chuyển trạng thái
       if (card.source === "doctor_request") {
         const url = `${API_BASE}/test-requests/${card.id}/status`;
         await axios.patch(url, { status: "in_progress" }, { headers });
       } else if (card.source === "self_booking") {
         const url = `${API_BASE}/appointments/${card.appointment_id}/status`;
-        await axios.patch(url, { status: "in_progress" }, { headers });
+        await axios.post(url, { status: "in_progress" }, { headers });
       } else {
         alert("Không xác định được loại mẫu xét nghiệm!");
         return;
@@ -443,7 +500,7 @@ const LabStaff = () => {
             <div>
               <div className="text-2xl font-bold">{summary.periodic}</div>
               <div className="text-gray-700 font-medium text-sm">
-                XN Định kỳ
+                XN CD4 & Viral Load
               </div>
             </div>
           </div>
@@ -483,7 +540,7 @@ const LabStaff = () => {
                 </div>
               ) : (
                 [...section.cards]
-                  .sort((a, b) => (a.stt || 0) - (b.stt || 0))
+                  .sort((a, b) => (a.queue_number || 0) - (b.queue_number || 0))
                   .map((card) => (
                     <Card
                       key={
