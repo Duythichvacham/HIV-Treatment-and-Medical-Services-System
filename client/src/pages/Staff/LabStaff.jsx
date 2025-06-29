@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsByPatient } from "../../services/api";
+import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsForPatient } from "../../services/api";
 import axios from "axios";
 
 const API_BASE = "http://localhost:5000/api/v1";
@@ -60,15 +60,26 @@ const parseVNDateTime = (str) => {
 
 const Card = ({ data, section, onStart, onProcess, onResult }) => {
   const [latest, setLatest] = useState({ cd4: null, vl: null });
+  const [loadingLatest, setLoadingLatest] = useState(false);
 
   useEffect(() => {
     if (data.patient_id) {
-      getLatestTestResultsByPatient(data.patient_id).then(res => {
-        setLatest({
-          cd4: res?.latest_cd4 || null,
-          vl: res?.latest_viral_load || null
+      setLoadingLatest(true);
+      getLatestTestResultsForPatient(data.patient_id)
+        .then(res => {
+          console.log("Latest results for patient", data.patient_id, ":", res);
+          setLatest({
+            cd4: res?.data?.latest_cd4 || null,
+            vl: res?.data?.latest_viral_load || null
+          });
+        })
+        .catch(error => {
+          console.error("Error fetching latest results:", error);
+          setLatest({ cd4: null, vl: null });
+        })
+        .finally(() => {
+          setLoadingLatest(false);
         });
-      });
     }
   }, [data.patient_id]);
 
@@ -110,20 +121,33 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       </div>
       {/* Hiển thị tải lượng CD4 và Viral Load gần nhất, mỗi loại một dòng */}
       <div className="text-xs text-gray-600 mb-1">
-        {(() => {
-          // Lấy kết quả CD4 mới nhất trong test_note hiện tại
-          const cd4s = (data.results || []).filter(r => r.test_type_id === 1);
-          const latestCD4 = cd4s.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), cd4s[0]);
-          // Lấy kết quả Viral Load mới nhất trong test_note hiện tại
-          const vls = (data.results || []).filter(r => r.test_type_id === 2);
-          const latestVL = vls.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), vls[0]);
-          return (
+        {section === "Hoàn thành" ? (
+          // Ở bảng hoàn thành: hiển thị kết quả của chính test note này
+          (() => {
+            // Lấy kết quả CD4 mới nhất trong test_note hiện tại
+            const cd4s = (data.results || []).filter(r => r.test_type_id === 1);
+            const latestCD4 = cd4s.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), cd4s[0]);
+            // Lấy kết quả Viral Load mới nhất trong test_note hiện tại
+            const vls = (data.results || []).filter(r => r.test_type_id === 2);
+            const latestVL = vls.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), vls[0]);
+            return (
+              <>
+                <div>CD4 gần nhất: <b>{latestCD4 ? latestCD4.result_value : 'Chưa có'}</b></div>
+                <div>Viral Load gần nhất: <b>{latestVL ? latestVL.result_value : 'Chưa có'}</b></div>
+              </>
+            );
+          })()
+        ) : (
+          // Ở bảng chờ xét nghiệm và đang xét nghiệm: hiển thị kết quả mới nhất của bệnh nhân
+          loadingLatest ? (
+            <div className="text-gray-400">Đang tải lịch sử xét nghiệm...</div>
+          ) : (
             <>
-              <div>CD4 gần nhất: <b>{latestCD4 ? latestCD4.result_value : (latest.cd4 || 'Chưa có')}</b></div>
-              <div>Viral Load gần nhất: <b>{latestVL ? latestVL.result_value : (latest.vl || 'Chưa có')}</b></div>
+              <div>CD4 gần nhất: <b>{latest.cd4 || 'Chưa có'}</b></div>
+              <div>Viral Load gần nhất: <b>{latest.vl || 'Chưa có'}</b></div>
             </>
-          );
-        })()}
+          )
+        )}
       </div>
       <div className="text-xs text-gray-500 mb-1">
         {data.source === "doctor_request" ? (
