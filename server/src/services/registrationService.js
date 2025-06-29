@@ -94,29 +94,9 @@ const getPendingTestRequests = async () => {
  * @param {number} appointmentId - ID của appointment
  * @param {string} paymentMethod - Phương thức thanh toán (cash, qr_code)
  */
-<<<<<<< HEAD
-const approveTestRequest = async (appointmentId) => {
-  const query = `
-    -- 1. Cập nhật TestRequests status và approved_at
-    UPDATE TestRequests 
-    SET status = 'in_progress', approved_at = SWITCHOFFSET(GETDATE(), '+07:00') 
-    WHERE appointment_id = @appointmentId AND status = 'requested';
-    
-    -- 2. Cập nhật Invoice status từ 'pending' sang 'paid'
-    UPDATE Invoices 
-    SET status = 'paid', issued_at = SWITCHOFFSET(GETDATE(), '+07:00') 
-    WHERE appointment_id = @appointmentId AND status = 'pending';
-    
-    -- 3. Cập nhật Appointment status sang 'in_progress' 
-    UPDATE Appointments 
-    SET status = 'in_progress' 
-    WHERE appointment_id = @appointmentId AND status = 'requested';
-  `;
-=======
 const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
   const pool = await poolPromise;
   const transaction = pool.transaction();
->>>>>>> origin/feature/fullstack-multi-module-update
 
   try {
     await transaction.begin();
