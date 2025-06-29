@@ -98,7 +98,6 @@ exports.createTestResultAndComplete = async ({
   reference_range,
   notes,
 }) => {
-  console.log('[DEBUG] Đã vào hàm createTestResultAndComplete', { test_note_id, test_type_id, result_value });
   const pool = await poolPromise;
 
   // Nếu có notes và test_note_id, update notes vào TestNotes
@@ -226,8 +225,6 @@ exports.createTestResultAndComplete = async ({
 
   return true;
 };
-
-
 
 // Lấy danh sách bệnh nhân đang xét nghiệm
 
@@ -386,9 +383,7 @@ exports.getAllLabTests = async (
 
   // Nếu status là 'completed', lấy thêm test results
   if (status === 'completed') {
-    console.log('[DEBUG getAllLabTests] status:', status);
     const testNoteIds = records.map(r => r.test_note_id).filter(Boolean);
-    console.log('[DEBUG getAllLabTests] testNoteIds:', testNoteIds);
     let resultsByNoteId = {};
     
     if (testNoteIds.length > 0) {
@@ -400,9 +395,7 @@ exports.getAllLabTests = async (
         WHERE tr.test_note_id IN (${testNoteIds.join(",")})
         ORDER BY tr.test_note_id, tr.result_id ASC
       `;
-      console.log('[DEBUG getAllLabTests] resultsQuery:', resultsQuery);
       const resultsRes = await pool.request().query(resultsQuery);
-      console.log('[DEBUG getAllLabTests] resultsRes:', resultsRes.recordset);
       for (const row of resultsRes.recordset) {
         if (!resultsByNoteId[row.test_note_id]) resultsByNoteId[row.test_note_id] = [];
         resultsByNoteId[row.test_note_id].push(row);
@@ -588,4 +581,76 @@ exports.updateTestNoteDatetime = async (test_note_id, test_datetime) => {
     .input('test_datetime', test_datetime)
     .query('UPDATE TestNotes SET test_datetime = @test_datetime WHERE test_note_id = @test_note_id');
   return { test_note_id, test_datetime };
+};
+
+// Test function to check latest CD4 and Viral Load for debugging
+exports.getLatestTestResultsForPatient = async (patientId) => {
+  const pool = await poolPromise;
+  const query = `
+    SELECT 
+      p.patient_id,
+      p.full_name,
+      (SELECT TOP 1 result_value FROM TestResults tr2
+        JOIN TestNotes tn2 ON tr2.test_note_id = tn2.test_note_id
+        JOIN Appointments a2 ON tn2.appointment_id = a2.appointment_id
+        WHERE a2.patient_id = p.patient_id AND tr2.test_type_id = 1
+        ORDER BY tr2.created_at DESC) AS latest_cd4,
+      (SELECT TOP 1 result_value FROM TestResults tr3
+        JOIN TestNotes tn3 ON tr3.test_note_id = tn3.test_note_id
+        JOIN Appointments a3 ON tn3.appointment_id = a3.appointment_id
+        WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
+        ORDER BY tr3.created_at DESC) AS latest_viral_load,
+      (SELECT STRING_AGG(CONCAT(tr4.result_value, ' (', tr4.created_at, ')'), ', ') 
+       FROM TestResults tr4
+       JOIN TestNotes tn4 ON tr4.test_note_id = tn4.test_note_id
+       JOIN Appointments a4 ON tn4.appointment_id = a4.appointment_id
+       WHERE a4.patient_id = p.patient_id AND tr4.test_type_id = 1
+      ) AS all_cd4_results,
+      (SELECT STRING_AGG(CONCAT(tr5.result_value, ' (', tr5.created_at, ')'), ', ')
+       FROM TestResults tr5
+       JOIN TestNotes tn5 ON tr5.test_note_id = tn5.test_note_id
+       JOIN Appointments a5 ON tn5.appointment_id = a5.appointment_id
+       WHERE a5.patient_id = p.patient_id AND tr5.test_type_id = 2
+      ) AS all_viral_load_results
+    FROM Patients p
+    WHERE p.patient_id = @patient_id
+  `;
+  
+  const result = await pool.request()
+    .input("patient_id", sql.Int, patientId)
+    .query(query);
+  
+  return result.recordset[0];
+};
+
+// Simple test function to get all test results for a patient
+exports.getAllTestResultsForPatient = async (patientId) => {
+  const pool = await poolPromise;
+  const query = `
+    SELECT 
+      tr.result_id,
+      tr.test_type_id,
+      tt.name AS test_type_name,
+      tr.result_value,
+      tr.unit,
+      tr.created_at,
+      tn.test_note_id,
+      a.appointment_id,
+      p.patient_id,
+      p.full_name
+    FROM TestResults tr
+    JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+    JOIN Appointments a ON tn.appointment_id = a.appointment_id
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
+    WHERE p.patient_id = @patient_id
+    AND tr.test_type_id IN (1, 2) -- CD4 and Viral Load only
+    ORDER BY tr.created_at DESC
+  `;
+  
+  const result = await pool.request()
+    .input("patient_id", patientId)
+    .query(query);
+  
+  return result.recordset;
 };

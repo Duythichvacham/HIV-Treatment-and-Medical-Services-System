@@ -4,8 +4,7 @@ const authenticateToken = (req, res, next) => {
   // Lấy token từ header
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
-  console.log('Authorization header:', req.headers['authorization']);
-  console.log('req.user:', req.user);
+  
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }

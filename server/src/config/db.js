@@ -26,19 +26,9 @@ const config = {
 const poolPromise = new sql.ConnectionPool(config)
   .connect()
   .then((pool) => {
-    console.log("Connected to SQL Server successfully");
-    console.log("Database:", config.database);
-    console.log("Server:", config.server);
     return pool;
   })
   .catch((err) => {
-    console.error("Database connection failed:", err.message);
-    console.error("Config:", {
-      server: config.server,
-      database: config.database,
-      user: config.user,
-      port: config.port,
-    });
     process.exit(1); // Exit if cannot connect to database
   });
 module.exports = {

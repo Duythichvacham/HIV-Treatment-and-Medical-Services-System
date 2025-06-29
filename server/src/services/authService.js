@@ -9,7 +9,6 @@ async function authenticateUser(username, password) {
   const result = await pool.request()
     .input('username', sql.NVarChar, username)
     .query('SELECT * FROM Accounts WHERE username = @username AND status = \'active\'');
-  console.log('SQL result:', result);
 
   if (!result || !result.recordset || result.recordset.length === 0) return null;
 
@@ -17,7 +16,6 @@ async function authenticateUser(username, password) {
 
   // So sánh password với password_hash
   const isMatch = await bcrypt.compare(password, user.password_hash);
-  console.log('Password match:', isMatch);
   if (!isMatch) return null;
 
   // Nếu user là Doctor, thêm thông tin từ bảng Doctors

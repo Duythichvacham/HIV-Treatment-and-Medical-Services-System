@@ -5,19 +5,16 @@ const getAppointmentQueue = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId;
     const date = req.query.date;
-    console.log("[API] getAppointmentQueue called with doctor_id:", doctor_id, "date:", date);
     const queue = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "requested",
       date
     );
-    console.log("[API] getAppointmentQueue result count:", queue?.length, "data:", queue);
     res.status(200).json({
       success: true,
       data: queue,
     });
   } catch (err) {
-    console.error("[API] getAppointmentQueue error:", err);
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
@@ -27,19 +24,16 @@ const getAppointmentInProgress = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId;
     const date = req.query.date;
-    console.log("[API] getAppointmentInProgress called with doctor_id:", doctor_id, "date:", date);
     const in_progress = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "in_progress",
       date
     );
-    console.log("[API] getAppointmentInProgress result count:", in_progress?.length, "data:", in_progress);
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân đang khám thành công",
       data: in_progress,
     });
   } catch (err) {
-    console.error("[API] getAppointmentInProgress error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -49,19 +43,16 @@ const getAppointmentFinshed = async (req, res) => {
   try {
     const doctor_id = req.params.doctorId;
     const date = req.query.date;
-    console.log("[API] getAppointmentFinshed called with doctor_id:", doctor_id, "date:", date);
     const finished = await doctorService.getAppointmentsByStatus(
       doctor_id,
       "completed",
       date
     );
-    console.log("[API] getAppointmentFinshed result count:", finished?.length, "data:", finished);
     res.status(200).json({
       message: "Lấy danh sách bệnh nhân hoàn thành khám thành công",
       data: finished,
     });
   } catch (err) {
-    console.error("[API] getAppointmentFinshed error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -69,14 +60,12 @@ const getAppointmentFinshed = async (req, res) => {
 const getExamHistory = async (req, res) => {
   try {
     const patientId = req.params.patientId; // Lấy id từ URL
-    console.log("getExamHistory called with patientId:", patientId);
     const examHistory = await doctorService.getExamHistory(patientId);
     res.status(200).json({
       success: true,
       data: examHistory,
     });
   } catch (error) {
-    console.error("Error fetching exam history:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -88,7 +77,6 @@ const getCurrentExam = async (req, res) => {
     const result = await doctorService.getCurrentExam(patientId, appointmentId);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error("getCurrentExam error:", error);
     res.status(500).json({ success: false, message: "Lỗi server" });
   }
 };
@@ -97,26 +85,22 @@ const getCurrentExam = async (req, res) => {
 const getDoctors = async (req, res) => {
   try {
     const { date } = req.query;
-    console.log("getDoctors called with date:", date);
 
     let doctors;
     if (date) {
       // Lấy doctors có ca làm việc trong ngày được chỉ định
-      console.log("Fetching doctors by date:", date);
       doctors = await doctorService.getDoctorsByDate(date);
     } else {
       // Lấy tất cả doctors
-      console.log("Fetching all doctors");
       doctors = await doctorService.getDoctors();
     }
 
-    console.log("Found doctors:", doctors.length);
     res.status(200).json({
       success: true,
       data: doctors,
     });
   } catch (error) {
-    console.error("Error fetching doctors:", error);    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -135,10 +119,7 @@ const saveExamData = async (req, res) => {
       clinical_signs
     } = req.body;
     
-    console.log("saveExamData called with body:", req.body);
-    
     if (!appointment_id || !diagnosis) {
-      console.log("Missing required fields:", { appointment_id, diagnosis });
       return res.status(400).json({ 
         success: false, 
         error: "appointment_id và diagnosis là bắt buộc" 
@@ -157,17 +138,12 @@ const saveExamData = async (req, res) => {
       clinical_signs
     });
     
-    console.log("saveExamData successful:", result);
-    
     res.status(200).json({
       success: true,
       message: "Lưu dữ liệu khám bệnh thành công",
       data: result
     });
   } catch (error) {
-    console.error("Error saving exam data:", error);
-    console.error("Error stack:", error.stack);
-    
     // Phân loại lỗi chi tiết hơn
     let errorMessage = "Internal server error";
     let statusCode = 500;
@@ -205,7 +181,6 @@ const getDoctorByAccountId = async (req, res) => {
     }
     res.json({ doctor_id: result.recordset[0].doctor_id });
   } catch (error) {
-    console.error("getDoctorByAccountId error:", error);
     res.status(500).json({ message: 'Lỗi server', error: error.message });
   }
 };

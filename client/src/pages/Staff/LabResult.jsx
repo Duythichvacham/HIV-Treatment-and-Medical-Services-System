@@ -42,11 +42,6 @@ const LabResult = () => {
   const { state } = useLocation();
   const { note, results, patient, testType, room } = state || {};
 
-  // Debug để xem dữ liệu
-  console.log('LabResult state:', state);
-  console.log('LabResult note:', note);
-  console.log('LabResult results:', results);
-
   if (!note || !results || results.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center text-red-600 font-bold">

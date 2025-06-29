@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { getAllLabTests, getCurrentLabStaffShift } from "../../services/api";
+import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsByPatient } from "../../services/api";
 import axios from "axios";
 
 const API_BASE = "http://localhost:5000/api/v1";
@@ -58,146 +58,158 @@ const parseVNDateTime = (str) => {
   return new Date(`${year}-${paddedMonth}-${paddedDay}T${time}`);
 };
 
-const Card = ({ data, section, onStart, onProcess, onResult }) => (
-  <div className="bg-white rounded-xl p-5 shadow border mb-4">
-    <div className="flex items-center mb-2">
-      {/* Hiển thị số thứ tự từ queue_number */}
-      <div className="font-bold text-blue-700 mr-2">
-        {data.queue_number !== undefined && data.queue_number !== null
-          ? `STT: ${data.queue_number}`
-          : data.id || data.code}
+const Card = ({ data, section, onStart, onProcess, onResult }) => {
+  const [latest, setLatest] = useState({ cd4: null, vl: null });
+
+  useEffect(() => {
+    if (data.patient_id) {
+      getLatestTestResultsByPatient(data.patient_id).then(res => {
+        setLatest({
+          cd4: res?.latest_cd4 || null,
+          vl: res?.latest_viral_load || null
+        });
+      });
+    }
+  }, [data.patient_id]);
+
+  return (
+    <div className="bg-white rounded-xl p-5 shadow border mb-4">
+      <div className="flex items-center mb-2">
+        {/* Hiển thị số thứ tự từ queue_number */}
+        <div className="font-bold text-blue-700 mr-2">
+          {data.queue_number !== undefined && data.queue_number !== null
+            ? `STT: ${data.queue_number}`
+            : data.id || data.code}
+        </div>
+        <div className="font-semibold text-lg">
+          {data.patient_name || data.name}
+        </div>
       </div>
-      <div className="font-semibold text-lg">
-        {data.patient_name || data.name}
+      <div className="text-xs text-gray-500 mb-1">{data.code}</div>
+      <div className="text-sm text-gray-700 mb-1">
+        {data.age} tuổi - {data.gender}
       </div>
-    </div>
-    <div className="text-xs text-gray-500 mb-1">{data.code}</div>
-    <div className="text-sm text-gray-700 mb-1">
-      {data.age} tuổi - {data.gender}
-    </div>
-    <div className="text-xs text-gray-400 mb-1">
-      Đặt lúc: {formatDateTime(data.bookTime)}
-    </div>
-    {data.phone && (
-      <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>
-    )}
-    <div className="flex flex-wrap gap-2 my-2">
-      <span
-        className={`px-2 py-1 rounded text-xs ${
-          data.type === "Sàng lọc"
-            ? "bg-yellow-100 text-yellow-700"
-            : data.type === "Khẳng định"
-            ? "bg-red-100 text-red-700"
-            : "bg-purple-100 text-purple-700"
-        }`}
-      >
-        {data.type_name}
-      </span>
-    </div>
-    {/* Hiển thị tải lượng CD4 và Viral Load gần nhất */}
-    <div className="text-xs text-gray-600 mb-1">
-      CD4 gần nhất:{" "}
-      <b>
-        {data.latest_cd4 !== undefined && data.latest_cd4 !== null
-          ? data.latest_cd4
-          : "Chưa có"}
-      </b>{" "}
-      | Viral Load gần nhất:{" "}
-      <b>
-        {data.latest_viral_load !== undefined && data.latest_viral_load !== null
-          ? data.latest_viral_load
-          : "Chưa có"}
-      </b>
-    </div>
-    <div className="text-xs text-gray-500 mb-1">
-      {data.source === "doctor_request" ? (
-        <>
-          Nguồn:{" "}
-          <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>
-          {data.doctor ? (
+      <div className="text-xs text-gray-400 mb-1">
+        Đặt lúc: {formatDateTime(data.bookTime)}
+      </div>
+      {data.phone && (
+        <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>
+      )}
+      <div className="flex flex-wrap gap-2 my-2">
+        <span
+          className={`px-2 py-1 rounded text-xs ${
+            data.type === "Sàng lọc"
+              ? "bg-yellow-100 text-yellow-700"
+              : data.type === "Khẳng định"
+              ? "bg-red-100 text-red-700"
+              : "bg-purple-100 text-purple-700"
+          }`}
+        >
+          {data.type_name}
+        </span>
+      </div>
+      {/* Hiển thị tải lượng CD4 và Viral Load gần nhất, mỗi loại một dòng */}
+      <div className="text-xs text-gray-600 mb-1">
+        {(() => {
+          // Lấy kết quả CD4 mới nhất trong test_note hiện tại
+          const cd4s = (data.results || []).filter(r => r.test_type_id === 1);
+          const latestCD4 = cd4s.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), cd4s[0]);
+          // Lấy kết quả Viral Load mới nhất trong test_note hiện tại
+          const vls = (data.results || []).filter(r => r.test_type_id === 2);
+          const latestVL = vls.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), vls[0]);
+          return (
             <>
-              {" "}
-              - BS: <b>{data.doctor}</b>
+              <div>CD4 gần nhất: <b>{latestCD4 ? latestCD4.result_value : (latest.cd4 || 'Chưa có')}</b></div>
+              <div>Viral Load gần nhất: <b>{latestVL ? latestVL.result_value : (latest.vl || 'Chưa có')}</b></div>
             </>
-          ) : null}
-        </>
-      ) : data.source === "self_booking" ? (
+          );
+        })()}
+      </div>
+      <div className="text-xs text-gray-500 mb-1">
+        {data.source === "doctor_request" ? (
+          <>
+            Nguồn:{" "}
+            <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>
+            {data.doctor ? (
+              <>
+                {" "}
+                - BS: <b>{data.doctor}</b>
+              </>
+            ) : null}
+          </>
+        ) : data.source === "self_booking" ? (
+          <>
+            <span className="font-semibold text-green-700">
+              Bệnh nhân tự đăng ký
+            </span>
+          </>
+        ) : data.id ? (
+          <>
+            BS chỉ định: <b>{data.doctor}</b>
+          </>
+        ) : (
+          <b>Đăng kí xét nghiệm</b>
+        )}
+      </div>
+      {section === "Chờ xét nghiệm" && (
+        <button
+          onClick={() => onStart(data)}
+          className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition"
+        >
+          Bắt đầu xét nghiệm
+        </button>
+      )}
+      {section === "Đang xét nghiệm" && (
+        <button
+          onClick={() => onProcess(data)}
+          className="w-full mt-3 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
+        >
+          Nhập kết quả
+        </button>
+      )}
+      {section === "Hoàn thành" && (
         <>
-          <span className="font-semibold text-green-700">
-            Bệnh nhân tự đăng ký
-          </span>
+          <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-green-700">
+            {/* Thời gian hoàn thành */}
+            {(() => {
+              const results = data.results || [];
+              let doneTime = "-";
+              if (results.length > 0) {
+                const latest = results.reduce((a, b) => {
+                  // So sánh trực tiếp chuỗi thời gian
+                  const aTime = a.created_at || "";
+                  const bTime = b.created_at || "";
+                  return aTime > bTime ? a : b;
+                });
+                // Sử dụng hàm formatDateTime đã được cập nhật
+                if (latest && latest.created_at) {
+                  doneTime = formatDateTime(latest.created_at);
+                }
+              }
+              return <div>Hoàn thành: {doneTime}</div>;
+            })()}
+            {/* Kết quả Sàng lọc */}
+            {(() => {
+              const r = getResultByType(data.results, 3); // 3 = Sàng lọc
+              return r ? <div>Kết quả sàng lọc: <b>{r.result_value}</b></div> : null;
+            })()}
+            {/* Kết quả Khẳng định */}
+            {(() => {
+              const r = getResultByType(data.results, 4); // 4 = Khẳng định
+              return r ? <div>Kết quả khẳng định: <b>{r.result_value}</b></div> : null;
+            })()}
+          </div>
+          <button
+            onClick={() => onResult && onResult(data)}
+            className="w-full mt-1 bg-white border border-green-400 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-50 transition"
+          >
+            Xem kết quả
+          </button>
         </>
-      ) : data.id ? (
-        <>
-          BS chỉ định: <b>{data.doctor}</b>
-        </>
-      ) : (
-        <b>Đăng kí xét nghiệm</b>
       )}
     </div>
-    {section === "Chờ xét nghiệm" && (
-      <button
-        onClick={() => onStart(data)}
-        className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition"
-      >
-        Bắt đầu xét nghiệm
-      </button>
-    )}
-    {section === "Đang xét nghiệm" && (
-      <button
-        onClick={() => onProcess(data)}
-        className="w-full mt-3 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
-      >
-        Nhập kết quả
-      </button>
-    )}
-    {section === "Hoàn thành" && (
-      <>
-        {console.log("DEBUG completed card:", data)}
-        <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-green-700">
-          {/* Thời gian hoàn thành */}
-          {(() => {
-            const results = data.results || [];
-            console.log("DEBUG results for completed test:", results);
-            let doneTime = "-";
-            if (results.length > 0) {
-              const latest = results.reduce((a, b) => {
-                console.log("DEBUG comparing:", a.created_at, b.created_at);
-                // So sánh trực tiếp chuỗi thời gian
-                const aTime = a.created_at || "";
-                const bTime = b.created_at || "";
-                return aTime > bTime ? a : b;
-              });
-              console.log("DEBUG latest result:", latest);
-              // Sử dụng hàm formatDateTime đã được cập nhật
-              if (latest && latest.created_at) {
-                doneTime = formatDateTime(latest.created_at);
-              }
-              console.log("DEBUG formatted doneTime:", doneTime);
-            }
-            return <div>Hoàn thành: {doneTime}</div>;
-          })()}
-          {/* Kết quả Sàng lọc */}
-          {(() => {
-            const r = getResultByType(data.results, 3); // 3 = Sàng lọc
-            return r ? <div>Kết quả sàng lọc: <b>{r.result_value}</b></div> : null;
-          })()}
-          {/* Kết quả Khẳng định */}
-          {(() => {
-            const r = getResultByType(data.results, 4); // 4 = Khẳng định
-            return r ? <div>Kết quả khẳng định: <b>{r.result_value}</b></div> : null;
-          })()}
-        </div>
-        <button
-          onClick={() => onResult && onResult(data)}
-          className="w-full mt-1 bg-white border border-green-400 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-50 transition"
-        >
-          Xem kết quả
-        </button>
-      </>
-    )}
-  </div>
-);
+  );
+};
 
 const LabStaff = () => {
   const [sections, setSections] = useState([
@@ -307,7 +319,11 @@ const LabStaff = () => {
       let test_note_id = card.test_note_id;
       // Nếu chưa có test_note_id, tạo mới TestNote (ghi nhận test_datetime, notes=null)
       if (!test_note_id) {
-        const payload = { created_by_id: user.id, notes: null };
+        const payload = { 
+          created_by_id: user.id, 
+          notes: null,
+          test_datetime: new Date().toISOString()
+        };
         if (card.source === "doctor_request") {
           payload.test_request_id = card.id;
           if (card.appointment_id) payload.appointment_id = card.appointment_id;
@@ -393,18 +409,11 @@ const LabStaff = () => {
         { headers }
       );
 
-      console.log("DEBUG noteRes:", noteRes.data);
-      console.log("DEBUG resultsRes:", resultsRes.data);
-
       const note = noteRes.data.data;
       const results = resultsRes.data.data || [];
 
-      console.log("DEBUG note:", note);
-      console.log("DEBUG results:", results);
-
       navigate("/lab-result", { state: { note, results } });
     } catch (err) {
-      console.error("DEBUG handleViewResult error:", err);
       alert("Không thể lấy chi tiết kết quả!");
     }
   };
@@ -441,7 +450,6 @@ const LabStaff = () => {
         Đang tải dữ liệu...
       </div>
     );
-  console.log("DEBUG sections:", sections);
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-4">Quản lý xét nghiệm</h1>

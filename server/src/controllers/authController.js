@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-  console.log('Login body:', req.body);
   try {
     const user = await authService.authenticateUser(username, password);
     if (!user) {
@@ -28,7 +27,6 @@ exports.login = async (req, res) => {
 
     res.json({ token });
   } catch (err) {
-    console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
   // bcrypt.hash('@1', 10).then(hash => console.log(hash));
@@ -100,7 +98,6 @@ exports.registerPatient = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Registration error:', err);
     // Check for SQL Server unique constraint violation
     if (
       err.message.includes('duplicate') ||
@@ -128,7 +125,6 @@ exports.registerPatient = async (req, res) => {
 exports.changePassword = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
-    console.log('userId in req.user:', req.user);
     const { oldPassword, newPassword } = req.body;
     if (!oldPassword || !newPassword) throw new Error('Thiếu thông tin.');
     await authService.changePassword(userId, oldPassword, newPassword);

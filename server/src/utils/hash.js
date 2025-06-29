@@ -14,7 +14,6 @@ async function hashPasswords() {
 
     try {
       const hash = await bcrypt.hash(password, saltRounds);
-      console.log(`${user.username}: ${hash}`);
     } catch (err) {
       console.error(`Lỗi với ${user.username}:`, err);
     }
