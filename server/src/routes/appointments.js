@@ -1,27 +1,29 @@
 const express = require("express");
 const router = express.Router();
 const appointmentController = require("../controllers/appointmentController");
-const authenticateToken = require("../middleware/authMiddleware");
 
 // Kiểm tra lịch hẹn đã tồn tại (phải đặt trước các route có params)
-router.get("/check-existing", authenticateToken, appointmentController.checkExistingAppointment);
+router.get("/check-existing", appointmentController.checkExistingAppointment);
 
 // Manual cancel tất cả pending appointments trong ngày (cho admin/manager)
 router.post("/cancel-pending", appointmentController.cancelPendingAppointments);
 
 // Đặt lịch khám mới
-router.post("/", authenticateToken, appointmentController.createAppointment);
+router.post("/", appointmentController.createAppointment);
+
+// Confirm payment for appointment
+router.post(
+  "/:appointmentId/confirm-payment",
+  appointmentController.confirmPayment
+);
 
 // GET lấy danh sách lịch hẹn của người dùng
 // router.get("/", appointmentController.getAppointments);
-///api/v1/appointments/{appointment_id}/status (PATCH, cập nhật status cho appointments)
-router.patch("/:appointment_id/status", authenticateToken, appointmentController.updateStatus);
+///api/v1/appointments/{appointment_id}/status (POST, cập nhật status cho appointments)
+router.post("/:appointment_id/status", appointmentController.updateStatus);
 
 // Lấy chi tiết lịch hẹn theo appointment_id
-router.get("/:appointment_id", authenticateToken, appointmentController.getAppointmentDetail);
-
-// Lấy invoice của appointment
-router.get("/:appointment_id/invoice", authenticateToken, appointmentController.getAppointmentInvoice);
+router.get("/:appointment_id", appointmentController.getAppointmentDetail);
 
 module.exports = router;
 /** 

@@ -43,23 +43,7 @@ const validateAppointmentRules = async (
 
 exports.confirmPayment = async (invoiceId) => {
   const pool = await poolPromise;
-  
-  console.log("=== DEBUG confirmPayment ===");
-  console.log("Invoice ID:", invoiceId);
-  
-  // Kiểm tra invoice có tồn tại không trước khi update
-  const checkInvoice = await pool
-    .request()
-    .input("invoiceId", invoiceId)
-    .query("SELECT * FROM Invoices WHERE invoice_id = @invoiceId");
-  
-  console.log("Invoice trước khi update:", checkInvoice.recordset[0]);
-  
-  if (checkInvoice.recordset.length === 0) {
-    throw new Error(`Không tìm thấy invoice với ID: ${invoiceId}`);
-  }
-  
-  const result = await pool.request().input("invoiceId", invoiceId).query(`
+  await pool.request().input("invoiceId", invoiceId).query(`
       -- 1. Cập nhật trạng thái hóa đơn thành 'paid'
       UPDATE Invoices
       SET status = 'paid', issued_at = GETDATE()
@@ -73,13 +57,7 @@ exports.confirmPayment = async (invoiceId) => {
         FROM Invoices
         WHERE invoice_id = @invoiceId AND appointment_id IS NOT NULL
       );
-      
-      -- 3. Trả về thông tin invoice sau khi update
-      SELECT * FROM Invoices WHERE invoice_id = @invoiceId;
     `);
-
-  console.log("Kết quả update:", result.recordset);
-  console.log("Rows affected:", result.rowsAffected);
 
   return {
     success: true,
@@ -200,15 +178,7 @@ exports.createBooking = async ({
 
   const price = serviceResult.recordset[0].price;
 
-  // Bước 3: Lấy queue_number từ queueService (chỉ để trả về cho client, không lưu vào DB)
-  const queueType = doctorId ? "examination" : "test";
-  const queueNumber = await queueService.getNextQueueNumber(
-    queueType,
-    doctorId,
-    slotId
-  );
-
-  // Bước 4: Tạo appointment (KHÔNG lưu queue_number vào database)
+  // Bước 3: Tạo appointment trước
   const appointmentInsert = await pool
     .request()
     .input("patientId", patientId)
@@ -222,10 +192,27 @@ exports.createBooking = async ({
         (patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate)
       OUTPUT INSERTED.appointment_id
       VALUES 
-        (@patientId, @DoctorId, @slotId, @serviceId, @status, @roomId, @bookingDate)
+        (@patientId, @doctorId, @slotId, @serviceId, @status, @roomId, @bookingDate)
     `);
 
   const appointmentId = appointmentInsert.recordset[0].appointment_id;
+
+  // Bước 4: Tạo queue number cho appointment
+  let queueInfo = null;
+  try {
+    const queueType = doctorId ? "examination" : "test";
+    queueInfo = await queueService.createQueueNumber({
+      queue_type: queueType,
+      appointment_id: appointmentId,
+      request_id: null,
+      doctor_id: doctorId || null,
+      slot_id: slotId || null,
+      queue_date: new Date(bookingDate),
+    });
+  } catch (queueError) {
+    console.error("Error creating queue number:", queueError);
+    // Không throw error vì appointment đã được tạo thành công
+  }
 
   // Bước 5: Tạo hóa đơn
   await pool
@@ -233,7 +220,7 @@ exports.createBooking = async ({
     .input("patientId", patientId)
     .input("appointmentId", appointmentId)
     .input("amount", price)
-    .input("serviceType", "examination")
+    .input("serviceType", doctorId ? "examination" : "test")
     .input("status", "pending").query(`
       INSERT INTO Invoices 
         (patient_id, appointment_id, amount, service_type, status)
@@ -244,7 +231,7 @@ exports.createBooking = async ({
   return {
     message: "Tạo lịch hẹn và hóa đơn thành công",
     appointmentId,
-    queue_number: queueNumber, // Trả về queue_number cho client
+    queue_info: queueInfo, // Trả về thông tin queue number cho frontend
   };
 };
 

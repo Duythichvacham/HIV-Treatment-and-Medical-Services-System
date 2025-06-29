@@ -10,6 +10,7 @@ const labStaffRouter = require("./lab-staff");
 const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
 const registrationRouter = require("./registration");
+const queueRouter = require("./queue");
 
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
@@ -60,6 +61,11 @@ function route(app) {
    */
   //quản lý luồng /booking – tạo appointment + invoice
   app.use("/api/v1/booking", authMiddleware, bookingRouter);
+  /**
+   * API queue - Quản lý số thứ tự
+   * Prefix: api/v1/queue
+   */
+  app.use("/api/v1/queue", authMiddleware, queueRouter);
 }
 
 module.exports = route;

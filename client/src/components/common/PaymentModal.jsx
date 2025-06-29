@@ -19,6 +19,7 @@ import {
   Check,
   Printer,
 } from "lucide-react";
+import { approveTestRequest } from "../../services/api";
 
 const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
@@ -42,11 +43,16 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
 
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    setIsProcessing(false);
-    setShowReceipt(true);
+    try {
+      // Call the actual API to approve test request with payment method
+      await approveTestRequest(request.appointment_id, selectedPaymentMethod);
+      setIsProcessing(false);
+      setShowReceipt(true);
+    } catch (error) {
+      setIsProcessing(false);
+      console.error("Error processing payment:", error);
+      alert("Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.");
+    }
   };
 
   const handlePrintReceipt = () => {

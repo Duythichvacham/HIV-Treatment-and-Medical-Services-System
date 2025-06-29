@@ -236,7 +236,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
 
   return {
     ...appointment,
-    invoice_id
+    invoice_id,
   };
 };
 
@@ -513,14 +513,12 @@ exports.checkExistingAppointment = async (
 // Lấy invoice từ appointment_id
 exports.getInvoiceByAppointmentId = async (appointment_id) => {
   const pool = await poolPromise;
-  const result = await pool
-    .request()
-    .input("appointment_id", appointment_id)
+  const result = await pool.request().input("appointment_id", appointment_id)
     .query(`
       SELECT i.invoice_id, i.status, i.amount, i.created_at, i.issued_at
       FROM Invoices i 
       WHERE i.appointment_id = @appointment_id
     `);
-  
+
   return result.recordset[0] || null;
 };

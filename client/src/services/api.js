@@ -168,6 +168,29 @@ export const createAppointment = async (data) => {
   }
 };
 
+/**
+ * Confirm payment for appointment
+ * @param {number} appointmentId - Appointment ID
+ * @param {string} paymentMethod - Payment method (cash, qr_code)
+ */
+export const confirmAppointmentPayment = async (
+  appointmentId,
+  paymentMethod
+) => {
+  try {
+    const response = await api.post(
+      `/api/v1/appointments/${appointmentId}/confirm-payment`,
+      {
+        paymentMethod: paymentMethod,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ confirmAppointmentPayment error:", error);
+    throw error;
+  }
+};
+
 // ===========================================
 // AUTH ENDPOINTS
 // ===========================================

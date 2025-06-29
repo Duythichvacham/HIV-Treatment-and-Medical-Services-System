@@ -1,4 +1,5 @@
 const { poolPromise, sql } = require("../config/db");
+const queueService = require("./queueService");
 
 /**
  * Lấy danh sách TestRequests pending của ngày hiện tại và nhóm theo appointment_id
@@ -89,39 +90,110 @@ const getPendingTestRequests = async () => {
 };
 
 /**
- * Duyệt tất cả TestRequests thuộc 1 appointment
+ * Duyệt tất cả TestRequests thuộc 1 appointment, cấp số thứ tự và cập nhật Invoice thành 'paid'
  * @param {number} appointmentId - ID của appointment
+ * @param {string} paymentMethod - Phương thức thanh toán (cash, qr_code)
  */
-const approveTestRequest = async (appointmentId) => {
-  const query = `
-    -- 1. Cập nhật TestRequests status và approved_at
-    UPDATE TestRequests 
-    SET status = 'in_progress', approved_at = GETDATE() 
-    WHERE appointment_id = @appointmentId AND status = 'requested';
-    
-    -- 2. Cập nhật Invoice status từ 'pending' sang 'paid'
-    UPDATE Invoices 
-    SET status = 'paid', issued_at = GETDATE() 
-    WHERE appointment_id = @appointmentId AND status = 'pending';
-    
-    -- 3. Cập nhật Appointment status sang 'in_progress' 
-    UPDATE Appointments 
-    SET status = 'in_progress' 
-    WHERE appointment_id = @appointmentId AND status = 'requested';
-  `;
+const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
+  const pool = await poolPromise;
+  const transaction = pool.transaction();
 
   try {
-    const pool = await poolPromise;
-    const request = pool.request();
-    request.input("appointmentId", sql.Int, appointmentId);
-    const result = await request.query(query);
+    await transaction.begin();
+
+    // 1. Lấy danh sách TestRequests cần approve
+    const testRequestsQuery = `
+      SELECT request_id, appointment_id
+      FROM TestRequests 
+      WHERE appointment_id = @appointmentId AND status = 'requested'
+    `;
+
+    const testRequestsResult = await transaction
+      .request()
+      .input("appointmentId", sql.Int, appointmentId)
+      .query(testRequestsQuery);
+
+    const testRequests = testRequestsResult.recordset;
+
+    if (testRequests.length === 0) {
+      await transaction.rollback();
+      return {
+        success: false,
+        affectedRows: 0,
+        message: `Không tìm thấy TestRequest nào cần duyệt cho appointment ${appointmentId}`,
+      };
+    }
+
+    // 2. Update status của TestRequests
+    const updateQuery = `
+      UPDATE TestRequests 
+      SET status = 'in_progress', approved_at = GETDATE() 
+      WHERE appointment_id = @appointmentId AND status = 'requested'
+    `;
+
+    const updateResult = await transaction
+      .request()
+      .input("appointmentId", sql.Int, appointmentId)
+      .query(updateQuery);
+
+    // 3. Cập nhật Invoice status thành 'paid' cho appointment này
+    const updateInvoiceQuery = `
+      UPDATE Invoices 
+      SET status = 'paid', issued_at = GETDATE()
+      WHERE appointment_id = @appointmentId AND status = 'pending'
+    `;
+
+    const invoiceUpdateResult = await transaction
+      .request()
+      .input("appointmentId", sql.Int, appointmentId)
+      .query(updateInvoiceQuery);
+
+    console.log(
+      `📄 Updated ${invoiceUpdateResult.rowsAffected[0]} invoices to 'paid' status for appointment ${appointmentId}`
+    );
+
+    // 4. Cấp số thứ tự cho từng TestRequest được approve
+    const queueResults = [];
+    let queueErrors = [];
+
+    for (const testRequest of testRequests) {
+      try {
+        // Cấp số thứ tự cho TestRequest (loại test)
+        const queueInfo = await queueService.createQueueForTestRequest(
+          testRequest.request_id
+        );
+        queueResults.push({
+          request_id: testRequest.request_id,
+          queue_info: queueInfo,
+        });
+
+        console.log(
+          `✅ Đã cấp số thứ tự ${queueInfo.queue_number} cho TestRequest ${testRequest.request_id}`
+        );
+      } catch (queueError) {
+        // Log lỗi nhưng không fail toàn bộ transaction
+        console.error(
+          `❌ Lỗi khi cấp số thứ tự cho TestRequest ${testRequest.request_id}:`,
+          queueError.message
+        );
+        queueErrors.push({
+          request_id: testRequest.request_id,
+          error: queueError.message,
+        });
+      }
+    }
+
+    await transaction.commit();
 
     return {
       success: true,
-      affectedRows: result.rowsAffected[0],
-      message: `Đã duyệt ${result.rowsAffected[0]} yêu cầu xét nghiệm cho appointment ${appointmentId}`,
+      affectedRows: updateResult.rowsAffected[0],
+      message: `Đã duyệt ${updateResult.rowsAffected[0]} yêu cầu xét nghiệm cho appointment ${appointmentId}`,
+      queue_results: queueResults,
+      queue_errors: queueErrors.length > 0 ? queueErrors : null,
     };
   } catch (error) {
+    await transaction.rollback();
     console.error("Error in approveTestRequest:", error);
     throw error;
   }
