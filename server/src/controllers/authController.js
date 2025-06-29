@@ -123,3 +123,18 @@ exports.registerPatient = async (req, res) => {
     res.status(500).json({ message: 'Lỗi server khi đăng ký' });
   }
 };
+
+// change password
+exports.changePassword = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    console.log('userId in req.user:', req.user);
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) throw new Error('Thiếu thông tin.');
+    await authService.changePassword(userId, oldPassword, newPassword);
+    res.json({ message: 'Đổi mật khẩu thành công.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
