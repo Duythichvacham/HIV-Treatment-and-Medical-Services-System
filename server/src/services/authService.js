@@ -125,4 +125,34 @@ async function registerPatient(patientData) {
   }
 }
 
-module.exports = { authenticateUser, registerPatient };
+// change password
+async function changePassword(userId, oldPassword, newPassword) {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input('account_id', sql.Int, userId)
+    .query('SELECT * FROM Accounts WHERE account_id = @account_id AND status = \'active\'');
+  if (!result.recordset || result.recordset.length === 0) {
+    const err = new Error('Không tìm thấy tài khoản.');
+    err.status = 404;
+    throw err;
+  }
+  const user = result.recordset[0]; 
+  // Kiểm tra mật khẩu cũ
+  const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+  if (!isMatch) {
+    return { success: false, message: 'Mật khẩu cũ không đúng.' };
+  }
+  // Hash mật khẩu mới
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  // Cập nhật mật khẩu
+  await pool.request()
+    .input('account_id', sql.Int, userId)
+    .input('password_hash', sql.VarChar, hashedPassword)
+    .query('UPDATE Accounts SET password_hash = @password_hash WHERE account_id = @account_id');
+  return { success: true };
+}
+
+
+module.exports = { authenticateUser, registerPatient, changePassword };
+
+
