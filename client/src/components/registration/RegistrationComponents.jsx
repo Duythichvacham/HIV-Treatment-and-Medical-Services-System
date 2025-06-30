@@ -12,6 +12,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import PaymentModal from "../common/PaymentModal";
 
 /**
  * Statistics Cards Component
@@ -120,67 +121,38 @@ export const RequestCard = ({
   request,
   index,
   formatCurrency,
-  formatDateTime,
   onProcessPayment,
-  isProcessing = false,
 }) => (
-  <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-    <div className="flex items-start justify-between mb-4">
-      <div className="flex items-center space-x-3">
+  <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-3 flex-1">
         <div className="flex-shrink-0">
-          <TestTube className="h-6 w-6 text-blue-600" />
+          <TestTube className="h-5 w-5 text-blue-600" />
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-semibold text-gray-900 truncate">
             {request.patient_name}
           </h3>
-          <p className="text-sm text-gray-600">SĐT: {request.patient_phone}</p>
+          <p className="text-sm text-gray-600">{request.patient_phone}</p>
         </div>
       </div>
-      <div className="text-right">
-        <p className="text-lg font-bold text-green-600">
-          {formatCurrency(request.service_price)}
-        </p>
-        <p className="text-xs text-gray-500">ID: {request.appointment_id}</p>
-      </div>
-    </div>
 
-    <div className="space-y-2 mb-4">
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-600">Dịch vụ:</span>
-        <span className="text-gray-900">{request.service_name}</span>
-      </div>
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-600">Ngày đặt:</span>
-        <span className="text-gray-900">
-          {formatDateTime(request.booking_date)}
-        </span>
-      </div>
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-600">Trạng thái:</span>
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          Chờ thanh toán
-        </span>
-      </div>
-    </div>
+      <div className="flex items-center space-x-4">
+        <div className="text-right">
+          <p className="text-lg font-bold text-green-600">
+            {formatCurrency(request.total_price || 0)}
+          </p>
+          <p className="text-xs text-gray-500">
+            {request.services?.length || 0} dịch vụ
+          </p>
+        </div>
 
-    <div className="flex justify-end space-x-3">
-      <button
-        onClick={() => onProcessPayment(index, "cash")}
-        disabled={isProcessing}
-        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <DollarSign className="w-4 h-4 mr-2" />
-        {isProcessing ? "Đang xử lý..." : "Thu tiền mặt"}
-      </button>
-      <button
-        onClick={() => onProcessPayment(index, "card")}
-        disabled={isProcessing}
-        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Receipt className="w-4 h-4 mr-2" />
-        {isProcessing ? "Đang xử lý..." : "Thu qua thẻ"}
-      </button>
+        <PaymentModal
+          request={request}
+          requestIndex={index}
+          onPaymentComplete={onProcessPayment}
+        />
+      </div>
     </div>
   </div>
 );
@@ -204,18 +176,26 @@ export const HistoryCard = ({ request, formatCurrency, formatDateTime }) => (
       </div>
       <div className="text-right">
         <p className="text-lg font-bold text-green-600">
-          {formatCurrency(request.amount)}
+          {formatCurrency(request.total_price || 0)}
         </p>
-        <p className="text-xs text-gray-500">
-          {request.payment_method === "cash" ? "Tiền mặt" : "Chuyển khoản"}
-        </p>
+        <p className="text-xs text-gray-500">Tiền mặt</p>
       </div>
     </div>
 
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-600">Dịch vụ:</span>
-        <span className="text-gray-900">{request.service_name}</span>
+    <div className="space-y-2 mb-4">
+      <div>
+        <span className="font-medium text-gray-600 text-sm">Dịch vụ:</span>
+        <div className="mt-1 space-y-1">
+          {request.services &&
+            request.services.map((service, index) => (
+              <div key={index} className="flex justify-between text-sm">
+                <span className="text-gray-900">{service.service_name}</span>
+                <span className="text-gray-600">
+                  {formatCurrency(service.service_price)}
+                </span>
+              </div>
+            ))}
+        </div>
       </div>
       <div className="flex justify-between text-sm">
         <span className="font-medium text-gray-600">Thanh toán lúc:</span>
