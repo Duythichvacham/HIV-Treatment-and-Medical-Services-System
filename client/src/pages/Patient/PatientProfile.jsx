@@ -38,11 +38,14 @@ const PatientProfile = () => {
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otp: ''
   });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
   
   const { user } = useAuth();
 
@@ -70,7 +73,7 @@ const PatientProfile = () => {
   };
 
   const validatePasswordForm = () => {
-    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword || !passwordData.otp) {
       setPasswordError('Vui lòng điền đầy đủ thông tin');
       return false;
     }
@@ -129,7 +132,8 @@ const PatientProfile = () => {
       setPasswordData({
         oldPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        otp: ''
       });
 
       // Hide form after 2 seconds
@@ -143,6 +147,29 @@ const PatientProfile = () => {
       setPasswordError(err.message);
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleGetOtp = async () => {
+    setOtpLoading(true);
+    setOtpMessage('');
+    try {
+      // Gửi OTP về email hoặc số điện thoại
+      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profile.email,
+          phone: profile.phone
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Gửi OTP thất bại');
+      setOtpMessage('OTP đã được gửi!');
+    } catch (err) {
+      setOtpMessage(err.message);
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -232,7 +259,29 @@ const PatientProfile = () => {
           {showChangePassword && !edit && (
             <div className="mt-2 p-4 bg-gray-100 rounded-xl border">
               <h4 className="font-semibold text-gray-800 mb-3">Đổi mật khẩu</h4>
-              
+              <div className="mb-3">
+                <label className="block text-xs text-gray-500 mb-1">Mã OTP</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 rounded border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    value={passwordData.otp}
+                    onChange={e => handlePasswordChange("otp", e.target.value)}
+                    placeholder="Nhập mã OTP được gửi về điện thoại/email"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGetOtp}
+                    className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition ${otpLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={otpLoading}
+                  >
+                    {otpLoading ? 'Đang gửi...' : 'Lấy OTP'}
+                  </button>
+                </div>
+                {otpMessage && (
+                  <div className={`mt-2 text-sm ${otpMessage.includes('OTP đã được gửi') ? 'text-green-600' : 'text-red-600'}`}>{otpMessage}</div>
+                )}
+              </div>
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu cũ</label>
                 <input 
@@ -243,7 +292,6 @@ const PatientProfile = () => {
                   placeholder="Nhập mật khẩu hiện tại"
                 />
               </div>
-              
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu mới</label>
                 <input 
@@ -257,7 +305,6 @@ const PatientProfile = () => {
                   Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt (@$!%*?&)
                 </p>
               </div>
-              
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Nhập lại mật khẩu mới</label>
                 <input 
@@ -303,7 +350,7 @@ const PatientProfile = () => {
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
                   onClick={() => {
                     setShowChangePassword(false);
-                    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '', otp: '' });
                     setPasswordError('');
                     setPasswordSuccess('');
                   }}

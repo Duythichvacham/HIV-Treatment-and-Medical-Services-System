@@ -12,12 +12,15 @@ const PatientRegister = () => {
     gender: '',
     email: '',
     phone: '',
-    address: ''
+    address: '',
+    otp: ''
   });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -31,7 +34,7 @@ const PatientRegister = () => {
   const validateForm = () => {
     if (!formData.username || !formData.password || !formData.confirmPassword || 
         !formData.fullName || !formData.dob || !formData.gender || 
-        !formData.email || !formData.phone) {
+        !formData.email || !formData.phone || !formData.otp) {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc');
       return false;
     }
@@ -113,7 +116,8 @@ const PatientRegister = () => {
         gender: '',
         email: '',
         phone: '',
-        address: ''
+        address: '',
+        otp: ''
       });
 
       // Redirect to login after 2 seconds
@@ -126,6 +130,29 @@ const PatientRegister = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGetOtp = async () => {
+    setOtpLoading(true);
+    setOtpMessage('');
+    try {
+      // Gửi OTP về email hoặc số điện thoại
+      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          phone: formData.phone
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Gửi OTP thất bại');
+      setOtpMessage('OTP đã được gửi!');
+    } catch (err) {
+      setOtpMessage(err.message);
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -271,18 +298,18 @@ const PatientRegister = () => {
                   Số điện thoại <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="tel"
+                  type="text"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="0123456789"
+                  placeholder="Nhập số điện thoại"
                   required
                 />
               </div>
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa chỉ
+                  Địa chỉ <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -290,8 +317,36 @@ const PatientRegister = () => {
                   value={formData.address}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="Nhập địa chỉ (không bắt buộc)"
+                  placeholder="Nhập địa chỉ"
+                  required
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mã OTP <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    name="otp"
+                    value={formData.otp}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Nhập mã OTP được gửi về điện thoại/email"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGetOtp}
+                    className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition ${otpLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={otpLoading}
+                  >
+                    {otpLoading ? 'Đang gửi...' : 'Lấy OTP'}
+                  </button>
+                </div>
+                {otpMessage && (
+                  <div className={`mt-2 text-sm ${otpMessage.includes('OTP đã được gửi') ? 'text-green-600' : 'text-red-600'}`}>{otpMessage}</div>
+                )}
               </div>
             </div>
           </div>
