@@ -305,6 +305,71 @@ const getDoctors = async (req, res) => {
   }
 };
 
+// Hàm parse vitals
+const parseVitals = (vitalsString) => {
+  const result = {
+    blood_pressure: "",
+    pulse: "",
+    temperature: "",
+  };
+
+  if (!vitalsString) return result;
+
+  const regexBP = /Huyết áp:\s*([\d/]+)/;
+  const regexPulse = /Mạch:\s*(\d+)/;
+  const regexTemp = /Nhiệt độ:\s*([\d.]+)/;
+
+  const matchBP = vitalsString.match(regexBP);
+  const matchPulse = vitalsString.match(regexPulse);
+  const matchTemp = vitalsString.match(regexTemp);
+
+  if (matchBP) result.blood_pressure = matchBP[1];
+  if (matchPulse) result.pulse = matchPulse[1];
+  if (matchTemp) result.temperature = matchTemp[1];
+
+  return result;
+};
+
+// GET: Lấy dữ liệu khám bệnh tạm theo appointmentId
+const getExamDataByAppointmentId = async (req, res) => {
+  try {
+    const appointmentId = req.params.appointmentId;
+    console.log("[API] getExamDataByAppointmentId called with:", appointmentId);
+
+    const examData = await doctorService.getExamDataByAppointmentId(
+      appointmentId
+    );
+
+    if (!examData) {
+      return res.status(404).json({
+        success: false,
+        error: "Không tìm thấy dữ liệu khám bệnh cho lịch hẹn này",
+      });
+    }
+
+    // Parse vitals thành các field riêng
+    const vitalsParsed = parseVitals(examData?.clinical_exam?.vitals || "");
+
+    console.log("[API] getExamDataByAppointmentId result:", examData);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...examData,
+        vitals_parsed: vitalsParsed,
+      },
+    });
+  } catch (error) {
+    console.error("[API] getExamDataByAppointmentId error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Lỗi khi lấy dữ liệu khám bệnh",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 // POST: Lưu dữ liệu khám bệnh (chẩn đoán, kế hoạch điều trị, etc.)
 const saveExamData = async (req, res) => {
   try {
@@ -813,32 +878,19 @@ const getOngoingTests = async (req, res) => {
 // POST: Tạo test request cho bệnh nhân
 const createTestRequest = async (req, res) => {
   try {
-    const {
-      patient_id,
-      appointment_id,
-      service_ids, // Array of service IDs
-      notes,
-    } = req.body;
+    const { appointment_id, service_id, notes } = req.body;
 
     console.log("[API] createTestRequest called with:", {
-      patient_id,
       appointment_id,
-      service_ids,
+      service_id,
       notes,
     });
 
     // Validate input
-    if (
-      !patient_id ||
-      !appointment_id ||
-      !service_ids ||
-      !Array.isArray(service_ids) ||
-      service_ids.length === 0
-    ) {
+    if (!appointment_id || !service_id) {
       return res.status(400).json({
         success: false,
-        error:
-          "Thiếu thông tin bắt buộc: patient_id, appointment_id, và service_ids",
+        error: "Thiếu thông tin bắt buộc: appointment_id và service_id",
       });
     }
 
@@ -862,12 +914,11 @@ const createTestRequest = async (req, res) => {
       doctorId = doctorResult.recordset[0].doctor_id;
     }
 
-    const result = await doctorService.createTestRequest({
+    const result = await doctorService.createIndependentTestRequest({
       doctor_id: doctorId,
-      patient_id,
       appointment_id,
-      service_ids,
-      notes,
+      service_id,
+      notes: notes || "",
     });
 
     res.status(201).json({
@@ -1047,4 +1098,5 @@ module.exports = {
   createIndependentTestRequest,
   getTestRequestsByPatient,
   getTestRequestDetails,
+  getExamDataByAppointmentId,
 };

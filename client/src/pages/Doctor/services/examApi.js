@@ -10,6 +10,13 @@ export const examApi = {
     return response.data;
   },
 
+  // Get exam data by appointment ID (for loading saved temp data)
+  getExamData: async (appointmentId) => {
+    const url = `/api/v1/doctors/exam-data/${appointmentId}`;
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
   // Save exam (draft) - sử dụng endpoint backend thực tế
   save: async (appointmentId, examData, patientData = null) => {
     console.log("[examApi.save] Saving exam data:", {

@@ -138,6 +138,47 @@ const getCurrentExam = async (patientId, appointmentId = null) => {
 };
 //
 
+const getExamDataByAppointmentId = async (appointment_id) => {
+  const pool = await poolPromise;
+
+  // 1. ClinicalExams
+  const clinicalResult = await pool
+    .request()
+    .input("appointment_id", appointment_id)
+    .query(
+      `SELECT * FROM ClinicalExams WHERE appointment_id = @appointment_id`
+    );
+  const clinicalExam = clinicalResult.recordset[0] || null;
+
+  // 2. Prescriptions
+  const prescriptionResult = await pool
+    .request()
+    .input("appointment_id", appointment_id)
+    .query(
+      `SELECT * FROM Prescriptions WHERE appointment_id = @appointment_id`
+    );
+  const prescription = prescriptionResult.recordset[0] || null;
+
+  // 3. PrescriptionDetails
+  let prescriptionDetails = [];
+  if (prescription) {
+    const detailResult = await pool
+      .request()
+      .input("prescription_id", prescription.prescription_id)
+      .query(
+        `SELECT * FROM PrescriptionDetails WHERE prescription_id = @prescription_id`
+      );
+    prescriptionDetails = detailResult.recordset;
+  }
+
+  return {
+    appointment_id,
+    clinical_exam: clinicalExam,
+    prescription: prescription,
+    prescription_details: prescriptionDetails,
+  };
+};
+
 //GET lịch sử khám bệnh của bệnh nhân (danh sách tổng quan)
 const getExamHistory = async (patientId) => {
   const pool = await poolPromise;
@@ -1440,27 +1481,35 @@ const getTestRequestsByPatient = async (patientId) => {
       patientId
     );
 
-    // Sửa query theo schema thực tế
+    // Query với kết quả xét nghiệm thực tế từ TestResults
     const query = `
       SELECT 
         tr.request_id,
-        tr.doctor_id,
         tr.appointment_id,
-        tr.request_date,
+        tr.doctor_id,
         tr.status,
         trd.detail_id,
         trd.service_id,
-        trd.notes,
         s.name as service_name,
         s.price,
         s.service_type,
+        a.patient_id,
         d.full_name as doctor_name,
-        a.patient_id
+        tr.request_date,
+        trd.notes,
+        -- Kết quả xét nghiệm (nếu có)
+        trs.result_value,
+        trs.unit,
+        trs.reference_range,
+        trs.finished_at as result_date,
+        tn.notes as result_notes
       FROM TestRequests tr
-      JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
-      JOIN Services s ON trd.service_id = s.service_id
-      JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      JOIN Doctors d ON tr.doctor_id = d.doctor_id
+      INNER JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+      INNER JOIN Services s ON trd.service_id = s.service_id
+      INNER JOIN Appointments a ON tr.appointment_id = a.appointment_id
+      INNER JOIN Doctors d ON tr.doctor_id = d.doctor_id
+      LEFT JOIN TestNotes tn ON tr.request_id = tn.request_id
+      LEFT JOIN TestResults trs ON tn.test_note_id = trs.test_note_id
       WHERE a.patient_id = @patient_id
       ORDER BY tr.request_date DESC, tr.request_id DESC
     `;
@@ -1470,7 +1519,7 @@ const getTestRequestsByPatient = async (patientId) => {
       .input("patient_id", patientId)
       .query(query);
 
-    // Group by request_id (sửa theo schema thực tế)
+    // Group by request_id và detail_id (sửa để xử lý multiple results)
     const groupedResults = {};
     result.recordset.forEach((row) => {
       if (!groupedResults[row.request_id]) {
@@ -1486,17 +1535,48 @@ const getTestRequestsByPatient = async (patientId) => {
         };
       }
 
-      groupedResults[row.request_id].details.push({
-        detail_id: row.detail_id,
-        service_id: row.service_id,
-        service_name: row.service_name,
-        service_type: row.service_type,
-        price: row.price,
-        notes: row.notes,
-      });
+      // Tìm detail đã tồn tại
+      let existingDetail = groupedResults[row.request_id].details.find(
+        (d) => d.detail_id === row.detail_id
+      );
+
+      if (!existingDetail) {
+        // Tạo detail mới
+        existingDetail = {
+          detail_id: row.detail_id,
+          service_id: row.service_id,
+          service_name: row.service_name,
+          service_type: row.service_type,
+          price: row.price,
+          notes: row.notes,
+          results: [], // Array để chứa multiple results
+        };
+        groupedResults[row.request_id].details.push(existingDetail);
+      }
+
+      // Thêm kết quả nếu có
+      if (row.result_value) {
+        existingDetail.results.push({
+          result_value: row.result_value,
+          unit: row.unit,
+          reference_range: row.reference_range,
+          result_date: row.result_date,
+          result_notes: row.result_notes,
+        });
+      }
+
+      // Để backward compatibility, set result = first result hoặc null
+      existingDetail.result =
+        existingDetail.results.length > 0 ? existingDetail.results[0] : null;
     });
 
-    return Object.values(groupedResults);
+    const finalResults = Object.values(groupedResults);
+    console.log(
+      "[doctorService.getTestRequestsByPatient] Final grouped results count:",
+      finalResults.length
+    );
+
+    return finalResults;
   } catch (error) {
     console.error("[doctorService.getTestRequestsByPatient] Error:", error);
     throw error;
@@ -1612,4 +1692,5 @@ module.exports = {
   getTestRequestsByPatient,
   getTestRequestDetails,
   getExamHistoryBasic,
+  getExamDataByAppointmentId,
 };

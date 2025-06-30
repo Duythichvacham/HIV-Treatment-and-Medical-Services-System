@@ -93,6 +93,13 @@ router.post(
   doctorController.saveExamDataTemp
 );
 
+//GET /api/v1/doctors/exam-data/:appointmentId
+router.get(
+  "/exam-data/:appointmentId",
+  authenticateToken,
+  doctorController.getExamDataByAppointmentId
+);
+
 // GET, lấy danh sách test có sẵn
 router.get(
   "/available-tests",

@@ -86,10 +86,33 @@ const PatientExamRefactored = ({
   // Load initial data
   useEffect(() => {
     if (patientId && appointmentId && examForm?.loadInitialData) {
+      console.log("[DEBUG] Loading initial exam data for:", {
+        patientId,
+        appointmentId,
+      });
       examForm.loadInitialData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patientId, appointmentId]); // Only depend on IDs to avoid infinite loops
+
+  // Reload data when patient status changes to "in_progress" (for "Tiếp tục khám" case)
+  useEffect(() => {
+    if (
+      patientId &&
+      appointmentId &&
+      examForm?.reloadData &&
+      combinedPatientData?.currentAppointment?.status === "in_progress"
+    ) {
+      console.log("[DEBUG] Patient status is in_progress, reloading exam data");
+      // Small delay to ensure status change has been processed
+      const timer = setTimeout(() => {
+        examForm.reloadData();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [combinedPatientData?.currentAppointment?.status]);
 
   // Handle save temp exam
   const handleSaveTemp = async () => {
@@ -97,6 +120,10 @@ const PatientExamRefactored = ({
       const result = await examForm.saveTemp();
       if (result.success) {
         alert("Đã lưu tạm thông tin khám thành công!");
+        // Reload data để đảm bảo có thể tiếp tục khám với data đã lưu
+        if (examForm.reloadData) {
+          await examForm.reloadData();
+        }
         onBack(); // Go back to patient queue
       } else {
         alert("Có lỗi xảy ra khi lưu tạm: " + result.error);
@@ -138,8 +165,8 @@ const PatientExamRefactored = ({
     }
   };
 
-  // Determine if we can complete the exam
-  const canComplete = () => {
+  // Determine if we can complete the exam - memoized để tránh re-render liên tục
+  const canCompleteExam = useMemo(() => {
     // Use the same validation logic as validateExamCompletion
     const examData = examForm.examData;
 
@@ -166,25 +193,35 @@ const PatientExamRefactored = ({
       examData.prescription?.follow_up_plan?.trim() &&
       examData.prescription?.doctor_notes?.trim();
 
-    const canComplete =
+    const result =
       hasValidDiagnosis &&
       hasEssentialVitalSigns &&
       hasPhysicalMeasurements &&
       hasClinicalSigns &&
       hasPrescriptionNotes;
 
-    console.log("[canComplete] Check:", {
-      hasValidDiagnosis,
-      hasEssentialVitalSigns,
-      hasPhysicalMeasurements,
-      hasClinicalSigns,
-      hasPrescriptionNotes,
-      canComplete,
-      examData,
-    });
+    // Chỉ log khi kết quả thay đổi, không phải mỗi lần render
+    if (process.env.NODE_ENV === "development") {
+      console.log("[canComplete] Check:", {
+        hasValidDiagnosis,
+        hasEssentialVitalSigns,
+        hasPhysicalMeasurements,
+        hasClinicalSigns,
+        hasPrescriptionNotes,
+        canComplete: result,
+      });
+    }
 
-    return canComplete;
-  };
+    return result;
+  }, [
+    examForm.examData,
+    examForm.examData.diagnosis_primary,
+    examForm.examData.vital_signs,
+    examForm.examData.clinical_signs,
+    examForm.examData.prescription?.counseling_notes,
+    examForm.examData.prescription?.follow_up_plan,
+    examForm.examData.prescription?.doctor_notes,
+  ]);
 
   const isReadOnly = mode === EXAM_MODES.VIEW;
   const hasCurrentExam =
@@ -310,7 +347,7 @@ const PatientExamRefactored = ({
                   onComplete={handleCompleteExam}
                   onBack={onBack}
                   saving={examForm.saving}
-                  canComplete={canComplete()}
+                  canComplete={canCompleteExam}
                   readOnly={isReadOnly}
                 />
               </>

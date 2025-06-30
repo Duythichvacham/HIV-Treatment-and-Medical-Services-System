@@ -124,14 +124,41 @@ const ExamHistoryDetail = ({ examDetail, onClose }) => {
                 </div>
                 <div className="space-y-2">
                   {(() => {
-                    // Parse vitals from JSON string or use individual fields
+                    // Parse vitals from formatted string
                     let vitals = {};
-                    if (thong_tin_kham_lam_sang.vitals) {
+                    const vitalsSource =
+                      thong_tin_kham_lam_sang.sinh_hieu ||
+                      thong_tin_kham_lam_sang.vitals;
+                    console.log("DEBUG vitals raw:", vitalsSource);
+
+                    if (vitalsSource) {
                       try {
-                        vitals =
-                          typeof thong_tin_kham_lam_sang.vitals === "string"
-                            ? JSON.parse(thong_tin_kham_lam_sang.vitals)
-                            : thong_tin_kham_lam_sang.vitals;
+                        // Try JSON parse first (for new format)
+                        if (
+                          typeof vitalsSource === "string" &&
+                          vitalsSource.startsWith("{")
+                        ) {
+                          vitals = JSON.parse(vitalsSource);
+                        } else if (typeof vitalsSource === "object") {
+                          vitals = vitalsSource;
+                        } else {
+                          // Parse formatted string (current format in DB)
+                          const vitalsStr = vitalsSource;
+                          const bpMatch = vitalsStr.match(
+                            /Huyết áp:\s*([0-9/]+)/
+                          );
+                          const hrMatch = vitalsStr.match(/Mạch:\s*([0-9]+)/);
+                          const tempMatch = vitalsStr.match(
+                            /Nhiệt độ:\s*([0-9.]+)/
+                          );
+
+                          vitals = {
+                            bloodPressure: bpMatch ? bpMatch[1] : "",
+                            heartRate: hrMatch ? hrMatch[1] : "",
+                            temperature: tempMatch ? tempMatch[1] : "",
+                          };
+                        }
+                        console.log("DEBUG vitals parsed:", vitals);
                       } catch (e) {
                         console.error("Error parsing vitals:", e);
                       }
@@ -143,11 +170,13 @@ const ExamHistoryDetail = ({ examDetail, onClose }) => {
                           <Heart className="h-4 w-4 text-green-600 mr-2" />
                           <span className="font-medium">Mạch:</span>
                           <span className="ml-2">
-                            {vitals.heart_rate ||
+                            {vitals.heartRate ||
+                              vitals.heart_rate ||
                               thong_tin_kham_lam_sang.nhip_tim ||
                               thong_tin_kham_lam_sang.heart_rate ||
                               "Chưa có thông tin"}{" "}
-                            {vitals.heart_rate ||
+                            {vitals.heartRate ||
+                            vitals.heart_rate ||
                             thong_tin_kham_lam_sang.nhip_tim ||
                             thong_tin_kham_lam_sang.heart_rate
                               ? "bpm"
@@ -157,11 +186,13 @@ const ExamHistoryDetail = ({ examDetail, onClose }) => {
                         <div className="flex items-center">
                           <span className="font-medium">Huyết áp:</span>
                           <span className="ml-2">
-                            {vitals.blood_pressure ||
+                            {vitals.bloodPressure ||
+                              vitals.blood_pressure ||
                               thong_tin_kham_lam_sang.huyet_ap ||
                               thong_tin_kham_lam_sang.blood_pressure ||
                               "Chưa có thông tin"}{" "}
-                            {vitals.blood_pressure ||
+                            {vitals.bloodPressure ||
+                            vitals.blood_pressure ||
                             thong_tin_kham_lam_sang.huyet_ap ||
                             thong_tin_kham_lam_sang.blood_pressure
                               ? "mmHg"

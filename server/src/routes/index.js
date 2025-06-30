@@ -76,7 +76,7 @@ function route(app) {
    * API public
    * Prefix: api/public/
    */
-  app.use("/api/slots", slotRouter);
+  app.use("/api/v1/slots", slotRouter);
 }
 
 module.exports = route;

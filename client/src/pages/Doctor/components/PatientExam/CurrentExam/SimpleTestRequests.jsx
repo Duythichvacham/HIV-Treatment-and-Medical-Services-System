@@ -52,6 +52,43 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
     });
   };
 
+  // Helper function to determine actual status based on results
+  const getActualStatus = (request) => {
+    // Nếu đã có status completed, return completed
+    if (request.status === "completed") return "completed";
+
+    // Kiểm tra xem tất cả test trong request có kết quả chưa
+    const allTestsHaveResults = request.details.every(
+      (detail) => detail.result !== null
+    );
+    if (allTestsHaveResults) return "completed";
+
+    // Ngược lại return status gốc
+    return request.status;
+  };
+
+  // Check if can create new test request (all previous requests must be completed)
+  const canCreateNewRequest = () => {
+    if (existingRequests.length === 0) return true;
+
+    // Check if there are any pending requests
+    const hasPendingRequests = existingRequests.some((request) => {
+      // Nếu status là completed hoặc có kết quả thì coi như đã hoàn thành
+      if (request.status === "completed") return false;
+
+      // Kiểm tra xem tất cả các test trong request có kết quả chưa
+      const allTestsHaveResults = request.details.every(
+        (detail) => detail.result !== null
+      );
+      if (allTestsHaveResults) return false;
+
+      // Còn lại là pending
+      return request.status === "requested" || request.status === "in_progress";
+    });
+
+    return !hasPendingRequests;
+  };
+
   // Handle create test request
   const handleCreateTestRequest = async () => {
     if (!appointmentId || selectedTests.length === 0) {
@@ -59,13 +96,19 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
       return;
     }
 
+    // Check if can create new request
+    if (!canCreateNewRequest()) {
+      alert(
+        "Không thể tạo chỉ định mới khi vẫn còn xét nghiệm đang chờ kết quả. Vui lòng đợi kết quả trước khi chỉ định tiếp."
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
       for (const testId of selectedTests) {
-        await testRequestApi.createIndependentTestRequest({
-          doctor_id: 1, // Get from auth context
-          appointment_id: appointmentId,
+        await testRequestApi.createTestRequest(appointmentId, {
           service_id: testId,
           notes: notes || "Chỉ định từ bác sĩ",
         });
@@ -102,7 +145,7 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
       </div>
 
       {/* Available Tests Selection */}
-      {!readOnly && (
+      {!readOnly && canCreateNewRequest() && (
         <div className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -164,13 +207,29 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
           <div className="flex justify-end">
             <button
               onClick={handleCreateTestRequest}
-              disabled={loading || selectedTests.length === 0}
+              disabled={
+                loading || selectedTests.length === 0 || !canCreateNewRequest()
+              }
               className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Tạo chỉ định
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Warning when cannot create new request */}
+      {!readOnly && !canCreateNewRequest() && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center gap-2 text-yellow-800">
+            <TestTube className="w-5 h-5" />
+            <span className="font-medium">Chờ kết quả xét nghiệm</span>
+          </div>
+          <p className="text-sm text-yellow-700 mt-1">
+            Không thể tạo chỉ định mới khi vẫn còn xét nghiệm đang chờ kết quả.
+            Vui lòng đợi tất cả kết quả trước khi chỉ định tiếp.
+          </p>
         </div>
       )}
 
@@ -210,22 +269,22 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
                     <Clock className="w-4 h-4 text-blue-500" />
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        request.status === "requested"
+                        getActualStatus(request) === "requested"
                           ? "bg-yellow-100 text-yellow-800"
-                          : request.status === "in_progress"
+                          : getActualStatus(request) === "in_progress"
                           ? "bg-blue-100 text-blue-800"
-                          : request.status === "completed"
+                          : getActualStatus(request) === "completed"
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {request.status === "requested"
-                        ? "requested"
-                        : request.status === "in_progress"
+                      {getActualStatus(request) === "requested"
+                        ? "Đã chỉ định"
+                        : getActualStatus(request) === "in_progress"
                         ? "Đang thực hiện"
-                        : request.status === "completed"
+                        : getActualStatus(request) === "completed"
                         ? "Hoàn thành"
-                        : request.status}
+                        : getActualStatus(request)}
                     </span>
                   </div>
                 </div>
@@ -234,22 +293,84 @@ const SimpleTestRequests = ({ patientId, appointmentId, readOnly = false }) => {
                 <div className="mt-3 pl-7">
                   <div className="space-y-2">
                     {request.details.map((detail) => (
-                      <div
-                        key={detail.detail_id}
-                        className="flex justify-between items-center"
-                      >
-                        <span className="text-sm text-gray-900">
-                          {detail.service_name}
-                        </span>
-                        <span className="text-sm font-medium text-blue-600">
-                          {detail.price?.toLocaleString()} đ
-                        </span>
+                      <div key={detail.detail_id} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-900">
+                            {detail.service_name}
+                          </span>
+                          <span className="text-sm font-medium text-blue-600">
+                            {detail.price?.toLocaleString()} đ
+                          </span>
+                        </div>
+
+                        {/* Show results if completed */}
+                        {(getActualStatus(request) === "completed" ||
+                          detail.result) && (
+                          <div className="bg-green-50 border border-green-200 rounded p-3 mt-2">
+                            <h5 className="text-sm font-semibold text-green-800 mb-2">
+                              📋 Kết quả xét nghiệm:
+                            </h5>
+                            <div className="text-sm space-y-1">
+                              {/* Hiển thị kết quả thực từ database */}
+                              {detail.result ? (
+                                <>
+                                  <div>
+                                    <span className="font-medium text-green-700">
+                                      Kết quả:
+                                    </span>
+                                    <span className="ml-2 text-green-800">
+                                      {detail.result.result_value}{" "}
+                                      {detail.result.unit}
+                                    </span>
+                                  </div>
+                                  {detail.result.reference_range && (
+                                    <div>
+                                      <span className="font-medium text-green-700">
+                                        Chỉ số bình thường:
+                                      </span>
+                                      <span className="ml-2 text-green-800">
+                                        {detail.result.reference_range}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {detail.result.result_date && (
+                                    <div>
+                                      <span className="font-medium text-green-700">
+                                        Ngày có kết quả:
+                                      </span>
+                                      <span className="ml-2 text-green-800">
+                                        {new Date(
+                                          detail.result.result_date
+                                        ).toLocaleDateString("vi-VN")}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {detail.result.result_notes && (
+                                    <div>
+                                      <span className="font-medium text-green-700">
+                                        Ghi chú:
+                                      </span>
+                                      <span className="ml-2 text-green-800">
+                                        {detail.result.result_notes}
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="text-yellow-700">
+                                  Kết quả chưa được cập nhật từ phòng xét nghiệm
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                   {request.details[0]?.notes && (
                     <div className="mt-2 text-sm text-gray-600">
-                      <strong>Ghi chú:</strong> {request.details[0].notes}
+                      <strong>Ghi chú chỉ định:</strong>{" "}
+                      {request.details[0].notes}
                     </div>
                   )}
                 </div>
