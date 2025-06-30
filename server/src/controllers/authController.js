@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const authService = require('../services/authService');
 const bcrypt = require('bcryptjs');
+const { verifiedEmails, otpStore } = require('../utils/otpStore');
+
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
@@ -34,6 +36,13 @@ exports.login = async (req, res) => {
 
 exports.registerPatient = async (req, res) => {
   const { username, password, fullName, dob, gender, email, phone, address } = req.body;
+
+  // --- BẮT BUỘC: Kiểm tra email đã xác thực OTP chưa ---
+  if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
+    return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
+  }
+  // Xóa trạng thái xác thực sau khi dùng (tránh đăng ký lặp)
+  delete verifiedEmails[email];
   
   try {
     // Validate required fields
@@ -123,14 +132,38 @@ exports.registerPatient = async (req, res) => {
 
 // change password
 exports.changePassword = async (req, res, next) => {
-  try {
-    const userId = req.user?.userId;
-    const { oldPassword, newPassword } = req.body;
-    if (!oldPassword || !newPassword) throw new Error('Thiếu thông tin.');
-    await authService.changePassword(userId, oldPassword, newPassword);
+ try {
+    const { email, oldPassword, newPassword } = req.body;
+
+    // 1. Kiểm tra xác thực OTP
+    if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
+      return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
+    }
+    delete verifiedEmails[email];
+
+    // 2. Validate input
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: 'Thiếu thông tin.' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 8 ký tự.' });
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ message: 'Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&)' });
+    }
+
+    // 3. Lấy account_id từ email
+    const accountId = await authService.getAccountIdByEmail(email);
+    if (!accountId) {
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản với email này.' });
+    }
+
+    // 4. Đổi mật khẩu
+    await authService.changePassword(accountId, oldPassword, newPassword);
     res.json({ message: 'Đổi mật khẩu thành công.' });
   } catch (err) {
-    next(err);
+    res.status(400).json({ message: err.message || 'Lỗi server khi đổi mật khẩu.' });
   }
 };
 

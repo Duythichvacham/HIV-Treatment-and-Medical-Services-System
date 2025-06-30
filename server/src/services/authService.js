@@ -126,31 +126,44 @@ async function registerPatient(patientData) {
 // change password
 async function changePassword(userId, oldPassword, newPassword) {
   const pool = await poolPromise;
+  // Lấy password_hash từ account_id
   const result = await pool.request()
     .input('account_id', sql.Int, userId)
-    .query('SELECT * FROM Accounts WHERE account_id = @account_id AND status = \'active\'');
-  if (!result.recordset || result.recordset.length === 0) {
-    const err = new Error('Không tìm thấy tài khoản.');
-    err.status = 404;
-    throw err;
-  }
-  const user = result.recordset[0]; 
+    .query('SELECT password_hash FROM Accounts WHERE account_id = @account_id');
+  if (!result.recordset.length) throw new Error('Không tìm thấy tài khoản.');
+  const user = result.recordset[0];
+
   // Kiểm tra mật khẩu cũ
   const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
-  if (!isMatch) {
-    return { success: false, message: 'Mật khẩu cũ không đúng.' };
-  }
+  if (!isMatch) throw new Error('Mật khẩu cũ không đúng.');
+
   // Hash mật khẩu mới
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  // Cập nhật mật khẩu
   await pool.request()
     .input('account_id', sql.Int, userId)
     .input('password_hash', sql.VarChar, hashedPassword)
     .query('UPDATE Accounts SET password_hash = @password_hash WHERE account_id = @account_id');
-  return { success: true };
+  return true;
+}
+
+async function getAccountIdByEmail(email) {
+  const pool = await poolPromise;
+  const result = await pool.request()
+    .input('email', sql.VarChar, email)
+    .query(`
+      SELECT a.account_id
+      FROM Accounts a
+      INNER JOIN Patients p ON a.account_id = p.account_id
+      WHERE p.email = @email
+    `);
+  if (result.recordset.length === 0) return null;
+  return result.recordset[0].account_id;
 }
 
 
-module.exports = { authenticateUser, registerPatient, changePassword };
+
+
+
+module.exports = { authenticateUser, registerPatient, changePassword, getAccountIdByEmail };
 
 
