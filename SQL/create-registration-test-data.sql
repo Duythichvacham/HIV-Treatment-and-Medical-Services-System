@@ -46,7 +46,7 @@ INSERT INTO TestRequests (doctor_id, appointment_id, request_date, approved_by_i
 (1, @apt4, DATEADD(HOUR, -3, GETDATE()), 7, DATEADD(HOUR, -2, GETDATE()), 'in_progress'),
 (2, @apt5, DATEADD(HOUR, -2, GETDATE()), 7, DATEADD(HOUR, -1, GETDATE()), 'completed');
 
-PRINT 'Created 5 test requests (3 pending, 2 approved)';
+PRINT 'Created 5 test requests (3 pending, 2 approved)' ;
 
 -- ===========================================================
 -- STEP 3: CREATE TEST REQUEST DETAILS
