@@ -9,7 +9,9 @@ router.post('/register/patient', authController.registerPatient);
 
 router.post('/change-password', authMiddleware, authController.changePassword);
 
-router.post('/send-otp', emailController.sendOtp);
+router.post('/send-otp', emailController.sendOtp);  
 router.post('/verify-otp', emailController.verifyOtp);
+
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;

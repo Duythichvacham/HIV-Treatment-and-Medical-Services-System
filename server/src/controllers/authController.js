@@ -167,3 +167,36 @@ exports.changePassword = async (req, res, next) => {
   }
 };
 
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    // 1. Kiểm tra xác thực OTP
+    if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
+      return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
+    }
+    delete verifiedEmails[email];
+
+    // 2. Validate mật khẩu mới
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: 'Mật khẩu phải có ít nhất 8 ký tự.' });
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ message: 'Mật khẩu phải chứa ít nhất 1 chữ thường, 1 chữ hoa, 1 số và 1 ký tự đặc biệt (@$!%*?&)' });
+    }
+
+    // 3. Lấy account_id từ email
+    const accountId = await authService.getAccountIdByEmail(email);
+    if (!accountId) {
+      return res.status(404).json({ message: 'Không tìm thấy tài khoản với email này.' });
+    }
+
+    // 4. Đặt lại mật khẩu (không cần mật khẩu cũ)
+    await authService.resetPassword(accountId, newPassword);
+    res.json({ message: 'Đặt lại mật khẩu thành công.' });
+  } catch (err) {
+    res.status(400).json({ message: err.message || 'Lỗi server khi đặt lại mật khẩu.' });
+  }
+};

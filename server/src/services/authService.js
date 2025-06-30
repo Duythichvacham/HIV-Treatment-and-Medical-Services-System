@@ -160,10 +160,18 @@ async function getAccountIdByEmail(email) {
   return result.recordset[0].account_id;
 }
 
+async function resetPassword(userId, newPassword) {
+  const pool = await poolPromise;
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await pool.request()
+    .input('account_id', sql.Int, userId)
+    .input('password_hash', sql.VarChar, hashedPassword)
+    .query('UPDATE Accounts SET password_hash = @password_hash WHERE account_id = @account_id');
+  return true;
+}
 
 
 
-
-module.exports = { authenticateUser, registerPatient, changePassword, getAccountIdByEmail };
+module.exports = { authenticateUser, registerPatient, changePassword, getAccountIdByEmail, resetPassword };
 
 
