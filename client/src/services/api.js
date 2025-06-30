@@ -558,6 +558,20 @@ export const getTestResults = async (test_note_id) => {
 };
 
 /**
+ * Get latest test results for a patient
+ * @param {number} patient_id - Patient ID
+ */
+export const getLatestTestResultsForPatient = async (patient_id) => {
+  try {
+    const response = await api.get(`/api/v1/lab/test-latest-results/${patient_id}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getLatestTestResultsForPatient error:", error);
+    throw error;
+  }
+};
+
+/**
  * Create test note
  * @param {object} noteData - Test note data
  */

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import AppointmentForm from '../../../components/common/AppointmentForm';
-import { getDoctorById, getServices } from '../../../services/api';
+import { getDoctorById, getServices, checkExistingAppointment } from '../../../services/api';
 import { AuthContext } from '../../../contexts/AuthContext';
 
 const DoctorDetail = () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppointmentSuccessModal from "./AppointmentSuccessModal";
 import AppointmentConfirmModal from "./AppointmentConfirmModal";
-import { createAppointment, getSlots, confirmAppointmentPayment } from "../../services/api";
+import { createAppointment, getSlots, confirmAppointmentPayment, checkExistingAppointment } from "../../services/api";
 
 const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const [reason, setReason] = useState("");
@@ -31,6 +31,41 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     if (isDoctor && !slotLabel) {
       setError("Vui lòng chọn khung giờ khám!");
       return;
+    }
+
+    // Kiểm tra lịch hẹn đã tồn tại trước khi đặt
+    if (isLoggedIn && date) {
+      try {
+        setLoading(true);
+        let serviceId = null;
+        let doctorId = null;
+
+        if (isDoctor) {
+          doctorId = serviceType.replace("doctor_", "");
+          serviceId = 1; // Khám bệnh
+        } else if (serviceType && serviceType.startsWith("service_")) {
+          serviceId = serviceType.replace("service_", "");
+        }
+
+        if (serviceId) {
+          const existingCheck = await checkExistingAppointment(
+            serviceId,
+            date,
+            doctorId
+          );
+
+          if (existingCheck.hasExisting) {
+            setError(existingCheck.message || "Bạn đã có lịch hẹn tương tự. Vui lòng kiểm tra lại.");
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Cannot check existing appointment:", err);
+        // Tiếp tục đặt lịch nếu không kiểm tra được
+      } finally {
+        setLoading(false);
+      }
     }
 
     // Gọi API ngay khi submit form (giống như trang /appointment)

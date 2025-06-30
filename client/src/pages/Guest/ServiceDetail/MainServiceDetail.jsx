@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import AppointmentForm from "../../../components/common/AppointmentForm";
-import { getServices } from "../../../services/api";
+import { getServices, checkExistingAppointment } from "../../../services/api";
 import { AuthContext } from "../../../contexts/AuthContext";
 
 const MainServiceDetail = () => {
@@ -16,14 +16,12 @@ const MainServiceDetail = () => {
       try {
         // Get services by type - first try with test type
         const services = await getServices("test");
-        console.log("All services:", services);
 
         let foundService = null;
         let serviceType = "test"; // default
 
         // Find service by service_id
         if (serviceId) {
-          console.log("Looking for service with ID:", serviceId);
           const serviceData = services.data || services;
           foundService = serviceData.find(
             (s) => s.service_id === parseInt(serviceId)
@@ -52,7 +50,6 @@ const MainServiceDetail = () => {
           if (serviceData.length > 0) {
             foundService = serviceData[0];
             serviceType = "test";
-            console.warn(`Service not found, using fallback:`, foundService);
           }
         }
 
@@ -67,7 +64,6 @@ const MainServiceDetail = () => {
 
         setService(enhancedService);
       } catch (err) {
-        console.error("Error fetching service:", err);
         setError("Không tìm thấy dịch vụ.");
       } finally {
         setLoading(false);

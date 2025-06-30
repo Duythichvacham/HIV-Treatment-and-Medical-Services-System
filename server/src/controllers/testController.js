@@ -185,9 +185,7 @@ exports.getAllLabTests = async (req, res, next) => {
 
     // Gắn trường assigned_by và format bookTime
     let data = tests.map((item) => {
-      console.log('[DEBUG] Original bookTime:', item.bookTime);
       const formattedBookTime = formatDateTimeWithoutTimezone(item.bookTime);
-      console.log('[DEBUG] Formatted bookTime:', formattedBookTime);
       return {
         ...item,
         assigned_by: item.doctor
@@ -315,10 +313,14 @@ exports.createTestNote = async (req, res, next) => {
     // Chuyển đổi về giờ Việt Nam trước khi lưu
     let noteDatetime;
     if (test_datetime) {
-      noteDatetime = new Date(test_datetime);
+      // Nếu frontend gửi ISO string, chuyển về giờ Việt Nam
+      const utcDate = new Date(test_datetime);
+      // Chuyển về giờ Việt Nam (UTC+7)
+      noteDatetime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
     } else {
-      // Tạo thời gian hiện tại (SQL Server đã là giờ Việt Nam)
-      noteDatetime = new Date();
+      // Tạo thời gian hiện tại theo giờ Việt Nam
+      const now = new Date();
+      noteDatetime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
     }
     
     const note = await testService.createTestNote({
@@ -333,7 +335,6 @@ exports.createTestNote = async (req, res, next) => {
       note.test_datetime = formatDateTimeWithoutTimezone(note.test_datetime);
     }
     
-    console.log('DEBUG: Đã tạo TestNote:', note);
     res.json({ message: "Tạo phiếu xét nghiệm thành công", data: note });
   } catch (error) {
     next(error);

@@ -171,10 +171,6 @@ const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
           request_id: testRequest.request_id,
           queue_info: queueInfo,
         });
-
-        console.log(
-          `✅ Đã cấp số thứ tự ${queueInfo.queue_number} cho TestRequest ${testRequest.request_id}`
-        );
       } catch (queueError) {
         // Log lỗi nhưng không fail toàn bộ transaction
         console.error(

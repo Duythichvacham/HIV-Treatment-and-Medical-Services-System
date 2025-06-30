@@ -72,15 +72,8 @@ exports.createAppointment = async (req, res, next) => {
         appointment.slot_id,
         new Date(appointment.bookingDate)
       );
-      console.log(
-        `✅ Đã cấp số thứ tự ${queueInfo.queue_number} cho appointment ${appointment.appointment_id}`
-      );
     } catch (queueError) {
       // Log lỗi nhưng không fail toàn bộ request
-      console.error(
-        `❌ Lỗi khi cấp số thứ tự cho appointment ${appointment.appointment_id}:`,
-        queueError.message
-      );
       // Có thể thông báo cho frontend biết để xử lý sau
     }
 
