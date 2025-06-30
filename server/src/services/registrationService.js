@@ -3,7 +3,7 @@ const queueService = require("./queueService");
 
 /**
  * Lấy danh sách TestRequests pending của ngày hiện tại và nhóm theo appointment_id
- * Mỗi nhóm sẽ có mảng services chứa tất cả dịch vụ thuộc appointment đó
+ * Điều kiện: TestRequests status = 'requested' và Invoice pending hoặc chưa có
  */
 const getPendingTestRequests = async () => {
   const query = `
@@ -23,7 +23,10 @@ const getPendingTestRequests = async () => {
       p.address as patient_address,
       a.bookingDate as appointment_date,
       sl.start_time as appointment_time,
-      d.full_name as doctor_name
+      d.full_name as doctor_name,
+      i.invoice_id,
+      i.amount as invoice_amount,
+      i.status as invoice_status
     FROM TestRequests tr
     JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
     JOIN Services s ON trd.service_id = s.service_id
@@ -31,8 +34,10 @@ const getPendingTestRequests = async () => {
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Doctors d ON tr.doctor_id = d.doctor_id
     LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
+    LEFT JOIN Invoices i ON tr.request_id = i.request_id
     WHERE tr.status = 'requested' 
       AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+      AND (i.status = 'pending' OR i.status IS NULL)
     ORDER BY sl.start_time ASC, tr.request_date ASC
   `;
 
@@ -90,7 +95,8 @@ const getPendingTestRequests = async () => {
 };
 
 /**
- * Duyệt tất cả TestRequests thuộc 1 appointment, cấp số thứ tự và cập nhật Invoice thành 'paid'
+ * Thu tiền cho TestRequest - chỉ cập nhật Invoice thành 'paid'
+ * TestRequest vẫn giữ status 'requested' để Lab Staff xử lý sau
  * @param {number} appointmentId - ID của appointment
  * @param {string} paymentMethod - Phương thức thanh toán (cash, qr_code)
  */
@@ -120,37 +126,36 @@ const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
       return {
         success: false,
         affectedRows: 0,
-        message: `Không tìm thấy TestRequest nào cần duyệt cho appointment ${appointmentId}`,
+        message: `Không tìm thấy TestRequest nào cần thu tiền cho appointment ${appointmentId}`,
       };
     }
 
-    // 2. Update status của TestRequests
-    const updateQuery = `
-      UPDATE TestRequests 
-      SET status = 'in_progress', approved_at = GETDATE() 
-      WHERE appointment_id = @appointmentId AND status = 'requested'
-    `;
+    // 2. Chỉ cập nhật Invoice status thành 'paid' cho các test request này
+    // KHÔNG thay đổi TestRequest status - để Lab Staff xử lý sau
+    if (testRequests.length > 0) {
+      const requestIds = testRequests.map((tr) => tr.request_id);
 
-    const updateResult = await transaction
-      .request()
-      .input("appointmentId", sql.Int, appointmentId)
-      .query(updateQuery);
+      // Sử dụng parameterized query để tránh SQL injection
+      const invoiceRequest = transaction.request();
+      requestIds.forEach((id, index) => {
+        invoiceRequest.input(`requestId${index}`, sql.Int, id);
+      });
 
-    // 3. Cập nhật Invoice status thành 'paid' cho appointment này
-    const updateInvoiceQuery = `
-      UPDATE Invoices 
-      SET status = 'paid', issued_at = GETDATE()
-      WHERE appointment_id = @appointmentId AND status = 'pending'
-    `;
+      const invoiceQuery = `
+        UPDATE Invoices 
+        SET status = 'paid', issued_at = GETDATE()
+        WHERE request_id IN (${requestIds
+          .map((_, index) => `@requestId${index}`)
+          .join(",")})
+          AND status = 'pending'
+      `;
 
-    const invoiceUpdateResult = await transaction
-      .request()
-      .input("appointmentId", sql.Int, appointmentId)
-      .query(updateInvoiceQuery);
+      const invoiceUpdateResult = await invoiceRequest.query(invoiceQuery);
 
-    console.log(
-      `📄 Updated ${invoiceUpdateResult.rowsAffected[0]} invoices to 'paid' status for appointment ${appointmentId}`
-    );
+      console.log(
+        `📄 Updated ${invoiceUpdateResult.rowsAffected[0]} invoices to 'paid' status for appointment ${appointmentId}`
+      );
+    }
 
     // 4. Cấp số thứ tự cho từng TestRequest được approve
     const queueResults = [];
@@ -187,8 +192,8 @@ const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
 
     return {
       success: true,
-      affectedRows: updateResult.rowsAffected[0],
-      message: `Đã duyệt ${updateResult.rowsAffected[0]} yêu cầu xét nghiệm cho appointment ${appointmentId}`,
+      affectedRows: testRequests.length,
+      message: `Đã thu tiền cho ${testRequests.length} yêu cầu xét nghiệm (appointment ${appointmentId})`,
       queue_results: queueResults,
       queue_errors: queueErrors.length > 0 ? queueErrors : null,
     };
@@ -206,52 +211,51 @@ const getRegistrationStatistics = async () => {
   try {
     const pool = await poolPromise;
 
-    // Đếm số TestRequests theo trạng thái - chỉ ngày hiện tại
-    const statusQuery = `
-      SELECT tr.status, COUNT(*) as count
+    // Đếm số TestRequests đang chờ xử lý (status = 'requested' và Invoice chưa thanh toán)
+    const pendingQuery = `
+      SELECT COUNT(DISTINCT tr.request_id) as pending_count
       FROM TestRequests tr
       JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      WHERE CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
-      GROUP BY tr.status
+      LEFT JOIN Invoices i ON tr.request_id = i.request_id
+      WHERE tr.status = 'requested' 
+        AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+        AND (i.status = 'pending' OR i.status IS NULL)
     `;
-    const statusResult = await pool.request().query(statusQuery);
-    const statusRows = statusResult.recordset;
+    const pendingResult = await pool.request().query(pendingQuery);
+    const pendingCount = pendingResult.recordset[0]?.pending_count || 0;
 
-    // Tổng doanh thu từ các TestRequests đã approved - chỉ ngày hiện tại
+    // Tổng doanh thu từ các TestRequests đã thu tiền hôm nay (Invoice = 'paid')
     const revenueQuery = `
       SELECT SUM(s.price) as total_revenue
       FROM TestRequests tr
       JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
       JOIN Services s ON trd.service_id = s.service_id
       JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      WHERE tr.status IN ('in_progress', 'completed')
+      JOIN Invoices i ON tr.request_id = i.request_id
+      WHERE i.status = 'paid'
         AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+        AND CAST(i.issued_at AS DATE) = CAST(GETDATE() AS DATE)
     `;
     const revenueResult = await pool.request().query(revenueQuery);
-    const revenueRows = revenueResult.recordset;
+    const totalRevenue = revenueResult.recordset[0]?.total_revenue || 0;
 
-    // Thống kê chi tiết ngày hiện tại
-    const todayQuery = `
-      SELECT 
-        COUNT(*) as total_requests,
-        SUM(CASE WHEN tr.status = 'requested' THEN 1 ELSE 0 END) as pending_requests,
-        SUM(CASE WHEN tr.status IN ('in_progress', 'completed') THEN 1 ELSE 0 END) as processed_today
+    // Số TestRequests đã thu tiền hôm nay (Invoice = 'paid')
+    const processedQuery = `
+      SELECT COUNT(DISTINCT tr.request_id) as processed_count
       FROM TestRequests tr
       JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      WHERE CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+      JOIN Invoices i ON tr.request_id = i.request_id
+      WHERE i.status = 'paid'
+        AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+        AND CAST(i.issued_at AS DATE) = CAST(GETDATE() AS DATE)
     `;
-    const todayResult = await pool.request().query(todayQuery);
-    const todayStats = todayResult.recordset[0];
+    const processedResult = await pool.request().query(processedQuery);
+    const processedCount = processedResult.recordset[0]?.processed_count || 0;
 
     return {
-      statusCounts: statusRows.reduce((acc, row) => {
-        acc[row.status] = row.count;
-        return acc;
-      }, {}),
-      totalRevenue: revenueRows[0]?.total_revenue || 0,
-      pending_requests: todayStats?.pending_requests || 0,
-      processed_today: todayStats?.processed_today || 0,
-      today_revenue: revenueRows[0]?.total_revenue || 0,
+      pending_requests: pendingCount,
+      today_revenue: totalRevenue,
+      processed_today: processedCount,
     };
   } catch (error) {
     console.error("Error in getRegistrationStatistics:", error);
@@ -260,7 +264,7 @@ const getRegistrationStatistics = async () => {
 };
 
 /**
- * Lấy lịch sử thanh toán ngày hiện tại (các TestRequests đã approved)
+ * Lấy lịch sử thanh toán ngày hiện tại (các TestRequests đã thu tiền - Invoice = 'paid')
  */
 const getPaymentHistory = async (limit = 50) => {
   const query = `
@@ -269,7 +273,7 @@ const getPaymentHistory = async (limit = 50) => {
       tr.appointment_id,
       trd.service_id,
       tr.status,
-      tr.approved_at as payment_date,
+      i.issued_at as payment_date,
       trd.notes as service_notes,
       s.name as service_name,
       s.price as service_price,
@@ -277,17 +281,19 @@ const getPaymentHistory = async (limit = 50) => {
       p.phone as patient_phone,
       a.bookingDate as appointment_date,
       sl.start_time as appointment_time,
-      d.full_name as doctor_name
+      d.full_name as doctor_name,
+      i.amount as total_amount
     FROM TestRequests tr
     JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
     JOIN Services s ON trd.service_id = s.service_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Doctors d ON tr.doctor_id = d.doctor_id
+    JOIN Invoices i ON tr.request_id = i.request_id
     LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
-    WHERE tr.status IN ('in_progress', 'completed')
+    WHERE i.status = 'paid'
       AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
-    ORDER BY tr.approved_at DESC
+    ORDER BY i.issued_at DESC
   `;
 
   try {

@@ -7,11 +7,11 @@ const AppointmentHistory = () => {
     loading,
     error,
     filter,
-    
+
     // Actions
     setFilter,
     fetchAppointments,
-    
+
     // Computed
     getFilteredAppointments,
     getStatusBadge,
@@ -114,7 +114,7 @@ const AppointmentHistory = () => {
         <div className="space-y-4">
           {filteredAppointments.map((appointment) => {
             const statusInfo = getStatusBadge(appointment.status);
-            
+
             return (
               <div
                 key={appointment.appointment_id}
@@ -144,18 +144,16 @@ const AppointmentHistory = () => {
                       <div>
                         <span className="font-medium text-gray-600">Ngày:</span>
                         <p className="text-gray-900">
-                          {formatDate(appointment.booking_date)}
+                          {formatDate(appointment.bookingDate)}
                         </p>
                       </div>
                       <div>
                         <span className="font-medium text-gray-600">Giờ:</span>
                         <p className="text-gray-900">
-                          {appointment.slot_time
-                            ? formatTime(appointment.slot_time)
-                            : appointment.start_time && appointment.end_time
-                            ? `${formatTime(appointment.start_time)} - ${formatTime(
-                                appointment.end_time
-                              )}`
+                          {appointment.start_time && appointment.end_time
+                            ? `${formatTime(
+                                appointment.start_time
+                              )} - ${formatTime(appointment.end_time)}`
                             : "Linh hoạt"}
                         </p>
                       </div>
@@ -182,7 +180,9 @@ const AppointmentHistory = () => {
 
                     {appointment.room && (
                       <div className="mt-2">
-                        <span className="font-medium text-gray-600">Phòng:</span>
+                        <span className="font-medium text-gray-600">
+                          Phòng:
+                        </span>
                         <span className="text-gray-900 ml-2">
                           {appointment.room}
                         </span>
@@ -194,7 +194,8 @@ const AppointmentHistory = () => {
                 {appointment.created_at && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <p className="text-xs text-gray-500">
-                      Đặt lịch lúc: {formatDate(appointment.created_at)} {formatTime(appointment.created_at)}
+                      Đặt lịch lúc: {formatDate(appointment.created_at)}{" "}
+                      {formatTime(appointment.created_at)}
                     </p>
                   </div>
                 )}

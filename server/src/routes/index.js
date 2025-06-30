@@ -56,7 +56,7 @@ function route(app) {
   app.use("/api/v1/lab", authMiddleware, labStaffRouter);
   /**
    * API Registration staff
-   * Prefix: api/v1/registration
+   * Prefix: api/v1/registrations
    */
   // Registration Staff routes - temporarily bypass auth for testing
   app.use("/api/v1/registrations", registrationRouter);
