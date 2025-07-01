@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const testController = require("../controllers/testController");
 const testService = require("../services/testService");
+const emailController = require("../controllers/emailController");
+
 
 router.get("/", testController.getLabQueue);
 
@@ -44,22 +46,10 @@ router.patch("/test-notes/:test_note_id/notes", testController.updateTestNoteNot
 router.patch("/test-notes/:test_note_id/datetime", testController.updateTestNoteDatetime);
 
 // API lấy kết quả CD4/VL mới nhất theo patient_id
-router.get('/test-latest-results/:patientId', async (req, res) => {
-  try {
-    const { patientId } = req.params;
-    const pid = Number(patientId);
-    const result = await testService.getLatestTestResultsForPatient(pid);
-    res.json({
-      success: true,
-      data: result
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
-});
+router.get('/test-latest-results/:patientId', testController.getLatestTestResultsForPatient);
+
+router.post('/send-test-result', emailController.sendTestResult);
+
+router.post('/send-reminder', emailController.sendAllReminders);
 
 module.exports = router;

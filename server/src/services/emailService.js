@@ -19,4 +19,24 @@ async function sendOTPEmail(to, otp) {
   await transporter.sendMail(mailOptions);
 }
 
-module.exports = { sendOTPEmail };
+async function sendTestResultEmail(to, subject, content) {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text: content,
+  };
+  await transporter.sendMail(mailOptions);
+}
+
+async function sendAppointmentEmail(to, subject, content) {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to,
+    subject,
+    text: content,
+  };
+  await transporter.sendMail(mailOptions);
+}
+
+module.exports = { sendOTPEmail, sendTestResultEmail, sendAppointmentEmail };

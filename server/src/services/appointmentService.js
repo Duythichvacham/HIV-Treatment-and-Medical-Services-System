@@ -522,3 +522,22 @@ exports.getInvoiceByAppointmentId = async (appointment_id) => {
 
   return result.recordset[0] || null;
 };
+
+// Lấy danh sách lịch hẹn ngày mai
+exports.getTomorrowAppointments = async () => {
+  const pool = await poolPromise;
+  const result = await pool.request().query(`
+    SELECT a.appointment_id, a.bookingDate, 
+           p.full_name, p.email, s.name AS service_name, 
+           d.full_name AS doctor_name, r.room_name
+    FROM Appointments a
+    JOIN Patients p ON a.patient_id = p.patient_id
+    JOIN Services s ON a.service_id = s.service_id
+    LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+    LEFT JOIN Rooms r ON a.room_id = r.room_id
+    WHERE 
+      CAST(a.bookingDate AS DATE) = CAST(DATEADD(day, 1, GETDATE()) AS DATE)
+      AND a.status = 'requested'
+  `);
+  return result.recordset;
+}

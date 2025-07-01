@@ -14,4 +14,5 @@ router.post('/verify-otp', emailController.verifyOtp);
 
 router.post('/reset-password', authController.resetPassword);
 
+
 module.exports = router;
