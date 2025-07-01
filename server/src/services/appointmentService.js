@@ -524,20 +524,49 @@ exports.getInvoiceByAppointmentId = async (appointment_id) => {
 };
 
 // Lấy danh sách lịch hẹn ngày mai
-exports.getTomorrowAppointments = async () => {
+exports.getTomorrowAppointmentsGroupedByPatient = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`
-    SELECT a.appointment_id, a.bookingDate, 
-           p.full_name, p.email, s.name AS service_name, 
-           d.full_name AS doctor_name, r.room_name
-    FROM Appointments a
-    JOIN Patients p ON a.patient_id = p.patient_id
-    JOIN Services s ON a.service_id = s.service_id
-    LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
-    LEFT JOIN Rooms r ON a.room_id = r.room_id
-    WHERE 
-      CAST(a.bookingDate AS DATE) = CAST(DATEADD(day, 1, GETDATE()) AS DATE)
-      AND a.status = 'requested'
+    SELECT 
+  a.appointment_id,
+  a.patient_id,
+  p.full_name,
+  p.email,
+  s.name AS service_name,
+  d.full_name AS doctor_name,
+  a.bookingDate,
+  a.status,
+  a.room_id,
+  r.room_name,
+  a.service_id,
+  a.doctor_id,
+  a.slot_id,
+  sl.start_time,
+  sl.end_time
+FROM Appointments a
+JOIN Patients p ON a.patient_id = p.patient_id
+JOIN Services s ON a.service_id = s.service_id
+LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+LEFT JOIN Rooms r ON a.room_id = r.room_id
+LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
+WHERE 
+  CAST(a.bookingDate AS DATE) = CAST(DATEADD(day, 1, GETDATE()) AS DATE)
+  AND a.status = 'requested'
+ORDER BY a.patient_id, sl.start_time    
   `);
-  return result.recordset;
+
+  // Gom lịch theo bệnh nhân
+  const grouped = {};
+for (const row of result.recordset) {
+  if (!grouped[row.patient_id]) {
+    grouped[row.patient_id] = {
+      full_name: row.full_name,
+      email: row.email,
+      appointments: []
+    };
+  }
+  grouped[row.patient_id].appointments.push(row);
+}
+
+return Object.values(grouped);
 }
