@@ -38,11 +38,13 @@ exports.registerPatient = async (req, res) => {
   const { username, password, fullName, dob, gender, email, phone, address } = req.body;
 
   // --- BẮT BUỘC: Kiểm tra email đã xác thực OTP chưa ---
+  console.log('Check verifiedEmails (register):', email, verifiedEmails[email]);
   if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
     return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
   }
   // Xóa trạng thái xác thực sau khi dùng (tránh đăng ký lặp)
   delete verifiedEmails[email];
+  console.log('Delete verifiedEmails (register):', email);
   
   try {
     // Validate required fields
@@ -136,10 +138,12 @@ exports.changePassword = async (req, res, next) => {
     const { email, oldPassword, newPassword } = req.body;
 
     // 1. Kiểm tra xác thực OTP
+    console.log('Check verifiedEmails (changePassword):', email, verifiedEmails[email]);
     if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
       return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
     }
     delete verifiedEmails[email];
+    console.log('Delete verifiedEmails (changePassword):', email);
 
     // 2. Validate input
     if (!oldPassword || !newPassword) {
@@ -173,10 +177,12 @@ exports.resetPassword = async (req, res) => {
     const { email, newPassword } = req.body;
 
     // 1. Kiểm tra xác thực OTP
+    console.log('Check verifiedEmails (resetPassword):', email, verifiedEmails[email]);
     if (!verifiedEmails[email] || Date.now() > verifiedEmails[email]) {
       return res.status(400).json({ message: 'Bạn cần xác thực email trước.' });
     }
     delete verifiedEmails[email];
+    console.log('Delete verifiedEmails (resetPassword):', email);
 
     // 2. Validate mật khẩu mới
     if (!newPassword || newPassword.length < 8) {
@@ -198,5 +204,22 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: 'Đặt lại mật khẩu thành công.' });
   } catch (err) {
     res.status(400).json({ message: err.message || 'Lỗi server khi đặt lại mật khẩu.' });
+  }
+};
+
+exports.checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Thiếu email' });
+    const pool = await require('../config/db').poolPromise;
+    const result = await pool.request()
+      .input('email', require('mssql').VarChar, email)
+      .query('SELECT patient_id FROM Patients WHERE email = @email');
+    if (result.recordset.length > 0) {
+      return res.json({ exists: true });
+    }
+    return res.json({ exists: false });
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi server khi kiểm tra email' });
   }
 };
