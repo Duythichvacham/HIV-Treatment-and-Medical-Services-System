@@ -71,9 +71,22 @@ exports.createAppointment = async (data) => {
     queueNumber = 1;
   }
 
-  // 3. Trả về appointment với queue number
+  // Sau khi tạo appointment
+  const appointmentId = appointment.appointment_id;
+  const resultWithRoom = await pool
+    .request()
+    .input("appointment_id", appointmentId)
+    .query(`
+      SELECT a.*, r.room_name
+      FROM Appointments a
+      LEFT JOIN Rooms r ON a.room_id = r.room_id
+      WHERE a.appointment_id = @appointment_id
+    `);
+  const appointmentWithRoom = resultWithRoom.recordset[0];
+
+  // 3. Trả về appointment với queue number và room_name
   return {
-    ...appointment,
+    ...appointmentWithRoom,
     queue_number: queueNumber,
   };
 };
