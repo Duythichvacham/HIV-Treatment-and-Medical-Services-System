@@ -200,13 +200,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("staff");
     localStorage.removeItem("patient");
 
-    // Chỉ staff mới redirect về login, patient ở lại trang hiện tại
     if (userType === "staff") {
       setTimeout(() => {
         window.location.href = "/login/staff";
       }, 50);
+    } else {
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 50);
     }
-    // Patient không redirect, ở lại trang hiện tại
   };
 
   // Get default avatar based on role

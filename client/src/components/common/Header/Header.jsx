@@ -19,15 +19,7 @@ const Header = () => {
   console.log("Header - isStaff:", isStaff());
   const handleLogout = () => {
     logout();
-    // Chỉ staff mới redirect về login, patient ở lại trang hiện tại
-    if (isStaff()) {
-      // Staff sẽ được redirect trong AuthContext logout function
-      // Không cần navigate ở đây nữa
-    } else {
-      // Patient ở lại trang hiện tại, không redirect
-      // Có thể refresh trang nếu cần
-      window.location.reload();
-    }
+    // Đã chuyển hướng trong AuthContext, không cần reload hay navigate ở đây nữa
   };
   useEffect(() => {
     function handleClickOutside(event) {

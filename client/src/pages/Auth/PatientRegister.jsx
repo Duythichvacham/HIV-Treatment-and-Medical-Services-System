@@ -81,6 +81,19 @@ const PatientRegister = () => {
     setLoading(true);
 
     try {
+      // Xác thực OTP trước khi đăng ký
+      const verifyRes = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, otp: formData.otp })
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setError(verifyData.message || 'Xác thực OTP thất bại');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('http://localhost:5000/api/auth/register/patient', {
         method: 'POST',
         headers: {
@@ -137,7 +150,19 @@ const PatientRegister = () => {
     setOtpLoading(true);
     setOtpMessage('');
     try {
-      // Gửi OTP về email hoặc số điện thoại
+      // Kiểm tra email đã tồn tại chưa
+      const checkEmailRes = await fetch('http://localhost:5000/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+      const checkEmailData = await checkEmailRes.json();
+      if (checkEmailData.exists) {
+        setOtpMessage('Email này đã được đăng ký, vui lòng dùng email khác!');
+        setOtpLoading(false);
+        return;
+      }
+      // Gửi OTP về email
       const response = await fetch('http://localhost:5000/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

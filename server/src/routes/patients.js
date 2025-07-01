@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const appointmentController = require("../controllers/appointmentController");
+const patientController = require('../controllers/patientController');
 module.exports = router;
 ///patients/search?name=...&phone=... (GET, tìm kiếm bệnh nhân) - search theo Sdt - tên
 
@@ -9,3 +10,6 @@ router.get(
   "/appointment-history",
   appointmentController.getAppointmentsByPatientId
 );
+
+router.get('/:patientId', patientController.getPatientById);
+router.put('/:patientId', patientController.updatePatientById);
