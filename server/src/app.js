@@ -36,7 +36,7 @@ app.listen(PORT, () => {
   // console.log(`Server is running on port ${PORT}`);
 
 // Lên lịch chạy lúc 7h sáng mỗi ngày
-cron.schedule('* * * * *', () => {
+cron.schedule('0 7 * * *', () => {
   console.log('Bắt đầu gửi email nhắc lịch hẹn...');
   sendRemindersForTomorrow();
 });
