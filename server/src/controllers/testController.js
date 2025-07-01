@@ -409,3 +409,22 @@ exports.updateTestNoteDatetime = async (req, res, next) => {
     next(error);
   }
 };
+
+
+exports.getLatestTestResultsForPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const pid = Number(patientId);
+    const result = await testService.getLatestTestResultsForPatient(pid);
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};

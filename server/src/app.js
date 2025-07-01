@@ -1,9 +1,11 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const express = require("express"); // import express
+const cron = require('node-cron');
 const cors = require("cors"); // import cors
 const app = express(); // khởi tạo ứng dụng express
 const errorHandler = require("./middleware/errorHandler"); // Import middleware xử lý lỗi
 const { initializeScheduler } = require("./utils/scheduler"); // Import scheduler cho queue management
+const { sendRemindersForTomorrow } = require("./controllers/emailController");
 
 // Enable CORS for all origins in development- thiếu cái này browser nó từ chối request từ client
 // CORS (Cross-Origin Resource Sharing) cho phép server chấp nhận request từ các nguồn
@@ -32,4 +34,10 @@ initializeScheduler();
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   // console.log(`Server is running on port ${PORT}`);
+
+// Lên lịch chạy lúc 7h sáng mỗi ngày
+cron.schedule('* * * * *', () => {
+  console.log('Bắt đầu gửi email nhắc lịch hẹn...');
+  sendRemindersForTomorrow();
+});
 });
