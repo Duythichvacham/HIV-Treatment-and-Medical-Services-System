@@ -528,7 +528,8 @@ exports.getDoctorAppointments = async (
   doctorId,
   status,
   bookingDate,
-  slot_id
+  slot_id,
+  patient_id
 ) => {
   const pool = await poolPromise;
   try {
@@ -537,27 +538,27 @@ exports.getDoctorAppointments = async (
     // Xây dựng câu query với các điều kiện lọc
     let query = `
       SELECT 
-    a.appointment_id,
-    a.patient_id,
-    p.full_name,
-	DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
-	p.gender,
-	p.phone,
-	p.address,
-	sl.slot_id,
-	CONVERT(VARCHAR(5), sl.start_time, 108) + ' - ' + CONVERT(VARCHAR(5), sl.end_time, 108) AS slot_time,
-	s.service_type,
-	a.status,
-	FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') as created_at,
-	a.doctor_id,
-	FORMAT(a.bookingDate, 'yyyy-MM-dd') as bookingDate
-FROM Appointments a
-JOIN Services s ON a.service_id = s.service_id
-JOIN Patients p on a.patient_id = p.patient_id
-JOIN Slots sl on sl.slot_id = a.slot_id
-WHERE 
-    s.service_type = 'examination' 
-	and a.doctor_id = @doctorId 
+          a.appointment_id,
+          a.patient_id,
+          p.full_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        p.gender,
+        p.phone,
+        p.address,
+        sl.slot_id,
+        CONVERT(VARCHAR(5), sl.start_time, 108) + ' - ' + CONVERT(VARCHAR(5), sl.end_time, 108) AS slot_time,
+        s.service_type,
+        a.status,
+        FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') as created_at,
+        a.doctor_id,
+        FORMAT(a.bookingDate, 'yyyy-MM-dd') as bookingDate
+      FROM Appointments a
+      JOIN Services s ON a.service_id = s.service_id
+      JOIN Patients p on a.patient_id = p.patient_id
+      JOIN Slots sl on sl.slot_id = a.slot_id
+      WHERE 
+          s.service_type = 'examination' 
+        and a.doctor_id = @doctorId 
     `;
 
     // Thêm điều kiện lọc theo status nếu có
@@ -577,24 +578,14 @@ WHERE
       request.input("slot_id", parseInt(slot_id, 10));
       query += " AND a.slot_id = @slot_id";
     }
-
+    if (patient_id) {
+      request.input("patient_id", parseInt(patient_id, 10));
+      query += " AND a.patient_id = @patient_id";
+    }
     // Sắp xếp
     //query += " ORDER BY a.queue_number ASC";
 
     const result = await request.query(query);
-
-    console.log(
-      "getDoctorAppointments result:",
-      result.recordset?.length || 0,
-      "appointments found for doctor:",
-      doctorId,
-      "status:",
-      status || "all",
-      "date:",
-      bookingDate || "all",
-      "slot:",
-      slot_id || "all"
-    );
 
     return result.recordset || [];
   } catch (error) {

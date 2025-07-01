@@ -98,81 +98,20 @@ const getAppointmentFinshed = async (req, res) => {
 };
 const getAppointments = async (req, res) => {
   try {
-    // Debug: Log headers và req.user
-    console.log("[API] getAppointments - Headers:", req.headers.authorization);
-    console.log("[API] getAppointments - req.user:", req.user);
-
-    // Kiểm tra authentication
-    if (!req.user || (!req.user.account_id && !req.user.userId)) {
-      console.error(
-        "[API] getAppointments - No user or account_id/userId in request"
-      );
-      console.error(
-        "[API] getAppointments - Available headers:",
-        Object.keys(req.headers)
-      );
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized - Missing authentication",
-      });
-    }
-
     // Lấy account_id từ JWT token (support cả account_id và userId)
     const accountId = req.user.account_id || req.user.userId;
-    console.log("[API] getAppointments called with accountId:", accountId);
 
     // Lấy doctor_id trực tiếp từ token hoặc query từ DB
-    let doctorId;
-    if (req.user.doctor_id) {
-      // Nếu token đã có doctor_id, dùng luôn
-      doctorId = req.user.doctor_id;
-      console.log(
-        "[API] getAppointments - Using doctor_id from token:",
-        doctorId
-      );
-    } else {
-      // Nếu không có, query từ DB
-      console.log(
-        "[API] getAppointments - Querying doctor_id from DB for account_id:",
-        accountId
-      );
-      const pool = await require("../config/db").poolPromise;
-      const doctorResult = await pool
-        .request()
-        .input("account_id", accountId)
-        .query("SELECT doctor_id FROM Doctors WHERE account_id = @account_id");
-
-      if (doctorResult.recordset.length === 0) {
-        console.error(
-          "[API] getAppointments - Doctor not found for account_id:",
-          accountId
-        );
-        return res.status(404).json({
-          success: false,
-          message: "Không tìm thấy thông tin bác sĩ",
-        });
-      }
-
-      doctorId = doctorResult.recordset[0].doctor_id;
-    }
-    const { status, bookingDate, slot_id } = req.query;
-
-    console.log("[API] getAppointments params:", {
-      doctorId,
-      status,
-      bookingDate,
-      slot_id,
-    });
-
+    let doctorId = req.user.doctor_id;
+    const { status, bookingDate, slot_id, patient_id } = req.query;
     // Thực hiện query dựa trên các tham số
     const appointments = await appointmentService.getDoctorAppointments(
       doctorId,
       status,
       bookingDate,
-      slot_id
+      slot_id,
+      patient_id
     );
-
-    console.log("[API] getAppointments result count:", appointments?.length);
 
     res.json({
       success: true,
@@ -328,46 +267,6 @@ const parseVitals = (vitalsString) => {
   if (matchTemp) result.temperature = matchTemp[1];
 
   return result;
-};
-
-// GET: Lấy dữ liệu khám bệnh tạm theo appointmentId
-const getExamDataByAppointmentId = async (req, res) => {
-  try {
-    const appointmentId = req.params.appointmentId;
-    console.log("[API] getExamDataByAppointmentId called with:", appointmentId);
-
-    const examData = await doctorService.getExamDataByAppointmentId(
-      appointmentId
-    );
-
-    if (!examData) {
-      return res.status(404).json({
-        success: false,
-        error: "Không tìm thấy dữ liệu khám bệnh cho lịch hẹn này",
-      });
-    }
-
-    // Parse vitals thành các field riêng
-    const vitalsParsed = parseVitals(examData?.clinical_exam?.vitals || "");
-
-    console.log("[API] getExamDataByAppointmentId result:", examData);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        ...examData,
-        vitals_parsed: vitalsParsed,
-      },
-    });
-  } catch (error) {
-    console.error("[API] getExamDataByAppointmentId error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Lỗi khi lấy dữ liệu khám bệnh",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
 };
 
 // POST: Lưu dữ liệu khám bệnh (chẩn đoán, kế hoạch điều trị, etc.)
@@ -562,12 +461,195 @@ const saveExamData = async (req, res) => {
   }
 };
 
-// POST: Lưu tạm dữ liệu khám bệnh (không yêu cầu validation chặt chẽ)
+// Save exam data temporarily (Lưu tạm)
 const saveExamDataTemp = async (req, res) => {
   try {
     const {
       appointment_id,
-      // Clinical Exam data
+      vital_signs,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      follow_up_date,
+    } = req.body;
+
+    console.log("[API] saveExamDataTemp called with data:", req.body);
+
+    // Validate required fields - chỉ cần appointment_id
+    if (!appointment_id) {
+      return res.status(400).json({
+        success: false,
+        message: "appointment_id is required",
+      });
+    }
+
+    // Call service to save temp data - không validate, cho phép thiếu thông tin
+    const result = await doctorService.saveExamDataTemp({
+      appointment_id,
+      vital_signs: vital_signs || "Chưa có thông tin",
+      weight: weight || null,
+      height: height || null,
+      bmi: bmi || null,
+      clinical_signs: clinical_signs || "",
+      diagnosis_primary: diagnosis_primary || "",
+      diagnosis_secondary: diagnosis_secondary || "",
+      arv_regimen_id: arv_regimen_id || null,
+      support_drugs: support_drugs || [],
+      counseling_notes: counseling_notes || "",
+      follow_up_plan: follow_up_plan || "",
+      doctor_notes: doctor_notes || "",
+      follow_up_date: follow_up_date || null,
+      is_completed: false, // Lưu tạm - giữ status in_progress
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Đã lưu tạm thông tin khám thành công",
+      data: result,
+    });
+  } catch (error) {
+    console.error("[API] saveExamDataTemp error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lưu tạm thông tin khám",
+    });
+  }
+};
+
+// Complete exam (Hoàn thành khám)
+const completeExam = async (req, res) => {
+  try {
+    const {
+      appointment_id,
+      vital_signs,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      follow_up_date,
+    } = req.body;
+
+    console.log("[API] completeExam called with data:", req.body);
+
+    // Validate required fields - bắt buộc nhập đầy đủ thông tin
+    if (!appointment_id) {
+      return res.status(400).json({
+        success: false,
+        message: "appointment_id is required",
+      });
+    }
+
+    // Validate essential fields for completion
+    const missingFields = [];
+    if (!vital_signs || vital_signs === "Chưa có thông tin")
+      missingFields.push("Sinh hiệu");
+    if (!weight) missingFields.push("Cân nặng");
+    if (!height) missingFields.push("Chiều cao");
+    if (!clinical_signs) missingFields.push("Dấu hiệu lâm sàng");
+    if (!diagnosis_primary) missingFields.push("Chẩn đoán chính");
+    if (!counseling_notes) missingFields.push("Lời khuyên và tư vấn");
+    if (!follow_up_plan) missingFields.push("Kế hoạch tái khám");
+    if (!doctor_notes) missingFields.push("Ghi chú của bác sĩ");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Vui lòng nhập đầy đủ các trường bắt buộc: ${missingFields.join(
+          ", "
+        )}`,
+      });
+    }
+
+    // Call service to complete exam - validate đầy đủ, set status completed
+    const result = await doctorService.completeExam({
+      appointment_id,
+      vital_signs,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      follow_up_date,
+      is_completed: true, // Hoàn thành khám - set status completed
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Hoàn thành khám bệnh thành công",
+      data: result,
+    });
+  } catch (error) {
+    console.error("[API] completeExam error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi hoàn thành khám bệnh",
+    });
+  }
+};
+
+// GET: Lấy dữ liệu khám đã lưu cho appointment
+const getClinicalExam = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    console.log(
+      "[API] getClinicalExam called with appointmentId:",
+      appointmentId
+    );
+
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId is required",
+      });
+    }
+
+    const examData = await doctorService.getSavedClinicalExam(appointmentId);
+
+    res.status(200).json({
+      success: true,
+      data: examData,
+      message: "Lấy dữ liệu khám thành công",
+    });
+  } catch (error) {
+    console.error("[API] getClinicalExam error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy dữ liệu khám",
+    });
+  }
+};
+
+// POST: Lưu dữ liệu khám (lưu tạm hoặc hoàn thành)
+const saveClinicalExam = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const {
+      // Clinical exam data
       vitals,
       weight,
       height,
@@ -577,116 +659,82 @@ const saveExamDataTemp = async (req, res) => {
       diagnosis_secondary,
 
       // Prescription data
-      regimen_type,
       arv_regimen_id,
-      arv_medications,
-      support_drugs,
+      regimen_drugs = [],
+      support_drugs = [],
+      support_drug_details = [],
       counseling_notes,
       follow_up_plan,
       doctor_notes,
 
-      // Test requests data
-      test_requests,
+      // Action type
+      action = "save_temp", // "save_temp" hoặc "complete"
     } = req.body;
 
-    console.log("saveExamDataTemp called with body:", req.body);
-
-    // Kiểm tra tối thiểu: chỉ cần appointment_id
-    if (!appointment_id) {
-      console.log("Missing required field appointment_id");
-      return res.status(400).json({
-        success: false,
-        error: "appointment_id là bắt buộc",
-      });
-    }
-
-    // Prepare support drugs list for Prescriptions table
-    const supportDrugNames =
-      support_drugs && support_drugs.length > 0
-        ? support_drugs.map((drug) => drug.drug_name).join(", ")
-        : "";
-
-    // Combine ARV medications and support drugs for PrescriptionDetails
-    const allMedications = [];
-
-    // Add ARV medications if present
-    if (arv_medications && arv_medications.length > 0) {
-      allMedications.push(
-        ...arv_medications.map((med) => ({
-          ...med,
-          drug_type: "ARV",
-        }))
-      );
-    }
-
-    // Add support drugs if present
-    if (support_drugs && support_drugs.length > 0) {
-      allMedications.push(
-        ...support_drugs.map((drug) => ({
-          ...drug,
-          drug_type: "SUPPORT",
-        }))
-      );
-    }
-
-    // Sử dụng service với dữ liệu tạm thời
-    const result = await doctorService.saveExamData({
-      appointment_id,
-      // ClinicalExams data với giá trị mặc định
-      vitals: vitals || "",
-      weight: weight || 0,
-      height: height || 0,
-      bmi:
-        bmi ||
-        (weight && height
-          ? (weight / Math.pow(height / 100, 2)).toFixed(2)
-          : 0),
-      clinical_signs: clinical_signs || "",
-      diagnosis_primary: diagnosis_primary || "",
-      diagnosis_secondary: diagnosis_secondary || "",
-
-      // Prescriptions data
-      arv_regimen_id: regimen_type === "change" ? arv_regimen_id : null,
-      support_drugs: supportDrugNames,
-      counseling_notes: counseling_notes || "",
-      follow_up_plan: follow_up_plan || "",
-      doctor_notes: doctor_notes || "",
-
-      // PrescriptionDetails data
-      prescription_details: allMedications,
-
-      // Test requests data - không lưu test requests khi lưu tạm
-      test_requests: [], // Temporary save không tạo test requests
-
-      is_temporary: true, // Thêm flag để phân biệt là lưu tạm
-      is_completed: false, // Draft save
+    console.log("[API] saveClinicalExam called with:", {
+      appointmentId,
+      action,
+      hasVitals: !!vitals,
+      hasDiagnosisPrimary: !!diagnosis_primary,
     });
 
-    console.log("saveExamDataTemp successful:", result);
+    // Validation cho hoàn thành khám
+    if (action === "complete") {
+      if (!vitals || !diagnosis_primary) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Sinh hiệu và chẩn đoán chính là bắt buộc khi hoàn thành khám",
+        });
+      }
+    }
+
+    // Xử lý vitals thành chuỗi
+    let vitalsString = "";
+    if (vitals && typeof vitals === "object") {
+      const parts = [];
+      if (vitals.blood_pressure)
+        parts.push(`Huyết áp: ${vitals.blood_pressure}`);
+      if (vitals.pulse) parts.push(`Mạch: ${vitals.pulse}/phút`);
+      if (vitals.temperature) parts.push(`Nhiệt độ: ${vitals.temperature}°C`);
+      vitalsString = parts.join(", ");
+    } else if (typeof vitals === "string") {
+      vitalsString = vitals;
+    }
+
+    const result = await doctorService.saveClinicalExam({
+      appointmentId: parseInt(appointmentId),
+      vitals: vitalsString,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      regimen_drugs,
+      support_drugs,
+      support_drug_details,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      action, // Truyền action để service biết là lưu tạm hay hoàn thành
+    });
 
     res.status(200).json({
       success: true,
-      message: "Lưu tạm dữ liệu khám bệnh thành công",
       data: result,
+      message:
+        action === "complete"
+          ? "Hoàn thành khám bệnh thành công"
+          : "Lưu tạm dữ liệu khám thành công",
     });
   } catch (error) {
-    console.error("Error saving temporary exam data:", error);
-    console.error("Error stack:", error.stack);
-
-    // Phân loại lỗi chi tiết hơn
-    let errorMessage = "Internal server error";
-    let statusCode = 500;
-
-    if (error.message.includes("FK")) {
-      errorMessage = "Không tìm thấy cuộc hẹn trong hệ thống";
-      statusCode = 400;
-    }
-
-    res.status(statusCode).json({
+    console.error("[API] saveClinicalExam error:", error);
+    res.status(500).json({
       success: false,
-      error: errorMessage,
-      message: error.message,
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lưu dữ liệu khám",
     });
   }
 };
@@ -710,22 +758,6 @@ const getDoctorByAccountId = async (req, res) => {
   }
 };
 
-// GET: Lấy danh sách phác đồ ARV
-const getARVRegimens = async (req, res) => {
-  try {
-    console.log("[API] getARVRegimens called");
-    const regimens = await doctorService.getARVRegimens();
-    console.log("[API] getARVRegimens result count:", regimens?.length);
-    res.status(200).json({
-      success: true,
-      data: regimens,
-    });
-  } catch (err) {
-    console.error("[API] getARVRegimens error:", err);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-};
-
 //GET: lấy danh sách các loại thuốc
 const getPrescriptionDetails = async (req, res) => {
   try {
@@ -737,73 +769,6 @@ const getPrescriptionDetails = async (req, res) => {
   } catch (err) {
     console.error("[API] getPrescriptionDetails error:", err);
     res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-};
-
-// GET: Lấy danh sách thuốc ARV có sẵn
-const getDrugOfARVMedications = async (req, res) => {
-  try {
-    const medications = await doctorService.getDrugOfARVMedications();
-    console.log("[API] getARVMedications result count:", medications?.length);
-
-    res.status(200).json({
-      success: true,
-      data: medications,
-    });
-  } catch (err) {
-    console.error("[API] getARVMedications error:", err);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-};
-
-// GET: Lấy danh sách thuốc theo phác đồ ARV
-const getARVMedications = async (req, res) => {
-  try {
-    const regimenId = req.params.regimenId;
-    console.log("[API] getARVMedications called with regimenId:", regimenId);
-
-    if (!regimenId) {
-      return res.status(400).json({
-        success: false,
-        error: "regimenId là bắt buộc",
-      });
-    }
-
-    const medications = await doctorService.getARVMedications(regimenId);
-    console.log("[API] getARVMedications result count:", medications?.length);
-
-    res.status(200).json({
-      success: true,
-      data: medications,
-    });
-  } catch (err) {
-    console.error("[API] getARVMedications error:", err);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-};
-
-// GET: Lấy thông tin phác đồ ARV hiện tại của bệnh nhân
-const getCurrentARVRegimen = async (req, res) => {
-  try {
-    const patientId = req.params.patientId;
-    console.log("[API] getCurrentARVRegimen called with patientId:", patientId);
-
-    const arvData = await doctorService.getCurrentARVRegimen(patientId);
-
-    res.status(200).json({
-      success: true,
-      data: arvData,
-      message: arvData
-        ? "Lấy thông tin phác đồ ARV thành công"
-        : "Chưa có thông tin phác đồ ARV",
-    });
-  } catch (error) {
-    console.error("[API] getCurrentARVRegimen error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
-      message: "Có lỗi xảy ra khi lấy thông tin phác đồ ARV",
-    });
   }
 };
 
@@ -880,42 +845,12 @@ const createTestRequest = async (req, res) => {
   try {
     const { appointment_id, service_id, notes } = req.body;
 
-    console.log("[API] createTestRequest called with:", {
-      appointment_id,
-      service_id,
-      notes,
-    });
-
-    // Validate input
-    if (!appointment_id || !service_id) {
-      return res.status(400).json({
-        success: false,
-        error: "Thiếu thông tin bắt buộc: appointment_id và service_id",
-      });
-    }
-
     // Get doctor_id from token
-    let doctorId;
-    if (req.user.doctor_id) {
-      doctorId = req.user.doctor_id;
-    } else {
-      const pool = await require("../config/db").poolPromise;
-      const doctorResult = await pool
-        .request()
-        .input("account_id", req.user.userId)
-        .query("SELECT doctor_id FROM Doctors WHERE account_id = @account_id");
-
-      if (doctorResult.recordset.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: "Không tìm thấy thông tin bác sĩ",
-        });
-      }
-      doctorId = doctorResult.recordset[0].doctor_id;
-    }
+    let doctor_id = req.user.doctor_id;
+    console.log(doctor_id);
 
     const result = await doctorService.createIndependentTestRequest({
-      doctor_id: doctorId,
+      doctor_id,
       appointment_id,
       service_id,
       notes: notes || "",
@@ -932,6 +867,68 @@ const createTestRequest = async (req, res) => {
       success: false,
       error: "Internal server error",
       message: "Có lỗi xảy ra khi tạo chỉ định xét nghiệm",
+    });
+  }
+};
+
+// GET: Lấy test request hiện tại của bệnh nhân
+const getCurrentTestRequest = async (req, res) => {
+  try {
+    const appointmentId = req.params.appointmentId;
+
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId là bắt buộc",
+      });
+    }
+
+    const rawData = await doctorService.getCurrentTestRequest(appointmentId);
+
+    if (!rawData || rawData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy chỉ định xét nghiệm cho cuộc hẹn này",
+      });
+    }
+
+    // Gom nhóm dữ liệu: phần chung + danh sách services
+    const {
+      request_id,
+      appointment_id,
+      doctor_id,
+      request_date,
+      status,
+      detail_created_at,
+    } = rawData[0];
+
+    const services = rawData.map((item) => ({
+      service_id: item.service_id,
+      name: item.name,
+      notes: item.notes,
+    }));
+
+    const formatted = {
+      request_id,
+      appointment_id,
+      doctor_id,
+      request_date,
+      status,
+      detail_created_at,
+      services,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formatted,
+      message: "Lấy chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getCurrentTestRequest error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy chỉ định xét nghiệm",
     });
   }
 };
@@ -1072,7 +1069,6 @@ const getTestRequestDetails = async (req, res) => {
     });
   }
 };
-
 module.exports = {
   getDoctors,
   getAppointmentQueue,
@@ -1082,21 +1078,22 @@ module.exports = {
   getExamDetail,
   getCurrentExam,
   saveExamData,
-  saveExamDataTemp,
+  saveExamDataTemp, // Thêm method mới
+  completeExam, // Thêm method mới
+  // getExamData, // Thêm method mới
+  getClinicalExam,
+  saveClinicalExam,
   getDoctorByAccountId,
-  getARVRegimens,
-  getARVMedications,
   getAppointments,
-  getCurrentARVRegimen,
   getLatestTestResults,
   getAvailableTests,
   getOngoingTests,
   getPrescriptionDetails,
-  getDrugOfARVMedications,
   createTestRequest,
   getTestTypes,
   createIndependentTestRequest,
   getTestRequestsByPatient,
   getTestRequestDetails,
-  getExamDataByAppointmentId,
+  getCurrentTestRequest,
+  // getSavedClinicalExam,
 };

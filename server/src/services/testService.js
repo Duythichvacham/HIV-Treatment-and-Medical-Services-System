@@ -98,15 +98,22 @@ exports.createTestResultAndComplete = async ({
   reference_range,
   notes,
 }) => {
-  console.log('[DEBUG] Đã vào hàm createTestResultAndComplete', { test_note_id, test_type_id, result_value });
+  console.log("[DEBUG] Đã vào hàm createTestResultAndComplete", {
+    test_note_id,
+    test_type_id,
+    result_value,
+  });
   const pool = await poolPromise;
 
   // Nếu có notes và test_note_id, update notes vào TestNotes
   if (notes && test_note_id) {
-    await pool.request()
-      .input('test_note_id', test_note_id)
-      .input('notes', notes)
-      .query('UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id');
+    await pool
+      .request()
+      .input("test_note_id", test_note_id)
+      .input("notes", notes)
+      .query(
+        "UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id"
+      );
   }
 
   // Nếu có test_type_id và result_value KHÔNG phải object, chỉ lưu 1 chỉ số
@@ -130,7 +137,7 @@ exports.createTestResultAndComplete = async ({
         .input("unit", unit)
         .input("reference_range", reference_range)
         .query(
-          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, finished_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
         );
       result = update.recordset[0];
     } else {
@@ -143,7 +150,7 @@ exports.createTestResultAndComplete = async ({
         .input("unit", unit)
         .input("reference_range", reference_range)
         .query(
-          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range, created_at) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range, GETDATE())"
+          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range, finished_at) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range, GETDATE())"
         );
       result = insert.recordset[0];
     }
@@ -186,8 +193,7 @@ exports.createTestResultAndComplete = async ({
   // 5. Kiểm tra đã đủ kết quả cho tất cả test_type_id chưa (trên toàn bộ test_note_id của appointment)
   const countResult = await pool
     .request()
-    .input("appointment_id", appointment_id)
-    .query(`
+    .input("appointment_id", appointment_id).query(`
       SELECT COUNT(DISTINCT tr.test_type_id) AS count 
       FROM TestResults tr
       JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
@@ -205,13 +211,18 @@ exports.createTestResultAndComplete = async ({
       await pool
         .request()
         .input("appointment_id", appointment_id)
-        .query("UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id");
+        .query(
+          "UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id"
+        );
     }
 
     // Cập nhật tất cả TestRequests của appointment này
-    await pool.request()
+    await pool
+      .request()
       .input("appointment_id", appointment_id)
-      .query("UPDATE TestRequests SET status = 'completed' WHERE appointment_id = @appointment_id");
+      .query(
+        "UPDATE TestRequests SET status = 'completed' WHERE appointment_id = @appointment_id"
+      );
   }
 
   // Debug toàn bộ TestResults và TestNotes liên quan test_note_id
@@ -227,8 +238,6 @@ exports.createTestResultAndComplete = async ({
   return true;
 };
 
-
-
 // Lấy danh sách bệnh nhân đang xét nghiệm
 
 // - Sử dụng QueueNumbers table thay vì ROW_NUMBER()
@@ -242,17 +251,17 @@ exports.getAllLabTests = async (
 
   // Nếu có lab_staff_id nhưng không có room_id, tự động lấy room_id từ WorkingShifts
   if (lab_staff_id && !room_id) {
-    const shiftResult = await pool.request()
+    const shiftResult = await pool
+      .request()
       .input("lab_staff_id", lab_staff_id)
-      .input("date", date)
-      .query(`
+      .input("date", date).query(`
         SELECT room_id 
         FROM WorkingShifts 
         WHERE lab_staff_id = @lab_staff_id 
           AND shift_date = @date 
           AND status = 'approved'
       `);
-    
+
     if (shiftResult.recordset.length > 0) {
       room_id = shiftResult.recordset[0].room_id;
     }
@@ -284,13 +293,13 @@ exports.getAllLabTests = async (
           JOIN TestNotes tn2 ON tr2.test_note_id = tn2.test_note_id
           JOIN Appointments a2 ON tn2.appointment_id = a2.appointment_id
           WHERE a2.patient_id = p.patient_id AND tr2.test_type_id = 1
-          ORDER BY tr2.created_at DESC) AS latest_cd4,
+          ORDER BY tr2.finished_at DESC) AS latest_cd4,
         -- Viral Load gần nhất
         (SELECT TOP 1 result_value FROM TestResults tr3
           JOIN TestNotes tn3 ON tr3.test_note_id = tn3.test_note_id
           JOIN Appointments a3 ON tn3.appointment_id = a3.appointment_id
           WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
-          ORDER BY tr3.created_at DESC) AS latest_viral_load
+          ORDER BY tr3.finished_at DESC) AS latest_viral_load
     FROM TestRequests tr
     JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
@@ -344,13 +353,13 @@ exports.getAllLabTests = async (
           JOIN TestNotes tn2 ON tr2.test_note_id = tn2.test_note_id
           JOIN Appointments a2 ON tn2.appointment_id = a2.appointment_id
           WHERE a2.patient_id = p.patient_id AND tr2.test_type_id = 1
-          ORDER BY tr2.created_at DESC) AS latest_cd4,
+          ORDER BY tr2.finished_at DESC) AS latest_cd4,
         -- Viral Load gần nhất
         (SELECT TOP 1 result_value FROM TestResults tr3
           JOIN TestNotes tn3 ON tr3.test_note_id = tn3.test_note_id
           JOIN Appointments a3 ON tn3.appointment_id = a3.appointment_id
           WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
-          ORDER BY tr3.created_at DESC) AS latest_viral_load
+          ORDER BY tr3.finished_at DESC) AS latest_viral_load
     FROM Appointments a
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Services s ON a.service_id = s.service_id
@@ -385,34 +394,35 @@ exports.getAllLabTests = async (
   const records = result.recordset;
 
   // Nếu status là 'completed', lấy thêm test results
-  if (status === 'completed') {
-    console.log('[DEBUG getAllLabTests] status:', status);
-    const testNoteIds = records.map(r => r.test_note_id).filter(Boolean);
-    console.log('[DEBUG getAllLabTests] testNoteIds:', testNoteIds);
+  if (status === "completed") {
+    console.log("[DEBUG getAllLabTests] status:", status);
+    const testNoteIds = records.map((r) => r.test_note_id).filter(Boolean);
+    console.log("[DEBUG getAllLabTests] testNoteIds:", testNoteIds);
     let resultsByNoteId = {};
-    
+
     if (testNoteIds.length > 0) {
       const resultsQuery = `
         SELECT tr.test_note_id, tr.result_id, tr.test_type_id, tt.name AS test_type_name, 
-               tr.result_value, tr.unit, tr.reference_range, tr.created_at
+               tr.result_value, tr.unit, tr.reference_range, tr.finished_at
         FROM TestResults tr
         JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
         WHERE tr.test_note_id IN (${testNoteIds.join(",")})
         ORDER BY tr.test_note_id, tr.result_id ASC
       `;
-      console.log('[DEBUG getAllLabTests] resultsQuery:', resultsQuery);
+      console.log("[DEBUG getAllLabTests] resultsQuery:", resultsQuery);
       const resultsRes = await pool.request().query(resultsQuery);
-      console.log('[DEBUG getAllLabTests] resultsRes:', resultsRes.recordset);
+      console.log("[DEBUG getAllLabTests] resultsRes:", resultsRes.recordset);
       for (const row of resultsRes.recordset) {
-        if (!resultsByNoteId[row.test_note_id]) resultsByNoteId[row.test_note_id] = [];
+        if (!resultsByNoteId[row.test_note_id])
+          resultsByNoteId[row.test_note_id] = [];
         resultsByNoteId[row.test_note_id].push(row);
       }
     }
 
     // Gắn results vào từng bản ghi
-    const recordsWithResults = records.map(r => ({
+    const recordsWithResults = records.map((r) => ({
       ...r,
-      results: r.test_note_id ? (resultsByNoteId[r.test_note_id] || []) : []
+      results: r.test_note_id ? resultsByNoteId[r.test_note_id] || [] : [],
     }));
 
     return recordsWithResults;
@@ -532,7 +542,7 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
         tr.result_value, 
         tr.unit, 
         tr.reference_range, 
-        tr.created_at
+        tr.finished_at
       FROM TestResults tr
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
       WHERE tr.test_note_id = @test_note_id
@@ -558,9 +568,12 @@ exports.updateTestNoteStatus = async (test_note_id, status) => {
 
 exports.getTestNotesByAppointment = async (appointment_id) => {
   const pool = await poolPromise;
-  const result = await pool.request()
+  const result = await pool
+    .request()
     .input("appointment_id", appointment_id)
-    .query("SELECT * FROM TestNotes WHERE appointment_id = @appointment_id ORDER BY test_datetime DESC");
+    .query(
+      "SELECT * FROM TestNotes WHERE appointment_id = @appointment_id ORDER BY test_datetime DESC"
+    );
   return result.recordset;
 };
 
@@ -569,23 +582,25 @@ exports.updateTestNoteNotes = async (test_note_id, notes) => {
   const result = await pool
     .request()
     .input("test_note_id", sql.Int, test_note_id)
-    .input("notes", sql.NVarChar, notes)
-    .query(`
+    .input("notes", sql.NVarChar, notes).query(`
       UPDATE TestNotes 
       SET notes = @notes 
       WHERE test_note_id = @test_note_id;
       
       SELECT * FROM TestNotes WHERE test_note_id = @test_note_id;
     `);
-  
+
   return result.recordset[0];
 };
 
 exports.updateTestNoteDatetime = async (test_note_id, test_datetime) => {
   const pool = await poolPromise;
-  await pool.request()
-    .input('test_note_id', test_note_id)
-    .input('test_datetime', test_datetime)
-    .query('UPDATE TestNotes SET test_datetime = @test_datetime WHERE test_note_id = @test_note_id');
+  await pool
+    .request()
+    .input("test_note_id", test_note_id)
+    .input("test_datetime", test_datetime)
+    .query(
+      "UPDATE TestNotes SET test_datetime = @test_datetime WHERE test_note_id = @test_note_id"
+    );
   return { test_note_id, test_datetime };
 };

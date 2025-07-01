@@ -36,11 +36,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
   // Load initial data
   const loadInitialData = useCallback(async () => {
     if (!patientId || !appointmentId) return;
-
-    console.log("[useExamForm] Loading initial data for:", {
-      patientId,
-      appointmentId,
-    });
     setLoading(true);
     try {
       // Use exam-data API to get saved temp data
@@ -60,25 +55,62 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
           const data = examDataRes.data;
           console.log("[useExamForm] Exam data loaded:", data);
 
-          // Use vitals_parsed directly from API response
-          const vitals = {
-            bloodPressure: data.vitals_parsed?.blood_pressure || "",
-            heartRate: data.vitals_parsed?.pulse || "",
-            temperature: data.vitals_parsed?.temperature || "",
-            weight: data.clinical_exam?.weight || "",
-            height: data.clinical_exam?.height || "",
-            bmi: data.clinical_exam?.bmi || "",
+          // Parse vitals from string format "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
+          const parseVitals = (vitalsString) => {
+            const vitals = {
+              bloodPressure: "",
+              heartRate: "",
+              temperature: "",
+            };
+
+            if (vitalsString) {
+              const bloodPressureMatch =
+                vitalsString.match(/Huyết áp:\s*([^,]+)/);
+              const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
+              const temperatureMatch =
+                vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+
+              if (bloodPressureMatch)
+                vitals.bloodPressure = bloodPressureMatch[1].trim();
+              if (heartRateMatch) vitals.heartRate = heartRateMatch[1];
+              if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+            }
+
+            return vitals;
           };
+
+          const parsedVitals = parseVitals(data.clinicalExam?.vitals);
+
+          const vitals = {
+            bloodPressure: parsedVitals.bloodPressure,
+            heartRate: parsedVitals.heartRate,
+            temperature: parsedVitals.temperature,
+            weight: data.clinicalExam?.weight || "",
+            height: data.clinicalExam?.height || "",
+            bmi: data.clinicalExam?.bmi || "",
+          };
+
+          // Transform prescription details to support drugs format
+          const supportDrugs =
+            data.prescriptionDetails?.map((detail) => ({
+              id: detail.detail_id,
+              name: detail.drug_name,
+              dosage: detail.dosage,
+              frequency: detail.frequency,
+              duration_days: detail.duration_days,
+              usage_instructions: detail.usage_instructions,
+              notes: detail.notes,
+            })) || [];
 
           setExamData({
             vital_signs: vitals,
-            clinical_signs: data.clinical_exam?.clinical_signs || "",
-            diagnosis_primary: data.clinical_exam?.diagnosis_primary || "",
-            diagnosis_secondary: data.clinical_exam?.diagnosis_secondary || "",
+            clinical_signs: data.clinicalExam?.clinical_signs || "",
+            diagnosis_primary: data.clinicalExam?.diagnosis_primary || "",
+            diagnosis_secondary: data.clinicalExam?.diagnosis_secondary || "",
             follow_up_date: "",
             prescription: {
               arv_regimen_id: data.prescription?.arv_regimen_id || null,
-              support_drugs: data.prescription_details || [],
+              support_drugs: supportDrugs,
               counseling_notes: data.prescription?.counseling_notes || "",
               follow_up_plan: data.prescription?.follow_up_plan || "",
               doctor_notes: data.prescription?.doctor_notes || "",
@@ -195,7 +227,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
   }, [patientId, appointmentId]);
   // Force reload data (useful when patient status changes)
   const reloadData = useCallback(async () => {
-    console.log("[useExamForm] Force reloading data...");
     await loadInitialData();
   }, [loadInitialData]);
   // Update vital signs

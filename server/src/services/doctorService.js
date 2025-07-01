@@ -813,860 +813,700 @@ const saveExamData = async (examData) => {
   }
 };
 
-// Lấy danh sách phác đồ ARV từ database
-const getARVRegimens = async () => {
-  const pool = await poolPromise;
-
-  try {
-    console.log("Getting ARV regimens from database");
-
-    const query = `select * from ARVRegimens`;
-
-    const result = await pool.request().query(query);
-    console.log(`Found ${result.recordset.length} ARV regimens`);
-
-    return result.recordset;
-  } catch (error) {
-    console.error("Error in getARVRegimens:", error);
-    throw error;
-  }
-};
-
-//
-const getPrescriptionDetails = async () => {
-  const pool = await poolPromise;
-  try {
-    console.log("Getting prescription details from database");
-    const query = `select * from PrescriptionDetails`;
-    const result = await pool.request().query(query);
-    console.log(`Found ${result.recordset.length} prescription details`);
-    return result.recordset;
-  } catch (error) {
-    console.error("Error in getPrescriptionDetails:", error);
-    throw error;
-  }
-};
-const getDrugOfARVMedications = async () => {
-  const pool = await poolPromise;
-
-  try {
-    console.log("Getting ARV regimens from database");
-
-    const query = `
-      SELECT
-        arv_regimen_id,
-        name,
-        for_group,
-        components,
-        LTRIM(RTRIM(value1.[value])) AS drug_1,
-        LTRIM(RTRIM(value2.[value])) AS drug_2,
-        LTRIM(RTRIM(value3.[value])) AS drug_3
-      FROM ARVRegimens
-      CROSS APPLY STRING_SPLIT(components, '+') AS value1
-      OUTER APPLY (
-          SELECT value AS [value]
-          FROM (
-              SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn, value
-              FROM STRING_SPLIT(components, '+')
-          ) AS temp
-          WHERE rn = 2
-      ) AS value2
-      OUTER APPLY (
-          SELECT value AS [value]
-          FROM (
-              SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS rn, value
-              FROM STRING_SPLIT(components, '+')
-          ) AS temp
-          WHERE rn = 3
-      ) AS value3
-      WHERE value1.[value] = (
-          SELECT TOP 1 value
-          FROM STRING_SPLIT(components, '+')
-      );
-
-    `;
-
-    const result = await pool.request().query(query);
-    console.log(`Found ${result.recordset.length} ARV regimens`);
-
-    return result.recordset;
-  } catch (error) {
-    console.error("Error in getARVRegimens:", error);
-    throw error;
-  }
-};
-// Lấy danh sách thuốc theo phác đồ ARV
-const getARVMedications = async (regimenId) => {
-  const pool = await poolPromise;
-
-  try {
-    console.log(`Getting medications for ARV regimen ID: ${regimenId}`);
-
-    // Kiểm tra phác đồ có tồn tại không
-    const checkQuery = `
-      SELECT COUNT(*) AS count
-      FROM ARVRegimens
-      WHERE arv_regimen_id = @regimenId`;
-
-    const checkResult = await pool
-      .request()
-      .input("regimenId", regimenId)
-      .query(checkQuery);
-
-    if (checkResult.recordset[0].count === 0) {
-      throw new Error(`Không tìm thấy phác đồ ARV với ID: ${regimenId}`);
-    }
-
-    // Lấy thông tin thuốc từ phác đồ components
-    const regimenQuery = `
-      SELECT 
-        ar.arv_regimen_id,
-        ar.name AS regimen_name,
-        ar.for_group,
-        ar.components
-      FROM ARVRegimens ar
-      WHERE ar.arv_regimen_id = @regimenId`;
-
-    const regimenResult = await pool
-      .request()
-      .input("regimenId", regimenId)
-      .query(regimenQuery);
-
-    if (regimenResult.recordset.length === 0) {
-      return [];
-    }
-
-    const regimen = regimenResult.recordset[0];
-    const components = regimen.components;
-
-    // Phân tích chuỗi thành phần để tách các thuốc
-    // Ví dụ: "Tenofovir 300mg + Lamivudine 300mg + Efavirenz 600mg"
-    const medications = [];
-
-    if (components) {
-      // Tách các thành phần thuốc
-      const drugParts = components.split("+").map((part) => part.trim());
-
-      drugParts.forEach((drugPart, index) => {
-        if (drugPart) {
-          // Cải thiện regex để parse tên thuốc và liều lượng chính xác hơn
-          // Matching patterns:
-          // - "Tenofovir 300mg"
-          // - "Lopinavir/ritonavir"
-          // - "Atazanavir/ritonavir"
-          // - "Zidovudine"
-          const matches = drugPart.match(
-            /^([^0-9]+?)(?:\s+(\d+[a-zA-Z\/]+))?$/
-          );
-
-          let drugName = drugPart;
-          let dosage = "";
-
-          if (matches) {
-            drugName = matches[1].trim();
-            dosage = matches[2] || "";
-          } else {
-            // Fallback: nếu không match được, lấy toàn bộ làm tên thuốc
-            drugName = drugPart.trim();
-          }
-
-          const drug = {
-            drug_name: drugName,
-            dosage: dosage,
-            default_quantity: regimen.for_group === "Trẻ em" ? 60 : 30,
-            default_frequency:
-              regimen.for_group === "Trẻ em" ? "2 lần/ngày" : "1 lần/ngày",
-            default_duration: 30,
-            notes: "",
-            usage_instructions: `Uống ${
-              regimen.for_group === "Trẻ em" ? "2 lần/ngày" : "1 lần/ngày"
-            }, ${dosage ? `mỗi lần ${dosage}` : "theo chỉ định của bác sĩ"}`,
-          };
-
-          medications.push(drug);
-        }
-      });
-    }
-
-    // Đảm bảo luôn trả về đúng 3 thuốc (nếu không đủ, thêm placeholder)
-    while (medications.length < 3) {
-      medications.push({
-        drug_name: `Thuốc ${medications.length + 1}`,
-        dosage: "Chưa xác định",
-        default_quantity: regimen.for_group === "Trẻ em" ? 60 : 30,
-        default_frequency:
-          regimen.for_group === "Trẻ em" ? "2 lần/ngày" : "1 lần/ngày",
-        default_duration: 30,
-        notes: "Thông tin thuốc chưa đầy đủ",
-        usage_instructions: "Theo chỉ định của bác sĩ",
-      });
-    }
-
-    // Chỉ lấy tối đa 3 thuốc
-    const finalMedications = medications.slice(0, 3);
-
-    console.log(
-      `Found ${finalMedications.length} medications for regimen ${regimenId}`
-    );
-    return finalMedications;
-  } catch (error) {
-    console.error(
-      `Error in getARVMedications for regimen ${regimenId}:`,
-      error
-    );
-    throw error;
-  }
-};
-
-// Lấy thông tin bác sĩ theo accountId
-const getDoctorByAccountId = async (accountId) => {
-  const pool = await poolPromise;
-  try {
-    const result = await pool.request().input("accountId", accountId).query(`
-        SELECT doctor_id, full_name, email, phone, image_url
-        FROM Doctors
-        WHERE account_id = @accountId
-      `);
-
-    return result.recordset[0];
-  } catch (error) {
-    console.error("Error getting doctor by account ID:", error);
-    throw error;
-  }
-};
-
-// Lấy thông tin phác đồ ARV hiện tại của bệnh nhân
-const getCurrentARVRegimen = async (patientId) => {
-  const pool = await poolPromise;
-
-  try {
-    console.log(`Getting current ARV regimen for patient: ${patientId}`);
-
-    const query = `
-      SELECT TOP 1
-        ar.name AS phac_do,
-        ar.components AS thanh_phan,
-        FORMAT(a.created_at, 'dd-MM-yyyy') as ngay_bat_dau,
-        mh.arv_adherence AS tuan_thu,
-        mh.arv_side_effects AS tac_dung_phu,
-        pr.prescription_id,
-        pr.doctor_notes,
-        ar.arv_regimen_id
-      FROM Prescriptions pr
-      JOIN Appointments a ON pr.appointment_id = a.appointment_id
-      JOIN Patients p ON a.patient_id = p.patient_id
-      LEFT JOIN ARVRegimens ar ON pr.arv_regimen_id = ar.arv_regimen_id
-      LEFT JOIN MedicalHistory mh ON p.patient_id = mh.patient_id
-      WHERE p.patient_id = @patient_id
-        AND pr.arv_regimen_id IS NOT NULL
-      ORDER BY a.created_at DESC
-    `;
-
-    const result = await pool
-      .request()
-      .input("patient_id", patientId)
-      .query(query);
-
-    console.log(`Found ${result.recordset.length} ARV regimen records`);
-
-    if (result.recordset.length > 0) {
-      const arvData = result.recordset[0];
-      return {
-        regimen_id: arvData.arv_regimen_id,
-        regimen_name: arvData.phac_do,
-        components: arvData.thanh_phan,
-        start_date: arvData.ngay_bat_dau,
-        adherence: arvData.tuan_thu || "Chưa đánh giá",
-        side_effects: arvData.tac_dung_phu || "Chưa ghi nhận",
-        doctor_notes: arvData.doctor_notes,
-        prescription_id: arvData.prescription_id,
-      };
-    } else {
-      return null; // Chưa có thông tin phác đồ ARV
-    }
-  } catch (error) {
-    console.error(`Error getting ARV regimen for patient ${patientId}:`, error);
-    throw error;
-  }
-};
-
-// Lấy kết quả xét nghiệm gần nhất của bệnh nhân (4 loại chính: Sàng lọc, Khẳng định, CD4, Viral Load)
-const getLatestTestResults = async (patientId) => {
-  const pool = await poolPromise;
-
-  try {
-    console.log(`Getting latest test results for patient: ${patientId}`);
-
-    const query = `
-      SELECT 
-        tt.name as test_name,
-        ISNULL(latest_tr.result_value, '') AS result_value,
-        ISNULL(latest_tr.unit, '') AS unit,
-        ISNULL(CONVERT(VARCHAR, latest_tr.finished_at, 120), '') AS test_date,
-        ISNULL(latest_tr.notes, '') AS notes
-      FROM TestTypes tt
-      OUTER APPLY (
-          SELECT TOP 1 
-              tr.result_value, 
-              tr.unit, 
-              tr.finished_at, 
-              tn.notes
-          FROM Appointments a
-          JOIN TestNotes tn ON a.appointment_id = tn.appointment_id
-          JOIN TestResults tr ON tr.test_note_id = tn.test_note_id
-          WHERE 
-              a.patient_id = @patient_id AND 
-              tr.test_type_id = tt.test_type_id
-          ORDER BY tr.finished_at DESC
-      ) AS latest_tr
-    `;
-
-    const result = await pool
-      .request()
-      .input("patient_id", patientId)
-      .query(query);
-
-    console.log(`Found ${result.recordset.length} test results`);
-
-    const testResults = {
-      sang_loc: null,
-      khang_dinh: null,
-      cd4: null,
-      viral_load: null,
-    };
-
-    result.recordset.forEach((test) => {
-      const testData = {
-        result_value: test.result_value,
-        unit: test.unit,
-        notes: test.notes,
-        test_date: test.test_date,
-      };
-
-      switch (test.test_name) {
-        case "Sàng lọc":
-          testResults.sang_loc = {
-            ...testData,
-            test_name: "Sàng lọc HIV",
-          };
-          break;
-        case "Khẳng định":
-          testResults.khang_dinh = {
-            ...testData,
-            test_name: "Khẳng định HIV",
-          };
-          break;
-        case "CD4":
-          testResults.cd4 = {
-            ...testData,
-            test_name: "Số lượng CD4",
-          };
-          break;
-        case "HIV Viral Load":
-          testResults.viral_load = {
-            ...testData,
-            test_name: "Tải lượng virus",
-          };
-          break;
-      }
-    });
-
-    return testResults;
-  } catch (error) {
-    console.error(
-      `Error getting test results for patient ${patientId}:`,
-      error
-    );
-    return null;
-  }
-};
-
-// Get available tests
-const getAvailableTests = async () => {
-  const pool = await poolPromise;
-
-  try {
-    console.log("Getting available tests");
-
-    const result = await pool.request().query(`
-      SELECT 
-        service_id,
-        name,
-        description,
-        price,
-        service_type as type
-      FROM Services 
-      WHERE service_type = 'test'
-        AND is_active = 1
-      ORDER BY name
-    `);
-
-    // Nếu không có dữ liệu thực, trả về dữ liệu mẫu
-
-    return result.recordset;
-  } catch (error) {
-    console.error("Error getting available tests:", error);
-    throw error;
-  }
-};
-
-// Get ongoing tests for a patient
-const getOngoingTests = async (patientId) => {
-  const pool = await poolPromise;
-
-  try {
-    console.log(`Getting ongoing tests for patient: ${patientId}`);
-
-    const result = await pool.request().input("patient_id", patientId).query(`
-        SELECT 
-          tr.test_request_id,
-          tr.service_id,
-          s.service_name as test_name,
-          tr.status,
-          tr.requested_date,
-          tr.notes
-        FROM TestRequests tr
-        JOIN Services s ON tr.service_id = s.service_id
-        WHERE tr.patient_id = @patient_id
-          AND tr.status IN ('pending', 'in_progress')
-        ORDER BY tr.requested_date DESC
-      `);
-
-    return result.recordset || [];
-  } catch (error) {
-    console.error(
-      `Error getting ongoing tests for patient ${patientId}:`,
-      error
-    );
-    throw error;
-  }
-};
-
-// Create test request với nhiều services
-const createTestRequest = async (testRequestData) => {
+// Save exam data temporarily (Lưu tạm)
+const saveExamDataTemp = async (examData) => {
   const pool = await poolPromise;
   const transaction = pool.transaction();
 
   try {
-    const { doctor_id, patient_id, appointment_id, service_ids, notes } =
-      testRequestData;
-
-    console.log("createTestRequest - Input data:", testRequestData);
-
     await transaction.begin();
 
-    // 1. Tạo TestRequest chính
-    const insertTestRequestResult = await transaction
+    const {
+      appointment_id,
+      vital_signs,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      follow_up_date,
+      is_completed,
+    } = examData;
+
+    console.log(
+      "[doctorService.saveExamDataTemp] Saving temp exam data:",
+      examData
+    );
+
+    // 1. Save/Update ClinicalExams
+    await transaction
       .request()
-      .input("doctor_id", doctor_id)
-      .input("patient_id", patient_id)
       .input("appointment_id", appointment_id)
-      .input("request_date", new Date())
-      .input("status", "requested").query(`
-        INSERT INTO TestRequests (doctor_id, patient_id, appointment_id, request_date, status)
-        OUTPUT INSERTED.request_id
-        VALUES (@doctor_id, @patient_id, @appointment_id, @request_date, @status)
+      .input("vitals", vital_signs)
+      .input("weight", weight)
+      .input("height", height)
+      .input("bmi", bmi)
+      .input("clinical_signs", clinical_signs)
+      .input("diagnosis_primary", diagnosis_primary)
+      .input("diagnosis_secondary", diagnosis_secondary).query(`
+        MERGE ClinicalExams AS target
+        USING (VALUES (@appointment_id, @vitals, @weight, @height, @bmi, @clinical_signs, @diagnosis_primary, @diagnosis_secondary)) 
+        AS source (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary)
+        ON target.appointment_id = source.appointment_id
+        WHEN MATCHED THEN 
+          UPDATE SET 
+            vitals = source.vitals,
+            weight = source.weight,
+            height = source.height,
+            bmi = source.bmi,
+            clinical_signs = source.clinical_signs,
+            diagnosis_primary = source.diagnosis_primary,
+            diagnosis_secondary = source.diagnosis_secondary
+        WHEN NOT MATCHED THEN 
+          INSERT (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary)
+          VALUES (source.appointment_id, source.vitals, source.weight, source.height, source.bmi, source.clinical_signs, source.diagnosis_primary, source.diagnosis_secondary);
       `);
 
-    const requestId = insertTestRequestResult.recordset[0].request_id;
-    console.log("Created TestRequest with ID:", requestId);
-
-    // 2. Thêm chi tiết các services vào TestRequestDetails
-    for (const serviceId of service_ids) {
+    // 2. Save/Update Prescriptions
+    if (arv_regimen_id || counseling_notes || follow_up_plan || doctor_notes) {
       await transaction
         .request()
-        .input("request_id", requestId)
-        .input("service_id", serviceId)
-        .input("notes", notes || "").query(`
-          INSERT INTO TestRequestDetails (request_id, service_id, notes)
-          VALUES (@request_id, @service_id, @notes)
+        .input("appointment_id", appointment_id)
+        .input("arv_regimen_id", arv_regimen_id)
+        .input("counseling_notes", counseling_notes)
+        .input("follow_up_plan", follow_up_plan)
+        .input("doctor_notes", doctor_notes)
+        .input("follow_up_date", follow_up_date).query(`
+          MERGE Prescriptions AS target
+          USING (VALUES (@appointment_id, @arv_regimen_id, @counseling_notes, @follow_up_plan, @doctor_notes, @follow_up_date)) 
+          AS source (appointment_id, arv_regimen_id, counseling_notes, follow_up_plan, doctor_notes, follow_up_date)
+          ON target.appointment_id = source.appointment_id
+          WHEN MATCHED THEN 
+            UPDATE SET 
+              arv_regimen_id = source.arv_regimen_id,
+              counseling_notes = source.counseling_notes,
+              follow_up_plan = source.follow_up_plan,
+              doctor_notes = source.doctor_notes,
+              follow_up_date = source.follow_up_date
+          WHEN NOT MATCHED THEN 
+            INSERT (appointment_id, arv_regimen_id, counseling_notes, follow_up_plan, doctor_notes, follow_up_date)
+            VALUES (source.appointment_id, source.arv_regimen_id, source.counseling_notes, source.follow_up_plan, source.doctor_notes, source.follow_up_date);
         `);
     }
 
+    // 3. Save/Update PrescriptionDetails (support drugs)
+    if (support_drugs && support_drugs.length > 0) {
+      // First delete existing support drugs for this appointment
+      await transaction.request().input("appointment_id", appointment_id)
+        .query(`
+          DELETE pd FROM PrescriptionDetails pd
+          INNER JOIN Prescriptions p ON pd.prescription_id = p.prescription_id
+          WHERE p.appointment_id = @appointment_id
+        `);
+
+      // Get prescription_id
+      const prescriptionResult = await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .query(
+          "SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id"
+        );
+
+      if (prescriptionResult.recordset.length > 0) {
+        const prescription_id = prescriptionResult.recordset[0].prescription_id;
+
+        // Insert new support drugs
+        for (const drug of support_drugs) {
+          await transaction
+            .request()
+            .input("prescription_id", prescription_id)
+            .input("drug_name", drug.drug_name || "")
+            .input("dosage", drug.dosage || "")
+            .input("frequency", drug.frequency || "")
+            .input("duration_days", drug.duration_days || null)
+            .input("usage_instructions", drug.usage_instructions || "")
+            .input("notes", drug.notes || "").query(`
+              INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, duration_days, usage_instructions, notes)
+              VALUES (@prescription_id, @drug_name, @dosage, @frequency, @duration_days, @usage_instructions, @notes)
+            `);
+        }
+      }
+    }
+
+    // 4. Keep appointment status as in_progress for temp save (không thay đổi status)
+    console.log(
+      "[doctorService.saveExamDataTemp] Keeping appointment status as in_progress"
+    );
+
     await transaction.commit();
 
-    // 3. Lấy thông tin chi tiết của test request vừa tạo
-    const detailResult = await pool.request().input("request_id", requestId)
-      .query(`
-        SELECT 
-          tr.request_id,
-          tr.patient_id,
-          tr.doctor_id,
-          tr.appointment_id,
-          tr.request_date,
-          tr.status,
-          COUNT(trd.service_id) as service_count,
-          STRING_AGG(s.name, ', ') as service_names
-        FROM TestRequests tr
-        LEFT JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
-        LEFT JOIN Services s ON trd.service_id = s.service_id
-        WHERE tr.request_id = @request_id
-        GROUP BY tr.request_id, tr.doctor_id, tr.patient_id, tr.appointment_id, tr.request_date, tr.status
-      `);
-
-    console.log("createTestRequest successful:", detailResult.recordset[0]);
-    return detailResult.recordset[0];
+    return {
+      appointment_id,
+      message: "Exam data saved temporarily",
+      is_completed: false,
+    };
   } catch (error) {
     await transaction.rollback();
-    console.error("Error in createTestRequest:", error);
+    console.error("[doctorService.saveExamDataTemp] Error:", error);
     throw error;
   }
 };
 
-// Service methods for test types and independent test requests
+// Complete exam (Hoàn thành khám)
+const completeExam = async (examData) => {
+  const pool = await poolPromise;
+  const transaction = pool.transaction();
+
+  try {
+    await transaction.begin();
+
+    const {
+      appointment_id,
+      vital_signs,
+      weight,
+      height,
+      bmi,
+      clinical_signs,
+      diagnosis_primary,
+      diagnosis_secondary,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      follow_up_date,
+      is_completed,
+    } = examData;
+
+    console.log("[doctorService.completeExam] Completing exam:", examData);
+
+    // 1. Save/Update ClinicalExams
+    await transaction
+      .request()
+      .input("appointment_id", appointment_id)
+      .input("vitals", vital_signs)
+      .input("weight", weight)
+      .input("height", height)
+      .input("bmi", bmi)
+      .input("clinical_signs", clinical_signs)
+      .input("diagnosis_primary", diagnosis_primary)
+      .input("diagnosis_secondary", diagnosis_secondary).query(`
+        MERGE ClinicalExams AS target
+        USING (VALUES (@appointment_id, @vitals, @weight, @height, @bmi, @clinical_signs, @diagnosis_primary, @diagnosis_secondary, GETDATE())) 
+        AS source (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary, created_at)
+        ON target.appointment_id = source.appointment_id
+        WHEN MATCHED THEN 
+          UPDATE SET 
+            vitals = source.vitals,
+            weight = source.weight,
+            height = source.height,
+            bmi = source.bmi,
+            clinical_signs = source.clinical_signs,
+            diagnosis_primary = source.diagnosis_primary,
+            diagnosis_secondary = source.diagnosis_secondary,
+            updated_at = GETDATE()
+        WHEN NOT MATCHED THEN 
+          INSERT (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary, created_at)
+          VALUES (source.appointment_id, source.vitals, source.weight, source.height, source.bmi, source.clinical_signs, source.diagnosis_primary, source.diagnosis_secondary, source.created_at);
+      `);
+
+    // 2. Save/Update Prescriptions
+    await transaction
+      .request()
+      .input("appointment_id", appointment_id)
+      .input("arv_regimen_id", arv_regimen_id)
+      .input("counseling_notes", counseling_notes)
+      .input("follow_up_plan", follow_up_plan)
+      .input("doctor_notes", doctor_notes)
+      .input("follow_up_date", follow_up_date).query(`
+        MERGE Prescriptions AS target
+        USING (VALUES (@appointment_id, @arv_regimen_id, @counseling_notes, @follow_up_plan, @doctor_notes, @follow_up_date, GETDATE())) 
+        AS source (appointment_id, arv_regimen_id, counseling_notes, follow_up_plan, doctor_notes, follow_up_date, created_at)
+        ON target.appointment_id = source.appointment_id
+        WHEN MATCHED THEN 
+          UPDATE SET 
+            arv_regimen_id = source.arv_regimen_id,
+            counseling_notes = source.counseling_notes,
+            follow_up_plan = source.follow_up_plan,
+            doctor_notes = source.doctor_notes,
+            follow_up_date = source.follow_up_date,
+            updated_at = GETDATE()
+        WHEN NOT MATCHED THEN 
+          INSERT (appointment_id, arv_regimen_id, counseling_notes, follow_up_plan, doctor_notes, follow_up_date, created_at)
+          VALUES (source.appointment_id, source.arv_regimen_id, source.counseling_notes, source.follow_up_plan, source.doctor_notes, source.follow_up_date, source.created_at);
+      `);
+
+    // 3. Save/Update PrescriptionDetails (support drugs)
+    if (support_drugs && support_drugs.length > 0) {
+      // First delete existing support drugs for this appointment
+      await transaction.request().input("appointment_id", appointment_id)
+        .query(`
+          DELETE pd FROM PrescriptionDetails pd
+          INNER JOIN Prescriptions p ON pd.prescription_id = p.prescription_id
+          WHERE p.appointment_id = @appointment_id
+        `);
+
+      // Get prescription_id
+      const prescriptionResult = await transaction
+        .request()
+        .input("appointment_id", appointment_id)
+        .query(
+          "SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id"
+        );
+
+      if (prescriptionResult.recordset.length > 0) {
+        const prescription_id = prescriptionResult.recordset[0].prescription_id;
+
+        // Insert new support drugs
+        for (const drug of support_drugs) {
+          await transaction
+            .request()
+            .input("prescription_id", prescription_id)
+            .input("drug_name", drug.drug_name || "")
+            .input("dosage", drug.dosage || "")
+            .input("frequency", drug.frequency || "")
+            .input("duration_days", drug.duration_days || null)
+            .input("usage_instructions", drug.usage_instructions || "")
+            .input("notes", drug.notes || "").query(`
+              INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, duration_days, usage_instructions, notes)
+              VALUES (@prescription_id, @drug_name, @dosage, @frequency, @duration_days, @usage_instructions, @notes)
+            `);
+        }
+      }
+    }
+
+    // 4. Update appointment status to completed (hoàn thành khám)
+    await transaction.request().input("appointment_id", appointment_id).query(`
+        UPDATE Appointments 
+        SET status = 'completed'
+        WHERE appointment_id = @appointment_id
+      `);
+
+    console.log(
+      "[doctorService.completeExam] Appointment status updated to completed"
+    );
+
+    await transaction.commit();
+
+    return {
+      appointment_id,
+      message: "Exam completed successfully",
+      is_completed: true,
+    };
+  } catch (error) {
+    await transaction.rollback();
+    console.error("[doctorService.completeExam] Error:", error);
+    throw error;
+  }
+};
+
+// Get saved exam data for continuation (Lấy dữ liệu đã lưu tạm để tiếp tục khám)
+const getExamData = async (appointmentId) => {
+  const pool = await poolPromise;
+
+  try {
+    console.log(
+      "[doctorService.getExamData] Getting exam data for appointment:",
+      appointmentId
+    );
+
+    const result = await pool.request().input("appointment_id", appointmentId)
+      .query(`
+        SELECT 
+          -- Clinical Exam data
+          ce.vitals,
+          ce.weight,
+          ce.height,
+          ce.bmi,
+          ce.clinical_signs,
+          ce.diagnosis_primary,
+          ce.diagnosis_secondary,
+          
+          -- Prescription data
+          pr.arv_regimen_id,
+          pr.counseling_notes,
+          pr.follow_up_plan,
+          pr.doctor_notes,
+          pr.follow_up_date,
+          pr.prescription_id,
+          
+          -- Prescription details (support drugs)
+          pd.detail_id,
+          pd.drug_name,
+          pd.dosage,
+          pd.frequency,
+          pd.duration_days,
+          pd.usage_instructions,
+          pd.notes as drug_notes
+          
+        FROM Appointments a
+        LEFT JOIN ClinicalExams ce ON a.appointment_id = ce.appointment_id
+        LEFT JOIN Prescriptions pr ON a.appointment_id = pr.appointment_id
+        LEFT JOIN PrescriptionDetails pd ON pr.prescription_id = pd.prescription_id
+        WHERE a.appointment_id = @appointment_id
+      `);
+
+    if (result.recordset.length === 0) {
+      return null; // No data found
+    }
+
+    const firstRow = result.recordset[0];
+
+    // Parse vitals string to object
+    const parseVitals = (vitalsString) => {
+      if (!vitalsString || vitalsString === "Chưa có thông tin") {
+        return {
+          blood_pressure: "",
+          pulse: "",
+          temperature: "",
+        };
+      }
+
+      const vitals = {
+        blood_pressure: "",
+        pulse: "",
+        temperature: "",
+      };
+
+      // Parse string như "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
+      const bloodPressureMatch = vitalsString.match(/Huyết áp:\s*([^,]+)/);
+      const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
+      const temperatureMatch = vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+
+      if (bloodPressureMatch)
+        vitals.blood_pressure = bloodPressureMatch[1].trim();
+      if (heartRateMatch) vitals.pulse = heartRateMatch[1];
+      if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+
+      return vitals;
+    };
+
+    // Group prescription details
+    const prescriptionDetails = [];
+    const detailsMap = new Map();
+
+    result.recordset.forEach((row) => {
+      if (row.detail_id && !detailsMap.has(row.detail_id)) {
+        detailsMap.set(row.detail_id, {
+          detail_id: row.detail_id,
+          drug_name: row.drug_name,
+          dosage: row.dosage,
+          frequency: row.frequency,
+          duration_days: row.duration_days,
+          usage_instructions: row.usage_instructions,
+          notes: row.drug_notes,
+        });
+        prescriptionDetails.push(detailsMap.get(row.detail_id));
+      }
+    });
+
+    const examData = {
+      clinical_exam: {
+        weight: firstRow.weight,
+        height: firstRow.height,
+        bmi: firstRow.bmi,
+        clinical_signs: firstRow.clinical_signs,
+        diagnosis_primary: firstRow.diagnosis_primary,
+        diagnosis_secondary: firstRow.diagnosis_secondary,
+      },
+      vitals_parsed: parseVitals(firstRow.vitals),
+      prescription: {
+        arv_regimen_id: firstRow.arv_regimen_id,
+        counseling_notes: firstRow.counseling_notes,
+        follow_up_plan: firstRow.follow_up_plan,
+        doctor_notes: firstRow.doctor_notes,
+        follow_up_date: firstRow.follow_up_date,
+      },
+      prescription_details: prescriptionDetails,
+    };
+
+    console.log("[doctorService.getExamData] Parsed exam data:", examData);
+    return examData;
+  } catch (error) {
+    console.error("[doctorService.getExamData] Error:", error);
+    throw error;
+  }
+};
 
 const getTestTypes = async () => {
   const pool = await poolPromise;
 
   try {
-    console.log(
-      "[doctorService.getTestTypes] Getting all test types with services"
-    );
+    console.log("[doctorService.getTestTypes] Getting all test types");
 
-    const query = `
-      SELECT DISTINCT
-        tt.test_type_id,
-        tt.name as test_type_name,
-        tt.service_type,
-        tt.unit,
-        tt.normal_range,
-        tt.result_type,
+    const result = await pool.request().query(`
+      SELECT 
         s.service_id,
-        s.name as service_name,
+        s.name,
+        s.service_type,
+        s.description,
         s.price,
-        s.description as service_description,
         s.is_active
-      FROM TestTypes tt
-      JOIN ServicesTestTypes stt ON tt.test_type_id = stt.test_type_id
-      JOIN Services s ON stt.service_id = s.service_id
-      WHERE s.is_active = 1 AND s.service_type = 'test'
-      ORDER BY tt.name, s.name
-    `;
+      FROM Services s 
+      WHERE s.service_type = 'test' 
+        AND s.is_active = 1
+      ORDER BY s.name
+    `);
 
-    const result = await pool.request().query(query);
-
-    // Group by test_type_id
-    const groupedResults = {};
-    result.recordset.forEach((row) => {
-      if (!groupedResults[row.test_type_id]) {
-        groupedResults[row.test_type_id] = {
-          test_type_id: row.test_type_id,
-          test_type_name: row.test_type_name,
-          service_type: row.service_type,
-          unit: row.unit,
-          normal_range: row.normal_range,
-          result_type: row.result_type,
-          services: [],
-        };
-      }
-
-      groupedResults[row.test_type_id].services.push({
-        service_id: row.service_id,
-        service_name: row.service_name,
-        price: row.price,
-        description: row.service_description,
-        is_active: row.is_active,
-      });
-    });
-
-    return Object.values(groupedResults);
+    console.log(
+      "[doctorService.getTestTypes] Found test types:",
+      result.recordset.length
+    );
+    return result.recordset;
   } catch (error) {
     console.error("[doctorService.getTestTypes] Error:", error);
     throw error;
   }
 };
-
-const createIndependentTestRequest = async ({
-  doctor_id,
-  appointment_id,
-  service_id,
-  notes,
-}) => {
+const createIndependentTestRequest = async (requestData) => {
   const pool = await poolPromise;
-  const transaction = pool.transaction();
+  const transaction = await pool.transaction();
 
   try {
-    console.log(
-      "[doctorService.createIndependentTestRequest] Creating test request:",
-      {
-        doctor_id,
-        appointment_id,
-        service_id,
-        notes,
-      }
-    );
+    const { doctor_id, appointment_id, service_id, notes } = requestData;
 
     await transaction.begin();
 
-    // 1. Create TestRequest (theo schema thực tế)
-    const testRequestQuery = `
-      INSERT INTO TestRequests (
-        doctor_id, 
-        appointment_id,
-        request_date, 
-        status
-      )
-      OUTPUT INSERTED.request_id
-      VALUES (@doctor_id, @appointment_id, GETDATE(), 'requested')
-    `;
-
-    const testRequestResult = await transaction
+    // 1. Tạo TestRequest chính
+    const requestInsert = await transaction
       .request()
-      .input("doctor_id", doctor_id)
-      .input("appointment_id", appointment_id)
-      .query(testRequestQuery);
+      .input("doctor_id", parseInt(doctor_id, 10))
+      .input("appointment_id", parseInt(appointment_id, 10))
+      .input("request_date", new Date())
+      .input("status", "requested").query(`
+        INSERT INTO TestRequests (doctor_id, appointment_id, request_date, status)
+        OUTPUT INSERTED.request_id
+        VALUES (@doctor_id, @appointment_id, @request_date, @status)
+      `);
 
-    const request_id = testRequestResult.recordset[0].request_id;
+    const request_id = requestInsert.recordset[0].request_id;
 
-    // 2. Create TestRequestDetails (theo schema thực tế)
-    const detailQuery = `
-      INSERT INTO TestRequestDetails (
-        request_id,
-        service_id,
-        notes
-      )
-      VALUES (@request_id, @service_id, @notes)
-    `;
+    // 2. Handle service_id as either single value or array
+    const serviceIds = Array.isArray(service_id) ? service_id : [service_id];
 
-    await transaction
-      .request()
-      .input("request_id", request_id)
-      .input("service_id", service_id)
-      .input("notes", notes || "")
-      .query(detailQuery);
+    // Insert vào TestRequestDetails
+    for (const sid of serviceIds) {
+      await transaction
+        .request()
+        .input("request_id", request_id)
+        .input("service_id", parseInt(sid, 10))
+        .input("notes", String(notes?.[sid.toString()] || ""))
+        .input("created_at", new Date()).query(`
+          INSERT INTO TestRequestDetails (request_id, service_id, notes, created_at)
+          VALUES (@request_id, @service_id, @notes, @created_at)
+        `);
+    }
 
     await transaction.commit();
 
-    // 3. Get created test request with details (theo schema thực tế)
-    const resultQuery = `
-      SELECT 
-        tr.request_id,
-        tr.doctor_id,
-        tr.appointment_id,
-        tr.request_date,
-        tr.status,
-        trd.detail_id,
-        trd.service_id,
-        trd.notes,
-        s.name as service_name,
-        s.price,
-        s.service_type,
-        a.patient_id
-      FROM TestRequests tr
-      JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
-      JOIN Services s ON trd.service_id = s.service_id
-      JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      WHERE tr.request_id = @request_id
-    `;
-
-    const finalResult = await pool
-      .request()
-      .input("request_id", request_id)
-      .query(resultQuery);
-
-    return finalResult.recordset[0];
+    return {
+      request_id,
+      service_ids: serviceIds,
+      message: "Test request created successfully",
+    };
   } catch (error) {
     await transaction.rollback();
     console.error("[doctorService.createIndependentTestRequest] Error:", error);
     throw error;
   }
 };
-
-const getTestRequestsByPatient = async (patientId) => {
+const getCurrentTestRequest = async (appointment_id) => {
   const pool = await poolPromise;
+  try {
+    const request = pool.request();
+    let query = `
+      SELECT 
+    tr.request_id,
+    tr.appointment_id,
+    tr.doctor_id,
+    FORMAT(tr.request_date, 'yyyy-MM-dd HH:mm') as request_date,
+    tr.status,
+    trd.service_id,
+    s.name,
+    trd.notes,
+    FORMAT(trd.created_at, 'yyyy-MM-dd HH:mm') as detail_created_at
+FROM TestRequests tr
+JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
+JOIN Services s ON trd.service_id = s.service_id
+WHERE tr.request_id = (
+    SELECT TOP 1 request_id
+    FROM TestRequests
+    WHERE appointment_id = @appointment_id
+    ORDER BY request_date DESC
+)
+
+    `;
+    request.input("appointment_id", parseInt(appointment_id, 10));
+    const result = await request.query(query);
+    return result.recordset || [];
+  } catch (error) {
+    console.error("[getCurrentTestRequest] Error:", error);
+    throw error;
+  }
+};
+const saveClinicalExam = async (params) => {
+  const {
+    appointmentId,
+    vitals,
+    weight,
+    height,
+    bmi,
+    clinical_signs,
+    diagnosis_primary,
+    diagnosis_secondary,
+    arv_regimen_id,
+    regimen_drugs = [],
+    support_drugs = [],
+    support_drug_details = [],
+    counseling_notes,
+    follow_up_plan,
+    doctor_notes,
+  } = params;
+
+  const pool = await poolPromise;
+  const transaction = pool.transaction();
 
   try {
-    console.log(
-      "[doctorService.getTestRequestsByPatient] Getting test requests for patient:",
-      patientId
-    );
+    await transaction.begin();
 
-    // Query với kết quả xét nghiệm thực tế từ TestResults
-    const query = `
-      SELECT 
-        tr.request_id,
-        tr.appointment_id,
-        tr.doctor_id,
-        tr.status,
-        trd.detail_id,
-        trd.service_id,
-        s.name as service_name,
-        s.price,
-        s.service_type,
-        a.patient_id,
-        d.full_name as doctor_name,
-        tr.request_date,
-        trd.notes,
-        -- Kết quả xét nghiệm (nếu có)
-        trs.result_value,
-        trs.unit,
-        trs.reference_range,
-        trs.finished_at as result_date,
-        tn.notes as result_notes
-      FROM TestRequests tr
-      INNER JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
-      INNER JOIN Services s ON trd.service_id = s.service_id
-      INNER JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      INNER JOIN Doctors d ON tr.doctor_id = d.doctor_id
-      LEFT JOIN TestNotes tn ON tr.request_id = tn.request_id
-      LEFT JOIN TestResults trs ON tn.test_note_id = trs.test_note_id
-      WHERE a.patient_id = @patient_id
-      ORDER BY tr.request_date DESC, tr.request_id DESC
-    `;
-
-    const result = await pool
+    // 1. Lưu ClinicalExams
+    await transaction
       .request()
-      .input("patient_id", patientId)
-      .query(query);
+      .input("appointment_id", appointmentId)
+      .input("vitals", vitals || "")
+      .input("weight", weight)
+      .input("height", height)
+      .input("bmi", bmi)
+      .input("clinical_signs", clinical_signs || "")
+      .input("diagnosis_primary", diagnosis_primary || "")
+      .input("diagnosis_secondary", diagnosis_secondary || "").query(`
+        IF EXISTS (SELECT 1 FROM ClinicalExams WHERE appointment_id = @appointment_id)
+          UPDATE ClinicalExams
+          SET vitals = @vitals, weight = @weight, height = @height, bmi = @bmi,
+              clinical_signs = @clinical_signs, diagnosis_primary = @diagnosis_primary,
+              diagnosis_secondary = @diagnosis_secondary
+          WHERE appointment_id = @appointment_id
+        ELSE
+          INSERT INTO ClinicalExams (appointment_id, vitals, weight, height, bmi, clinical_signs, diagnosis_primary, diagnosis_secondary)
+          VALUES (@appointment_id, @vitals, @weight, @height, @bmi, @clinical_signs, @diagnosis_primary, @diagnosis_secondary)
+      `);
 
-    // Group by request_id và detail_id (sửa để xử lý multiple results)
-    const groupedResults = {};
-    result.recordset.forEach((row) => {
-      if (!groupedResults[row.request_id]) {
-        groupedResults[row.request_id] = {
-          request_id: row.request_id,
-          patient_id: row.patient_id,
-          doctor_id: row.doctor_id,
-          doctor_name: row.doctor_name,
-          appointment_id: row.appointment_id,
-          request_date: row.request_date,
-          status: row.status,
-          details: [],
-        };
-      }
+    // 2. Lưu Prescriptions
+    const supportDrugsStr = Array.isArray(support_drugs)
+      ? support_drugs.join(", ")
+      : support_drugs || "";
 
-      // Tìm detail đã tồn tại
-      let existingDetail = groupedResults[row.request_id].details.find(
-        (d) => d.detail_id === row.detail_id
+    await transaction
+      .request()
+      .input("appointment_id", appointmentId)
+      .input("arv_regimen_id", arv_regimen_id || null)
+      .input("support_drugs", supportDrugsStr)
+      .input("counseling_notes", counseling_notes || "")
+      .input("follow_up_plan", follow_up_plan || "")
+      .input("doctor_notes", doctor_notes || "").query(`
+        IF EXISTS (SELECT 1 FROM Prescriptions WHERE appointment_id = @appointment_id)
+          UPDATE Prescriptions
+          SET arv_regimen_id = @arv_regimen_id,
+              support_drugs = @support_drugs,
+              counseling_notes = @counseling_notes,
+              follow_up_plan = @follow_up_plan,
+              doctor_notes = @doctor_notes
+          WHERE appointment_id = @appointment_id
+        ELSE
+          INSERT INTO Prescriptions (appointment_id, arv_regimen_id, support_drugs, counseling_notes, follow_up_plan, doctor_notes)
+          VALUES (@appointment_id, @arv_regimen_id, @support_drugs, @counseling_notes, @follow_up_plan, @doctor_notes)
+      `);
+
+    // 3. Lấy prescription_id
+    const { recordset } = await transaction
+      .request()
+      .input("appointment_id", appointmentId)
+      .query(
+        `SELECT prescription_id FROM Prescriptions WHERE appointment_id = @appointment_id`
       );
 
-      if (!existingDetail) {
-        // Tạo detail mới
-        existingDetail = {
-          detail_id: row.detail_id,
-          service_id: row.service_id,
-          service_name: row.service_name,
-          service_type: row.service_type,
-          price: row.price,
-          notes: row.notes,
-          results: [], // Array để chứa multiple results
-        };
-        groupedResults[row.request_id].details.push(existingDetail);
+    const prescription_id = recordset[0]?.prescription_id;
+
+    if (prescription_id) {
+      // 4. Xoá cũ
+      await transaction
+        .request()
+        .input("prescription_id", prescription_id)
+        .query(
+          `DELETE FROM PrescriptionDetails WHERE prescription_id = @prescription_id`
+        );
+
+      // 5. Gộp thuốc từ cả regimen + support
+      const allDrugs = [
+        ...(regimen_drugs || []),
+        ...(support_drug_details || []),
+      ];
+
+      for (const drug of allDrugs) {
+        await transaction
+          .request()
+          .input("prescription_id", prescription_id)
+          .input("drug_name", drug.drug_name || "")
+          .input("dosage", drug.dosage || "")
+          .input("frequency", drug.frequency || "")
+          .input("duration_days", drug.duration_days || 0)
+          .input("usage_instructions", drug.usage_instructions || "")
+          .input("notes", drug.notes || "").query(`
+            INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, duration_days, usage_instructions, notes)
+            VALUES (@prescription_id, @drug_name, @dosage, @frequency, @duration_days, @usage_instructions, @notes)
+          `);
       }
+    }
 
-      // Thêm kết quả nếu có
-      if (row.result_value) {
-        existingDetail.results.push({
-          result_value: row.result_value,
-          unit: row.unit,
-          reference_range: row.reference_range,
-          result_date: row.result_date,
-          result_notes: row.result_notes,
-        });
-      }
-
-      // Để backward compatibility, set result = first result hoặc null
-      existingDetail.result =
-        existingDetail.results.length > 0 ? existingDetail.results[0] : null;
-    });
-
-    const finalResults = Object.values(groupedResults);
-    console.log(
-      "[doctorService.getTestRequestsByPatient] Final grouped results count:",
-      finalResults.length
-    );
-
-    return finalResults;
+    await transaction.commit();
+    return { success: true, message: "Đã lưu thông tin khám thành công" };
   } catch (error) {
-    console.error("[doctorService.getTestRequestsByPatient] Error:", error);
+    await transaction.rollback();
+    console.error("[saveClinicalExam error]:", error);
     throw error;
   }
 };
 
-const getTestRequestDetails = async (requestId) => {
+const getSavedClinicalExam = async (appointmentId) => {
   const pool = await poolPromise;
 
-  try {
-    console.log(
-      "[doctorService.getTestRequestDetails] Getting test request details:",
-      requestId
+  // Bắt đầu query dữ liệu
+  const clinicalExam = await pool
+    .request()
+    .input("appointment_id", appointmentId)
+    .query(
+      `SELECT * FROM ClinicalExams WHERE appointment_id = @appointment_id`
     );
 
-    // Sửa query theo schema thực tế
-    const query = `
-      SELECT 
-        tr.request_id,
-        tr.doctor_id,
-        tr.appointment_id,
-        tr.request_date,
-        tr.status,
-        a.patient_id,
-        p.full_name as patient_name,
-        'HIV' + RIGHT('000' + CAST(p.patient_id AS VARCHAR), 3) AS patient_code,
-        d.full_name as doctor_name,
-        trd.detail_id,
-        trd.service_id,
-        trd.notes,
-        s.name as service_name,
-        s.price,
-        s.service_type
-      FROM TestRequests tr
-      JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
-      JOIN Services s ON trd.service_id = s.service_id
-      JOIN Appointments a ON tr.appointment_id = a.appointment_id
-      JOIN Patients p ON a.patient_id = p.patient_id
-      JOIN Doctors d ON tr.doctor_id = d.doctor_id
-      WHERE tr.request_id = @request_id
-      ORDER BY trd.created_at DESC
-    `;
+  const prescription = await pool
+    .request()
+    .input("appointment_id", appointmentId)
+    .query(
+      `SELECT * FROM Prescriptions WHERE appointment_id = @appointment_id`
+    );
 
-    const result = await pool
-      .request()
-      .input("request_id", requestId)
-      .query(query);
+  const prescriptionId = prescription.recordset[0]?.prescription_id;
 
-    if (result.recordset.length === 0) {
-      throw new Error("Test request not found");
-    }
+  const prescriptionDetails = prescriptionId
+    ? await pool
+        .request()
+        .input("prescription_id", prescriptionId)
+        .query(
+          `SELECT * FROM PrescriptionDetails WHERE prescription_id = @prescription_id`
+        )
+    : { recordset: [] };
 
-    // Sửa theo schema thực tế
-    const testRequest = {
-      request_id: result.recordset[0].request_id,
-      patient_id: result.recordset[0].patient_id,
-      patient_name: result.recordset[0].patient_name,
-      patient_code: result.recordset[0].patient_code,
-      doctor_id: result.recordset[0].doctor_id,
-      doctor_name: result.recordset[0].doctor_name,
-      appointment_id: result.recordset[0].appointment_id,
-      request_date: result.recordset[0].request_date,
-      status: result.recordset[0].status,
-      details: [],
-    };
-
-    // Group details (đơn giản hóa theo schema thực tế)
-    const detailsMap = {};
-
-    result.recordset.forEach((row) => {
-      // Details
-      if (!detailsMap[row.detail_id]) {
-        detailsMap[row.detail_id] = {
-          detail_id: row.detail_id,
-          service_id: row.service_id,
-          service_name: row.service_name,
-          service_type: row.service_type,
-          price: row.price,
-          notes: row.notes,
-        };
-      }
-    });
-
-    testRequest.details = Object.values(detailsMap);
-
-    return testRequest;
-  } catch (error) {
-    console.error("[doctorService.getTestRequestDetails] Error:", error);
-    throw error;
-  }
+  return {
+    clinicalExam: clinicalExam.recordset[0] || null,
+    prescription: prescription.recordset[0] || null,
+    prescriptionDetails: prescriptionDetails.recordset || [],
+  };
 };
 
 module.exports = {
@@ -1677,20 +1517,14 @@ module.exports = {
   getExamDetail,
   getCurrentExam,
   saveExamData,
-  getARVRegimens,
-  getARVMedications,
-  getDoctorByAccountId,
-  getCurrentARVRegimen,
-  getLatestTestResults,
-  getAvailableTests,
-  getOngoingTests,
-  getPrescriptionDetails,
-  getDrugOfARVMedications,
-  createTestRequest,
-  getTestTypes,
-  createIndependentTestRequest,
-  getTestRequestsByPatient,
-  getTestRequestDetails,
+  saveExamDataTemp, // Thêm method mới
+  completeExam, // Thêm method mới
+  getExamData, // Thêm method mới
   getExamHistoryBasic,
   getExamDataByAppointmentId,
+  getTestTypes, // Add missing function
+  createIndependentTestRequest,
+  getCurrentTestRequest,
+  saveClinicalExam,
+  getSavedClinicalExam,
 };

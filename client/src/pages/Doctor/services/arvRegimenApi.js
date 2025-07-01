@@ -4,7 +4,7 @@ export const arvRegimenApi = {
   // Get all ARV regimens
   getAll: async () => {
     try {
-      const response = await api.get("/api/v1/doctors/arv-regimens");
+      const response = await api.get("/api/v1/arv-regimens/");
       return response.data;
     } catch (error) {
       console.error("Error fetching ARV regimens:", error);

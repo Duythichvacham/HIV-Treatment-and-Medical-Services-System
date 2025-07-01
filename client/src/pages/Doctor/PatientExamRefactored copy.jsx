@@ -7,7 +7,7 @@ import ExamTabs from "./components/PatientExam/ExamTabs";
 import VitalSigns from "./components/PatientExam/CurrentExam/VitalSigns";
 import ClinicalSigns from "./components/PatientExam/CurrentExam/ClinicalSigns";
 import TestRequests from "./components/PatientExam/CurrentExam/TestRequests";
-import TestRequestsSection from "./components/PatientExam/CurrentExam/TestRequestsSection";
+import SimpleTestRequests from "./components/PatientExam/CurrentExam/SimpleTestRequests";
 import Diagnosis from "./components/PatientExam/CurrentExam/Diagnosis";
 import Prescription from "./components/PatientExam/CurrentExam/Prescription";
 import ExamActions from "./components/PatientExam/CurrentExam/ExamActions";
@@ -182,15 +182,27 @@ const PatientExamRefactored = ({
       hasClinicalSigns &&
       hasPrescriptionNotes;
 
+    // Chỉ log khi kết quả thay đổi, không phải mỗi lần render
+    if (process.env.NODE_ENV === "development") {
+      console.log("[canComplete] Check:", {
+        hasValidDiagnosis,
+        hasEssentialVitalSigns,
+        hasPhysicalMeasurements,
+        hasClinicalSigns,
+        hasPrescriptionNotes,
+        canComplete: result,
+      });
+    }
+
     return result;
   }, [
     examForm.examData,
-    // examForm.examData.diagnosis_primary,
-    // examForm.examData.vital_signs,
-    // examForm.examData.clinical_signs,
-    // examForm.examData.prescription?.counseling_notes,
-    // examForm.examData.prescription?.follow_up_plan,
-    // examForm.examData.prescription?.doctor_notes,
+    examForm.examData.diagnosis_primary,
+    examForm.examData.vital_signs,
+    examForm.examData.clinical_signs,
+    examForm.examData.prescription?.counseling_notes,
+    examForm.examData.prescription?.follow_up_plan,
+    examForm.examData.prescription?.doctor_notes,
   ]);
 
   const isReadOnly = mode === EXAM_MODES.VIEW;
@@ -235,82 +247,9 @@ const PatientExamRefactored = ({
           isLoading={patientLoading && !patientInfo} // Don't show loading if we have patientInfo
         />
 
-        {/* Current ARV Regimen */}
-        {combinedPatientData?.currentArv ? (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-blue-800 mb-4 border-b pb-2">
-              Phác đồ ARV hiện tại
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-gray-600">Tên phác đồ:</span>
-                <p className="font-medium text-blue-600">
-                  {combinedPatientData.currentArv.name}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-600">Loại thuốc:</span>
-                <p className="font-medium">
-                  {combinedPatientData.currentArv.components}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm text-gray-600">Ngày bắt đầu:</span>
-                <p className="font-medium">
-                  {combinedPatientData.currentArv.created_at}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800 text-sm">
-              <span className="font-medium">
-                Chưa có thông tin phác đồ ARV.
-              </span>
-              Vui lòng cập nhật trong quá trình khám.
-            </p>
-          </div>
-        )}
-
-        {/* Latest Test Results */}
-        {combinedPatientData?.latestTestResults ? (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-green-800 mb-4 border-b pb-2">
-              Kết quả xét nghiệm gần nhất
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(combinedPatientData.latestTestResults).map(
-                ([key, test]) => (
-                  <div key={key}>
-                    <span className="text-sm text-gray-600">
-                      {test.test_name}:
-                    </span>
-                    <p className="font-medium">
-                      {test.result_value} {test.unit}
-                    </p>
-                    <span className="text-xs text-gray-500">
-                      {test.test_date}
-                    </span>
-                    {test.notes && (
-                      <p className="text-xs text-gray-600 mt-1">{test.notes}</p>
-                    )}
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <p className="text-gray-600 text-sm text-center">
-              <span className="font-medium">Chưa có kết quả xét nghiệm.</span>
-              Vui lòng yêu cầu xét nghiệm trong quá trình khám.
-            </p>
-          </div>
-        )}
-
         {/* Test Requests - Independent section */}
-        <TestRequestsSection
+        <SimpleTestRequests
+          patientId={patientId}
           appointmentId={appointmentId}
           readOnly={isReadOnly}
         />

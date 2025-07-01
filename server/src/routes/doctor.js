@@ -48,30 +48,6 @@ router.get(
   doctorController.getCurrentExam
 );
 
-// GET, lấy danh sách phác đồ ARV và thuốc tương ứng
-router.get("/arv-regimens", authenticateToken, doctorController.getARVRegimens);
-
-// GET, lấy danh sách thuốc ARV theo phác đồ
-router.get(
-  "/arv-medications/:regimenId",
-  authenticateToken,
-  doctorController.getARVMedications
-);
-
-// GET, lấy danh sách thuốc ARV có sẵn
-router.get(
-  "/arv-medications",
-  authenticateToken,
-  doctorController.getDrugOfARVMedications
-);
-
-// GET, lấy thông tin phác đồ ARV hiện tại của bệnh nhân
-router.get(
-  "/current-arv/:patientId",
-  authenticateToken,
-  doctorController.getCurrentARVRegimen
-);
-
 // GET, lấy kết quả xét nghiệm gần nhất của bệnh nhân
 router.get(
   "/latest-tests/:patientId",
@@ -80,25 +56,28 @@ router.get(
 );
 
 // POST, lưu dữ liệu khám bệnh (chẩn đoán, kế hoạch điều trị, etc.)
-router.post(
-  "/save-exam-data",
-  authenticateToken,
-  doctorController.saveExamData
-);
+// router.post(
+//   "/save-exam-data",
+//   authenticateToken,
+//   doctorController.saveExamData
+// );
 
-// POST, lưu tạm dữ liệu khám bệnh (không yêu cầu validation chặt chẽ)
+// POST, lưu tạm dữ liệu khám bệnh (không validate, cho phép thiếu thông tin)
 router.post(
   "/save-exam-data-temp",
   authenticateToken,
   doctorController.saveExamDataTemp
 );
 
-//GET /api/v1/doctors/exam-data/:appointmentId
-router.get(
-  "/exam-data/:appointmentId",
-  authenticateToken,
-  doctorController.getExamDataByAppointmentId
-);
+// POST, hoàn thành khám bệnh (validate đầy đủ, set status completed)
+router.post("/complete-exam", authenticateToken, doctorController.completeExam);
+
+// GET, lấy dữ liệu khám đã lưu tạm để tiếp tục khám
+// router.get(
+//   "/exam-data/:appointmentId",
+//   authenticateToken,
+//   doctorController.getExamData
+// );
 
 // GET, lấy danh sách test có sẵn
 router.get(
@@ -121,11 +100,11 @@ router.post(
   doctorController.createTestRequest
 );
 
-// POST, tạo test request mới (độc lập)
-router.post(
-  "/independent-test-requests",
+// GET, lấy danh sách test requests hiện tại của bên
+router.get(
+  "/current-test-request/:appointmentId",
   authenticateToken,
-  doctorController.createIndependentTestRequest
+  doctorController.getCurrentTestRequest
 );
 
 // GET, lấy danh sách test đang thực hiện của bệnh nhân
@@ -150,6 +129,16 @@ router.get(
   "/test-request-details/:requestId",
   authenticateToken,
   doctorController.getTestRequestDetails
+);
+router.post(
+  "/exams/:appointmentId",
+  authenticateToken,
+  doctorController.saveClinicalExam
+);
+router.get(
+  "/exams/:appointmentId",
+  authenticateToken,
+  doctorController.getClinicalExam
 );
 
 module.exports = router;

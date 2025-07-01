@@ -68,7 +68,7 @@ export const API_ENDPOINTS = {
     CREATE_REQUEST: "/api/v1/doctors/test-requests",
   },
   PRESCRIPTIONS: {
-    ARV_REGIMENS: "/api/v1/doctors/arv-regimens",
+    ARV_REGIMENS: "/api/v1/arv-regimens/",
     CREATE: "/api/v1/doctors/prescriptions",
   },
   SLOTS: {

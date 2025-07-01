@@ -132,7 +132,7 @@ export const prescriptionApi = {
   // Get ARV regimens
   getARVRegimens: async () => {
     console.log("[prescriptionApi.getARVRegimens] Fetching ARV regimens");
-    const response = await apiClient.get("/api/v1/doctors/arv-regimens");
+    const response = await apiClient.get("/api/v1/arv-regimens/");
     return response.data;
   },
 
