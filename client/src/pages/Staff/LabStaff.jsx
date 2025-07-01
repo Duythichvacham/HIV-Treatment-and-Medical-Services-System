@@ -107,17 +107,27 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
         <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>
       )}
       <div className="flex flex-wrap gap-2 my-2">
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            data.type === "Sàng lọc"
-              ? "bg-yellow-100 text-yellow-700"
-              : data.type === "Khẳng định"
-              ? "bg-red-100 text-red-700"
-              : "bg-purple-100 text-purple-700"
-          }`}
-        >
-          {data.type_name}
-        </span>
+        {data.source === 'doctor_request' && Array.isArray(data.type_names) ? (
+          [...new Set(data.type_names)].map((tn, idx) => (
+            <span key={idx}
+              className={`px-2 py-1 rounded text-xs bg-purple-100 text-purple-700`}
+            >
+              {tn}
+            </span>
+          ))
+        ) : (
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              data.type === "Sàng lọc"
+                ? "bg-yellow-100 text-yellow-700"
+                : data.type === "Khẳng định"
+                ? "bg-red-100 text-red-700"
+                : "bg-purple-100 text-purple-700"
+            }`}
+          >
+            {data.type_name}
+          </span>
+        )}
       </div>
       {/* Hiển thị tải lượng CD4 và Viral Load gần nhất, mỗi loại một dòng */}
       <div className="text-xs text-gray-600 mb-1">
@@ -282,10 +292,35 @@ const LabStaff = () => {
       const lab_staff_id = user?.id;
       // Lấy tất cả dữ liệu cho queue và inProgress
       const allTests = await getAllLabTests(null, selectedDate, lab_staff_id);
-      const queue = allTests.filter((test) => test.status === "requested");
-      const inProgress = allTests.filter((test) => test.status === "in_progress");
-      // Lấy completed với trường results đầy đủ
+      // Gộp các doctor_request theo id (request_id)
+      const groupByRequest = (arr) => {
+        const map = new Map();
+        arr.forEach(item => {
+          if (item.source === 'doctor_request') {
+            const key = item.id;
+            if (!map.has(key)) {
+              map.set(key, { ...item, 
+                type_names: [item.type_name],
+                service_names: [item.service_name],
+                service_ids: [item.service_id],
+              });
+            } else {
+              const exist = map.get(key);
+              exist.type_names.push(item.type_name);
+              exist.service_names.push(item.service_name);
+              exist.service_ids.push(item.service_id);
+            }
+          } else {
+            // self_booking giữ nguyên
+            map.set('self_' + (item.appointment_id || Math.random()), item);
+          }
+        });
+        return Array.from(map.values());
+      };
+      const queue = groupByRequest(allTests.filter((test) => test.status === "requested"));
+      const inProgress = groupByRequest(allTests.filter((test) => test.status === "in_progress"));
       const completed = await getAllLabTests('completed', selectedDate, lab_staff_id);
+      const completedGrouped = groupByRequest(completed);
       // Tính toán summary từ dữ liệu thật
       const screening = allTests.filter(
         (test) =>
@@ -307,7 +342,7 @@ const LabStaff = () => {
           cards: inProgress || [],
           count: (inProgress || []).length,
         },
-        { ...prevSections[2], cards: completed || [], count: (completed || []).length },
+        { ...prevSections[2], cards: completedGrouped || [], count: (completedGrouped || []).length },
       ]);
     } catch (err) {
       console.error("Lỗi tải dữ liệu lab:", err);
@@ -349,8 +384,8 @@ const LabStaff = () => {
           test_datetime: new Date().toISOString()
         };
         if (card.source === "doctor_request") {
-          payload.test_request_id = card.id;
-          if (card.appointment_id) payload.appointment_id = card.appointment_id;
+          payload.request_id = card.id;
+          payload.appointment_id = card.appointment_id;
         } else if (card.source === "self_booking") {
           payload.appointment_id = card.appointment_id;
         }
@@ -363,7 +398,7 @@ const LabStaff = () => {
       }
       // Sau đó chuyển trạng thái
       if (card.source === "doctor_request") {
-        const url = `${API_BASE}/test-requests/${card.id}/status`;
+        const url = `${API_BASE}/lab/test-requests/${card.id}/status`;
         await axios.patch(url, { status: "in_progress" }, { headers });
       } else if (card.source === "self_booking") {
         const url = `${API_BASE}/appointments/${card.appointment_id}/status`;
@@ -392,8 +427,8 @@ const LabStaff = () => {
         const headers = { Authorization: `Bearer ${token}` };
         const payload = { created_by_id: user.id };
         if (card.source === "doctor_request") {
-          payload.test_request_id = card.id;
-          if (card.appointment_id) payload.appointment_id = card.appointment_id;
+          payload.request_id = card.id;
+          payload.appointment_id = card.appointment_id;
         } else if (card.source === "self_booking") {
           payload.appointment_id = card.appointment_id;
         }

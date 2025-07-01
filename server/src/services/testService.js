@@ -85,6 +85,29 @@ exports.getTestNoteDetail = async (test_note_id) => {
     if (detail.source === "self_booking") {
       detail.doctor_name = null;
     }
+    // Nếu là TestRequest, lấy danh sách test_types
+    if (detail.source === "doctor_request" && detail.request_id) {
+      const testTypesRes = await pool.request()
+        .input("request_id", detail.request_id)
+        .query(`
+          SELECT DISTINCT tt.test_type_id, tt.name, tt.unit, tt.normal_range
+          FROM TestRequestDetails trd
+          JOIN ServicesTestTypes stt ON trd.service_id = stt.service_id
+          JOIN TestTypes tt ON stt.test_type_id = tt.test_type_id
+          WHERE trd.request_id = @request_id
+        `);
+      detail.test_types = testTypesRes.recordset;
+      // Lấy danh sách tên dịch vụ
+      const servicesRes = await pool.request()
+        .input("request_id", detail.request_id)
+        .query(`
+          SELECT DISTINCT s.name
+          FROM TestRequestDetails trd
+          JOIN Services s ON trd.service_id = s.service_id
+          WHERE trd.request_id = @request_id
+        `);
+      detail.service_names = servicesRes.recordset.map(r => r.name);
+    }
   }
   return detail;
 };
@@ -149,68 +172,90 @@ exports.createTestResultAndComplete = async ({
     // Không return ở đây, tiếp tục kiểm tra completion phía dưới
   }
 
-  // 1. Lấy appointment_id từ test_note_id
+  // 1. Lấy appointment_id và request_id từ test_note_id
   const testNoteRes = await pool
     .request()
     .input("test_note_id", test_note_id)
     .query(
-      "SELECT appointment_id FROM TestNotes WHERE test_note_id = @test_note_id"
+      "SELECT appointment_id, request_id FROM TestNotes WHERE test_note_id = @test_note_id"
     );
-  const appointment_id = testNoteRes.recordset[0]?.appointment_id;
+  let appointment_id = testNoteRes.recordset[0]?.appointment_id;
+  const request_id = testNoteRes.recordset[0]?.request_id;
+  // Nếu không có appointment_id, lấy từ TestRequests (nếu có request_id)
+  if (!appointment_id && request_id) {
+    const reqRes = await pool
+      .request()
+      .input("request_id", request_id)
+      .query("SELECT appointment_id FROM TestRequests WHERE request_id = @request_id");
+    appointment_id = reqRes.recordset[0]?.appointment_id;
+  }
   if (!appointment_id) {
     throw new Error("Không tìm thấy appointment_id cho test_note_id này");
   }
 
-  // 2. Lấy service_id từ appointment_id
-  const appRes = await pool
-    .request()
-    .input("appointment_id", appointment_id)
-    .query(
-      "SELECT service_id FROM Appointments WHERE appointment_id = @appointment_id"
-    );
-  const service_id = appRes.recordset[0]?.service_id;
-  if (!service_id) {
-    throw new Error("Không tìm thấy service_id cho appointment_id này");
-  }
-
-  // 3. Lấy danh sách test_type_id của service này
-  const sttRes = await pool
-    .request()
-    .input("service_id", service_id)
-    .query(
-      "SELECT test_type_id FROM ServicesTestTypes WHERE service_id = @service_id"
-    );
-  const testTypeIds = sttRes.recordset.map((r) => r.test_type_id);
-
-  // 5. Kiểm tra đã đủ kết quả cho tất cả test_type_id chưa (trên toàn bộ test_note_id của appointment)
-  const countResult = await pool
-    .request()
-    .input("appointment_id", appointment_id)
-    .query(`
-      SELECT COUNT(DISTINCT tr.test_type_id) AS count 
-      FROM TestResults tr
-      JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
-      WHERE tn.appointment_id = @appointment_id
-    `);
-  const resultCount = countResult.recordset[0]?.count || 0;
-  if (resultCount === testTypeIds.length) {
-    // Cập nhật tất cả TestNotes của appointment này
-    // await pool.request()
-    //   .input("appointment_id", appointment_id)
-    //   .query("UPDATE TestNotes SET status = 'completed' WHERE appointment_id = @appointment_id");
-
-    // Cập nhật Appointments
-    if (appointment_id) {
-      await pool
-        .request()
+  // Phân biệt doctor_request và self_booking
+  if (request_id) {
+    // doctor_request: lấy test_type_id từ TestRequestDetails
+    const testTypeRes = await pool.request()
+      .input("request_id", request_id)
+      .query(`
+        SELECT DISTINCT stt.test_type_id
+        FROM TestRequestDetails trd
+        JOIN ServicesTestTypes stt ON trd.service_id = stt.service_id
+        WHERE trd.request_id = @request_id
+      `);
+    const testTypeIds = testTypeRes.recordset.map(r => r.test_type_id);
+    // Đếm số lượng kết quả đã nhập cho request_id này
+    const countResult = await pool.request()
+      .input("request_id", request_id)
+      .query(`
+        SELECT COUNT(DISTINCT tr.test_type_id) AS count
+        FROM TestResults tr
+        JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+        WHERE tn.request_id = @request_id
+      `);
+    const resultCount = countResult.recordset[0]?.count || 0;
+    if (resultCount === testTypeIds.length) {
+      await pool.request()
+        .input("request_id", request_id)
+        .query("UPDATE TestRequests SET status = 'completed' WHERE request_id = @request_id");
+    }
+  } else {
+    // self_booking: lấy test_type_id từ service_id của Appointment
+    const appRes = await pool
+      .request()
+      .input("appointment_id", appointment_id)
+      .query(
+        "SELECT service_id FROM Appointments WHERE appointment_id = @appointment_id"
+      );
+    const service_id = appRes.recordset[0]?.service_id;
+    if (!service_id) {
+      throw new Error("Không tìm thấy service_id cho appointment_id này");
+    }
+    const sttRes = await pool
+      .request()
+      .input("service_id", service_id)
+      .query(
+        "SELECT test_type_id FROM ServicesTestTypes WHERE service_id = @service_id"
+      );
+    const testTypeIds = sttRes.recordset.map((r) => r.test_type_id);
+    // Đếm số lượng kết quả đã nhập cho appointment_id này
+    const countResult = await pool
+      .request()
+      .input("appointment_id", appointment_id)
+      .query(`
+        SELECT COUNT(DISTINCT tr.test_type_id) AS count 
+        FROM TestResults tr
+        JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+        WHERE tn.appointment_id = @appointment_id
+      `);
+    const resultCount = countResult.recordset[0]?.count || 0;
+    if (resultCount === testTypeIds.length) {
+      // Chỉ update status của Appointments, không update TestRequests
+      await pool.request()
         .input("appointment_id", appointment_id)
         .query("UPDATE Appointments SET status = 'completed' WHERE appointment_id = @appointment_id");
     }
-
-    // Cập nhật tất cả TestRequests của appointment này
-    await pool.request()
-      .input("appointment_id", appointment_id)
-      .query("UPDATE TestRequests SET status = 'completed' WHERE appointment_id = @appointment_id");
   }
 
   // Debug toàn bộ TestResults và TestNotes liên quan test_note_id
@@ -270,8 +315,8 @@ exports.getAllLabTests = async (
         tr.status,
         qn.current_number AS queue_number,
         p.patient_id,
-        NULL AS appointment_id,
-        a.room_id,
+        tr.appointment_id AS appointment_id,
+        tr.room_id,
         r.room_name,
         ws.shift_id,
         ws.shift_date,
@@ -295,8 +340,8 @@ exports.getAllLabTests = async (
     JOIN Services s ON trd.service_id = s.service_id
     LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
     JOIN Invoices i ON tr.request_id = i.request_id AND i.status = 'paid'
-    LEFT JOIN Rooms r ON a.room_id = r.room_id
-    LEFT JOIN WorkingShifts ws ON a.room_id = ws.room_id
+    LEFT JOIN Rooms r ON tr.room_id = r.room_id
+    LEFT JOIN WorkingShifts ws ON tr.room_id = ws.room_id
       AND CONVERT(date, tr.request_date) = ws.shift_date
     LEFT JOIN TestNotes tn ON tn.request_id = tr.request_id
     LEFT JOIN QueueNumbers qn ON qn.request_id = tr.request_id 
@@ -311,7 +356,7 @@ exports.getAllLabTests = async (
     query += ` AND CONVERT(date, tr.request_date) = @date`;
   }
   if (room_id) {
-    query += ` AND a.room_id = @room_id`;
+    query += ` AND tr.room_id = @room_id`;
   }
 
   query += `
@@ -495,7 +540,7 @@ exports.getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
 };
 
 exports.createTestNote = async ({
-  test_request_id,
+  request_id,
   appointment_id,
   created_by_id,
   test_datetime,
@@ -503,7 +548,7 @@ exports.createTestNote = async ({
   const pool = await poolPromise;
   const result = await pool
     .request()
-    .input("request_id", sql.Int, test_request_id)
+    .input("request_id", sql.Int, request_id)
     .input("appointment_id", sql.Int, appointment_id)
     .input("created_by_id", sql.Int, created_by_id)
     .input("test_datetime", sql.DateTime, test_datetime).query(`
@@ -653,4 +698,26 @@ exports.getAllTestResultsForPatient = async (patientId) => {
     .query(query);
   
   return result.recordset;
+};
+
+exports.createBulkTestResults = async ({ test_note_id, results, notes }) => {
+  const pool = await poolPromise;
+  // Cập nhật notes nếu có
+  if (notes && test_note_id) {
+    await pool.request()
+      .input('test_note_id', test_note_id)
+      .input('notes', notes)
+      .query('UPDATE TestNotes SET notes = @notes WHERE test_note_id = @test_note_id');
+  }
+  // Lưu từng kết quả
+  for (const r of results) {
+    await exports.createTestResultAndComplete({
+      test_note_id,
+      test_type_id: r.test_type_id,
+      result_value: r.result_value,
+      unit: r.unit,
+      reference_range: r.reference_range,
+      notes: null
+    });
+  }
 };
