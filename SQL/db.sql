@@ -116,6 +116,7 @@ CREATE TABLE TestRequests (
     doctor_id INT NOT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- người làm đơn
     appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- phát sinh từ đơn đặt lịch nào khi đang khám
     request_date DATETIME DEFAULT GETDATE(),
+    room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id), -- phòng xét nghiệm
     approved_by_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- registration-staff
     approved_at DATETIME NULL,
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),

@@ -26,9 +26,6 @@ export const StatisticsCards = ({ stats, formatCurrency }) => (
           <p className="text-3xl font-bold text-orange-600">
             {stats.pending_requests}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            TestRequests status = 'requested'
-          </p>
         </div>
         <Clock className="h-8 w-8 text-orange-600" />
       </div>

@@ -52,13 +52,18 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
       );
       setIsProcessing(false);
 
+      // Debug: Log the entire response to see the structure
+      console.log("API Response:", result);
+      console.log("Queue Result:", result.data?.queue_result);
+
       // Store queue info from API response
       if (
         result.data &&
-        result.data.queue_results &&
-        result.data.queue_results.length > 0
+        result.data.queue_result &&
+        result.data.queue_result.results &&
+        result.data.queue_result.results.length > 0
       ) {
-        setQueueInfo(result.data.queue_results[0].queue_info);
+        setQueueInfo(result.data.queue_result.results[0].queue_info);
       }
 
       setShowReceipt(true);

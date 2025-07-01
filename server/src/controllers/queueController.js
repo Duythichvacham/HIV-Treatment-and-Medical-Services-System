@@ -1,4 +1,4 @@
-const queueService = require("../services/queueService");
+const queueService = require("../services/queues/queueService");
 
 /**
  * Cấp số thứ tự cho appointment

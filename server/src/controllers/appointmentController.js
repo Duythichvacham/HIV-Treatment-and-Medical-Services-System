@@ -1,5 +1,5 @@
 const appointmentService = require("../services/appointmentService");
-const queueService = require("../services/queueService");
+const queueService = require("../services/queues/queueService");
 const paymentService = require("../services/paymentService");
 const { autoCancelPendingAppointments } = require("../utils/scheduler");
 

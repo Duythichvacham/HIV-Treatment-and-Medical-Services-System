@@ -1,5 +1,6 @@
+USE HIV_HEALTH_CARE
 -- 1. Accounts (giữ nguyên từ data mẫu ban đầu)
-INSERT INTO Accounts (username, password_hash, role, status) VALUES
+INSERT INTO Accounts (username, password_hash, role, status) VALUES 
 ('admin01', '$2b$10$5yIXgrKWmsOXurLPFLm6Ku3d0XHZYhsUXvyvMbnD0WefI4WfPlkLO', 'Manager', 'active'),
 ('doctor01', '$2b$10$VBQ33AMG1DIE6IyhEG8Rsua8g5zJHtHEtCquHukuhrDPIUwmPWc8C', 'Doctor', 'active'),
 ('doctor02', '$2b$10$JLXsFxPDKpbDpfTWLnEawOYtRSrKy5reMFfSwzVp8..A54bqXxkSi', 'Doctor', 'active'),
@@ -181,221 +182,228 @@ INSERT INTO WorkingShifts (account_id, doctor_id, lab_staff_id, registration_sta
 -- Thêm Appointments từ 30/6 đến 8/7/2025
 INSERT INTO Appointments (patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate) VALUES
 -- 30/6/2025
-(3, 1, 1, 1, 'completed', 1, '2025-06-30'),
-(4, 2, 2, 1, 'completed', 2, '2025-06-30'),
-(5, 3, 3, 2, 'completed', 3, '2025-06-30'),
+(3, 1, 1, 1, 'requested', 1, '2025-06-30'),
+(4, 2, 2, 1, 'requested', 2, '2025-06-30'),
+(5, 3, 3, 2, 'requested', 3, '2025-06-30'),
 (6, 4, 1, 1, 'in_progress', 4, '2025-06-30'),
-(7, NULL, 2, 3, 'completed', 6, '2025-06-30'),
-(8, NULL, 3, 4, 'completed', 10, '2025-06-30'),
+(7, NULL, 2, 3, 'requested', 6, '2025-06-30'),
+(8, NULL, 3, 4, 'requested', 10, '2025-06-30'),
 (9, 1, 4, 1, 'requested', 1, '2025-06-30'),
 (10, 2, 5, 1, 'requested', 2, '2025-06-30'),
 
 -- 1/7/2025
-(1, 1, 1, 1, 'completed', 1, '2025-07-01'),
-(2, 2, 2, 1, 'completed', 2, '2025-07-01'),
-(3, 5, 3, 2, 'completed', 5, '2025-07-01'),
+(1, 1, 1, 1, 'requested', 1, '2025-07-01'),
+(2, 2, 2, 1, 'requested', 2, '2025-07-01'),
+(3, 5, 3, 2, 'requested', 5, '2025-07-01'),
 (4, NULL, 1, 3, 'in_progress', 6, '2025-07-01'),
-(5, NULL, 2, 5, 'completed', 10, '2025-07-01'),
+(5, NULL, 2, 5, 'requested', 10, '2025-07-01'),
 (6, 1, 4, 1, 'requested', 1, '2025-07-01'),
 (7, 2, 5, 1, 'requested', 2, '2025-07-01'),
 
 -- 2/7/2025
-(8, 2, 1, 1, 'completed', 2, '2025-07-02'),
-(9, 3, 2, 1, 'completed', 3, '2025-07-02'),
-(10, 4, 3, 2, 'completed', 4, '2025-07-02'),
+(8, 2, 1, 1, 'requested', 2, '2025-07-02'),
+(9, 3, 2, 1, 'requested', 3, '2025-07-02'),
+(10, 4, 3, 2, 'requested', 4, '2025-07-02'),
 (1, NULL, 1, 4, 'in_progress', 6, '2025-07-02'),
 (2, 3, 4, 1, 'requested', 3, '2025-07-02'),
 (3, 4, 5, 1, 'requested', 4, '2025-07-02'),
 
 -- 3/7/2025
-(4, 1, 1, 1, 'completed', 1, '2025-07-03'),
-(5, 3, 2, 1, 'completed', 3, '2025-07-03'),
-(6, 5, 3, 2, 'completed', 5, '2025-07-03'),
+(4, 1, 1, 1, 'requested', 1, '2025-07-03'),
+(5, 3, 2, 1, 'requested', 3, '2025-07-03'),
+(6, 5, 3, 2, 'requested', 5, '2025-07-03'),
 (7, NULL, 1, 3, 'in_progress', 10, '2025-07-03'),
 (8, 1, 4, 1, 'requested', 1, '2025-07-03'),
 (9, 3, 5, 1, 'requested', 3, '2025-07-03'),
 
 -- 4/7/2025
-(10, 1, 1, 1, 'completed', 1, '2025-07-04'),
-(1, 2, 2, 1, 'completed', 2, '2025-07-04'),
-(2, 4, 3, 2, 'completed', 4, '2025-07-04'),
+(10, 1, 1, 1, 'requested', 1, '2025-07-04'),
+(1, 2, 2, 1, 'requested', 2, '2025-07-04'),
+(2, 4, 3, 2, 'requested', 4, '2025-07-04'),
 (3, NULL, 1, 5, 'in_progress', 6, '2025-07-04'),
 (4, 2, 4, 1, 'requested', 2, '2025-07-04'),
 (5, 4, 5, 1, 'requested', 4, '2025-07-04'),
 
 -- 5/7/2025
-(6, 2, 1, 1, 'completed', 2, '2025-07-05'),
-(7, 3, 2, 1, 'completed', 3, '2025-07-05'),
-(8, NULL, 1, 4, 'completed', 10, '2025-07-05'),
+(6, 2, 1, 1, 'requested', 2, '2025-07-05'),
+(7, 3, 2, 1, 'requested', 3, '2025-07-05'),
+(8, NULL, 1, 4, 'requested', 10, '2025-07-05'),
 (9, 2, 3, 2, 'requested', 2, '2025-07-05'),
 (10, 3, 4, 1, 'requested', 3, '2025-07-05'),
 
 -- 7/7/2025
-(1, 1, 1, 1, 'completed', 1, '2025-07-07'),
-(2, 4, 2, 1, 'completed', 4, '2025-07-07'),
-(3, 5, 3, 2, 'completed', 5, '2025-07-07'),
+(1, 1, 1, 1, 'requested', 1, '2025-07-07'),
+(2, 4, 2, 1, 'requested', 4, '2025-07-07'),
+(3, 5, 3, 2, 'requested', 5, '2025-07-07'),
 (4, NULL, 1, 3, 'in_progress', 6, '2025-07-07'),
 (5, 1, 4, 1, 'requested', 1, '2025-07-07'),
 (6, 4, 5, 1, 'requested', 4, '2025-07-07'),
 
 -- 8/7/2025
-(7, 2, 1, 1, 'completed', 2, '2025-07-08'),
-(8, 3, 2, 1, 'completed', 3, '2025-07-08'),
-(9, 4, 3, 2, 'completed', 4, '2025-07-08'),
+(7, 2, 1, 1, 'requested', 2, '2025-07-08'),
+(8, 3, 2, 1, 'requested', 3, '2025-07-08'),
+(9, 4, 3, 2, 'requested', 4, '2025-07-08'),
 (10, NULL, 1, 4, 'in_progress', 10, '2025-07-08'),
 (1, 2, 4, 1, 'requested', 2, '2025-07-08'),
 (2, 3, 5, 1, 'requested', 3, '2025-07-08');
 
 -- Thêm TestRequests từ 30/6 đến 8/7/2025
-INSERT INTO TestRequests (doctor_id, appointment_id, request_date, approved_by_id, approved_at, status) VALUES
+INSERT INTO TestRequests (doctor_id, appointment_id, request_date, status) VALUES
 -- 30/6/2025
-(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 09:30:00', 7, '2025-06-30 10:00:00', 'completed'),
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 10:30:00', 7, '2025-06-30 11:00:00', 'completed'),
-(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 11:30:00', 7, '2025-06-30 12:00:00', 'completed'),
+(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 09:30:00', 'requested' ),
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 10:30:00', 'requested' ),
+(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), '2025-06-30 11:30:00', 'requested' ),
 
 -- 1/7/2025
-(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 09:30:00', 8, '2025-07-01 10:00:00', 'completed'),
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 10:30:00', 8, '2025-07-01 11:00:00', 'completed'),
-(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 11:30:00', 8, '2025-07-01 12:00:00', 'completed'),
+(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 09:30:00','requested' ),
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 10:30:00', 'requested'),
+(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), '2025-07-01 11:30:00','requested'),
 
 -- 2/7/2025
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 09:30:00', 7, '2025-07-02 10:00:00', 'completed'),
-(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 10:30:00', 7, '2025-07-02 11:00:00', 'completed'),
-(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 11:30:00', 7, '2025-07-02 12:00:00', 'completed'),
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 09:30:00','requested' ),
+(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 10:30:00','requested'),
+(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), '2025-07-02 11:30:00','requested'),
 
 -- 3/7/2025
-(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 09:30:00', 8, '2025-07-03 10:00:00', 'completed'),
-(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 10:30:00', 8, '2025-07-03 11:00:00', 'completed'),
-(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 11:30:00', 8, '2025-07-03 12:00:00', 'completed'),
+(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 09:30:00', 'requested' ),
+(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 10:30:00', 'requested' ),
+(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), '2025-07-03 11:30:00', 'requested'),
 
 -- 4/7/2025
-(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 09:30:00', 7, '2025-07-04 10:00:00', 'completed'),
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 10:30:00', 7, '2025-07-04 11:00:00', 'completed'),
-(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 11:30:00', 7, '2025-07-04 12:00:00', 'completed'),
+(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 09:30:00', 'requested'),
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 10:30:00', 'requested' ),
+(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), '2025-07-04 11:30:00', 'requested' ),
 
 -- 5/7/2025
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), '2025-07-05 09:30:00', 8, '2025-07-05 10:00:00', 'completed'),
-(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), '2025-07-05 10:30:00', 8, '2025-07-05 11:00:00', 'completed'),
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), '2025-07-05 09:30:00','requested' ),
+(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), '2025-07-05 10:30:00','requested' ),
 
 -- 7/7/2025
-(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 09:30:00', 7, '2025-07-07 10:00:00', 'completed'),
-(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 10:30:00', 7, '2025-07-07 11:00:00', 'completed'),
-(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 11:30:00', 7, '2025-07-07 12:00:00', 'completed'),
+(1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 09:30:00','requested' ),
+(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 10:30:00', 'requested'),
+(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), '2025-07-07 11:30:00','requested' ),
 
 -- 8/7/2025
-(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 09:30:00', 8, '2025-07-08 10:00:00', 'completed'),
-(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 10:30:00', 8, '2025-07-08 11:00:00', 'completed'),
-(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 11:30:00', 8, '2025-07-08 12:00:00', 'completed');
+(2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 09:30:00','requested' ),
+(3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 10:30:00','requested' ),
+(4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), '2025-07-08 11:30:00', 'requested');
 
--- Thêm TestNotes từ 30/6 đến 8/7/2025
-INSERT INTO TestNotes (request_id, appointment_id, created_by_id, test_datetime, notes) VALUES
--- TestNotes cho các test requests vừa thêm (giả sử request_id từ 11 trở đi)
-(11, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), 5, '2025-06-30 14:00:00', N'CD4: 450 cells/μL, Tải lượng virus: Không phát hiện'),
-(12, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), 5, '2025-06-30 15:00:00', N'Xét nghiệm máu tổng quát bình thường'),
-(13, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), 6, '2025-06-30 16:00:00', N'Tư vấn về tuân thủ điều trị ARV'),
+-- Thêm TestRequestDetails - chi tiết dịch vụ cho từng TestRequest
+INSERT INTO TestRequestDetails (request_id, service_id, notes) VALUES
+-- Dựa vào TestRequests đã tạo ở trên, gán dịch vụ cho từng request
+-- 30/6/2025
+(1, 3, N'Xét nghiệm CD4 và Viral Load định kỳ'),  -- Patient 3, TestRequest 1
+(2, 5, N'Xét nghiệm khẳng định tái kiểm'),        -- Patient 4, TestRequest 2  
+(3, 4, N'Xét nghiệm sàng lọc HIV'),               -- Patient 5, TestRequest 3
 
-(14, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), 5, '2025-07-01 14:00:00', N'CD4: 520 cells/μL, cải thiện so với lần trước'),
-(15, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), 5, '2025-07-01 15:00:00', N'Tải lượng virus: < 20 copies/mL'),
-(16, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), 6, '2025-07-01 16:00:00', N'Tư vấn dinh dưỡng và lối sống'),
+-- 1/7/2025
+(4, 3, N'Theo dõi CD4 và Viral Load'),            -- Patient 1, TestRequest 4
+(5, 5, N'Xét nghiệm khẳng định'),                 -- Patient 2, TestRequest 5
+(6, 4, N'Xét nghiệm sàng lọc định kỳ'),          -- Patient 3, TestRequest 6
 
-(17, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), 5, '2025-07-02 14:00:00', N'Xét nghiệm khẳng định HIV dương tính'),
-(18, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), 5, '2025-07-02 15:00:00', N'CD4: 380 cells/μL, cần theo dõi'),
-(19, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), 6, '2025-07-02 16:00:00', N'Tư vấn về phòng chống lây nhiễm'),
+-- 2/7/2025
+(7, 3, N'Kiểm tra CD4 và Viral Load'),           -- Patient 8, TestRequest 7
+(8, 5, N'Xét nghiệm khẳng định HIV'),            -- Patient 9, TestRequest 8
+(9, 4, N'Sàng lọc HIV ban đầu'),                 -- Patient 10, TestRequest 9
 
-(20, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), 5, '2025-07-03 14:00:00', N'Tải lượng virus: Không phát hiện được'),
-(21, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), 5, '2025-07-03 15:00:00', N'CD4: 600 cells/μL, ổn định'),
-(22, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), 6, '2025-07-03 16:00:00', N'Tư vấn về tác dụng phụ thuốc ARV'),
+-- 3/7/2025
+(10, 5, N'Xét nghiệm khẳng định'),               -- Patient 4, TestRequest 10
+(11, 3, N'Theo dõi tải lượng virus'),            -- Patient 5, TestRequest 11
+(12, 4, N'Sàng lọc HIV'),                        -- Patient 6, TestRequest 12
 
-(23, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), 5, '2025-07-04 14:00:00', N'Xét nghiệm chức năng gan: Bình thường'),
-(24, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), 5, '2025-07-04 15:00:00', N'CD4: 550 cells/μL, tiếp tục ổn định'),
-(25, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), 6, '2025-07-04 16:00:00', N'Tư vấn về kế hoạch hóa gia đình'),
+-- 4/7/2025
+(13, 4, N'Xét nghiệm sàng lọc'),                 -- Patient 10, TestRequest 13
+(14, 3, N'Kiểm tra CD4 và Viral Load'),          -- Patient 1, TestRequest 14
+(15, 4, N'Sàng lọc HIV định kỳ'),                -- Patient 2, TestRequest 15
 
-(26, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), 5, '2025-07-05 14:00:00', N'Tải lượng virus: < 20 copies/mL'),
-(27, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), 5, '2025-07-05 15:00:00', N'CD4: 420 cells/μL, cần tăng cường tuân thủ'),
+-- 5/7/2025
+(16, 5, N'Xét nghiệm khẳng định HIV'),           -- Patient 6, TestRequest 16
+(17, 3, N'Theo dõi CD4 và Viral Load'),          -- Patient 7, TestRequest 17
 
-(28, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), 5, '2025-07-07 14:00:00', N'Xét nghiệm định kỳ 6 tháng: Tốt'),
-(29, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), 5, '2025-07-07 15:00:00', N'CD4: 580 cells/μL, Tải lượng virus: Không phát hiện'),
-(30, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), 6, '2025-07-07 16:00:00', N'Tư vấn về việc tiêm vaccine'),
+-- 7/7/2025
+(18, 3, N'Kiểm tra tải lượng virus'),            -- Patient 1, TestRequest 18
+(19, 5, N'Xét nghiệm khẳng định'),               -- Patient 2, TestRequest 19
+(20, 4, N'Sàng lọc HIV'),                        -- Patient 3, TestRequest 20
 
-(31, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), 5, '2025-07-08 14:00:00', N'Xét nghiệm kháng thuốc: Không có đột biến'),
-(32, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), 5, '2025-07-08 15:00:00', N'CD4: 480 cells/μL, cải thiện tốt'),
-(33, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), 6, '2025-07-08 16:00:00', N'Tư vấn về chế độ ăn uống và tập luyện');
+-- 8/7/2025
+(21, 4, N'Xét nghiệm sàng lọc HIV'),             -- Patient 7, TestRequest 21
+(22, 3, N'Theo dõi CD4 và Viral Load'),          -- Patient 8, TestRequest 22
+(23, 4, N'Sàng lọc HIV định kỳ');                -- Patient 9, TestRequest 23
 
 -- Thêm Invoices từ 30/6 đến 8/7/2025
 INSERT INTO Invoices (patient_id, appointment_id, request_id, amount, service_type, status, issued_at) VALUES
 -- 30/6/2025
 (3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-06-30 09:30:00'),
-(3, NULL, 11, 550000, N'test', 'paid', '2025-06-30 14:00:00'),
+(3, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-06-30' ORDER BY created_at DESC) AND doctor_id = 1 AND request_date = '2025-06-30 09:30:00'), 550000, N'test', 'paid', '2025-06-30 14:00:00'),
 (4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-06-30 10:30:00'),
-(4, NULL, 12, 80000, N'test', 'paid', '2025-06-30 15:00:00'),
+(4, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-06-30' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-06-30 10:30:00'), 80000, N'test', 'paid', '2025-06-30 15:00:00'),
 (5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-06-30 11:30:00'),
-(5, NULL, 13, 120000, N'test', 'paid', '2025-06-30 16:00:00'),
+(5, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-06-30' ORDER BY created_at DESC) AND doctor_id = 3 AND request_date = '2025-06-30 11:30:00'), 120000, N'test', 'paid', '2025-06-30 16:00:00'),
 (6, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 150000, N'examination', 'pending', '2025-06-30 08:30:00'),
-(7, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 550000, N'test', 'paid', '2025-06-30 07:30:00'),
-(8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 120000, N'test', 'paid', '2025-06-30 08:30:00'),
+(7, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 550000, N'test', 'pending', '2025-06-30 07:30:00'),
+(8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-06-30' ORDER BY created_at DESC), NULL, 120000, N'test', 'pending', '2025-06-30 08:30:00'),
 
 -- 1/7/2025
 (1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-01 09:30:00'),
-(1, NULL, 14, 550000, N'test', 'paid', '2025-07-01 14:00:00'),
+(1, NULL, (SELECT TOP 1 request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-01' ORDER BY created_at DESC) AND doctor_id = 1 AND request_date = '2025-07-01 09:30:00'), 550000, N'test', 'pending', '2025-07-01 14:00:00'),
 (2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-01 10:30:00'),
-(2, NULL, 15, 80000, N'test', 'paid', '2025-07-01 15:00:00'),
+(2, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-01' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-07-01 10:30:00'), 80000, N'test', 'pending', '2025-07-01 15:00:00'),
 (3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-01 11:30:00'),
-(3, NULL, 16, 120000, N'test', 'paid', '2025-07-01 16:00:00'),
+(3, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-01' ORDER BY created_at DESC) AND doctor_id = 5 AND request_date = '2025-07-01 11:30:00'), 120000, N'test', 'pending', '2025-07-01 16:00:00'),
 (4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 550000, N'test', 'pending', '2025-07-01 07:30:00'),
-(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 80000, N'test', 'paid', '2025-07-01 08:30:00'),
+(5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-01' ORDER BY created_at DESC), NULL, 80000, N'test', 'pending', '2025-07-01 08:30:00'),
 
 -- 2/7/2025
 (8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-02 09:30:00'),
-(8, NULL, 17, 550000, N'test', 'paid', '2025-07-02 14:00:00'),
+(8, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-02' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-07-02 09:30:00'), 550000, N'test', 'pending', '2025-07-02 14:00:00'),
 (9, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-02 10:30:00'),
-(9, NULL, 18, 80000, N'test', 'paid', '2025-07-02 15:00:00'),
+(9, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-02' ORDER BY created_at DESC) AND doctor_id = 3 AND request_date = '2025-07-02 10:30:00'), 80000, N'test', 'pending', '2025-07-02 15:00:00'),
 (10, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-02 11:30:00'),
-(10, NULL, 19, 120000, N'test', 'paid', '2025-07-02 16:00:00'),
+(10, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-02' ORDER BY created_at DESC) AND doctor_id = 4 AND request_date = '2025-07-02 11:30:00'), 120000, N'test', 'pending', '2025-07-02 16:00:00'),
 (1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-02' ORDER BY created_at DESC), NULL, 120000, N'test', 'pending', '2025-07-02 07:30:00'),
 
 -- 3/7/2025
 (4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-03 09:30:00'),
-(4, NULL, 20, 80000, N'test', 'paid', '2025-07-03 14:00:00'),
+(4, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-03' ORDER BY created_at DESC) AND doctor_id = 1 AND request_date = '2025-07-03 09:30:00'), 80000, N'test', 'pending', '2025-07-03 14:00:00'),
 (5, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-03 10:30:00'),
-(5, NULL, 21, 550000, N'test', 'paid', '2025-07-03 15:00:00'),
+(5, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 5 AND bookingDate = '2025-07-03' ORDER BY created_at DESC) AND doctor_id = 3 AND request_date = '2025-07-03 10:30:00'), 550000, N'test', 'pending', '2025-07-03 15:00:00'),
 (6, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-03 11:30:00'),
-(6, NULL, 22, 120000, N'test', 'paid', '2025-07-03 16:00:00'),
+(6, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-03' ORDER BY created_at DESC) AND doctor_id = 5 AND request_date = '2025-07-03 11:30:00'), 120000, N'test', 'pending', '2025-07-03 16:00:00'),
 (7, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-03' ORDER BY created_at DESC), NULL, 550000, N'test', 'pending', '2025-07-03 07:30:00'),
 
 -- 4/7/2025
 (10, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-04 09:30:00'),
-(10, NULL, 23, 120000, N'test', 'paid', '2025-07-04 14:00:00'),
+(10, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-04' ORDER BY created_at DESC) AND doctor_id = 1 AND request_date = '2025-07-04 09:30:00'), 120000, N'test', 'pending', '2025-07-04 14:00:00'),
 (1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-04 10:30:00'),
-(1, NULL, 24, 550000, N'test', 'paid', '2025-07-04 15:00:00'),
+(1, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-04' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-07-04 10:30:00'), 550000, N'test', 'pending', '2025-07-04 15:00:00'),
 (2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-04 11:30:00'),
-(2, NULL, 25, 120000, N'test', 'paid', '2025-07-04 16:00:00'),
+(2, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-04' ORDER BY created_at DESC) AND doctor_id = 4 AND request_date = '2025-07-04 11:30:00'), 120000, N'test', 'pending', '2025-07-04 16:00:00'),
 (3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-04' ORDER BY created_at DESC), NULL, 80000, N'test', 'pending', '2025-07-04 07:30:00'),
 
 -- 5/7/2025
 (6, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-05 09:30:00'),
-(6, NULL, 26, 80000, N'test', 'paid', '2025-07-05 14:00:00'),
+(6, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 6 AND bookingDate = '2025-07-05' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-07-05 09:30:00'), 80000, N'test', 'pending', '2025-07-05 14:00:00'),
 (7, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-05 10:30:00'),
-(7, NULL, 27, 550000, N'test', 'paid', '2025-07-05 15:00:00'),
-(8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), NULL, 120000, N'test', 'paid', '2025-07-05 08:30:00'),
+(7, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-05' ORDER BY created_at DESC) AND doctor_id = 3 AND request_date = '2025-07-05 10:30:00'), 550000, N'test', 'pending', '2025-07-05 15:00:00'),
+(8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-05' ORDER BY created_at DESC), NULL, 120000, N'test', 'pending', '2025-07-05 08:30:00'),
 
 -- 7/7/2025
 (1, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-07 09:30:00'),
-(1, NULL, 28, 550000, N'test', 'paid', '2025-07-07 14:00:00'),
+(1, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 1 AND bookingDate = '2025-07-07' ORDER BY created_at DESC) AND doctor_id = 1 AND request_date = '2025-07-07 09:30:00'), 550000, N'test', 'pending', '2025-07-07 14:00:00'),
 (2, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-07 10:30:00'),
-(2, NULL, 29, 80000, N'test', 'paid', '2025-07-07 15:00:00'),
+(2, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 2 AND bookingDate = '2025-07-07' ORDER BY created_at DESC) AND doctor_id = 4 AND request_date = '2025-07-07 10:30:00'), 80000, N'test', 'pending', '2025-07-07 15:00:00'),
 (3, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-07 11:30:00'),
-(3, NULL, 30, 120000, N'test', 'paid', '2025-07-07 16:00:00'),
+(3, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 3 AND bookingDate = '2025-07-07' ORDER BY created_at DESC) AND doctor_id = 5 AND request_date = '2025-07-07 11:30:00'), 120000, N'test', 'pending', '2025-07-07 16:00:00'),
 (4, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 4 AND bookingDate = '2025-07-07' ORDER BY created_at DESC), NULL, 550000, N'test', 'pending', '2025-07-07 07:30:00'),
 
 -- 8/7/2025
 (7, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-08 09:30:00'),
-(7, NULL, 31, 120000, N'test', 'paid', '2025-07-08 14:00:00'),
+(7, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 7 AND bookingDate = '2025-07-08' ORDER BY created_at DESC) AND doctor_id = 2 AND request_date = '2025-07-08 09:30:00'), 120000, N'test', 'pending', '2025-07-08 14:00:00'),
 (8, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), NULL, 150000, N'examination', 'paid', '2025-07-08 10:30:00'),
-(8, NULL, 32, 550000, N'test', 'paid', '2025-07-08 15:00:00'),
+(8, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 8 AND bookingDate = '2025-07-08' ORDER BY created_at DESC) AND doctor_id = 3 AND request_date = '2025-07-08 10:30:00'), 550000, N'test', 'pending', '2025-07-08 15:00:00'),
 (9, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), NULL, 100000, N'consultation', 'paid', '2025-07-08 11:30:00'),
-(9, NULL, 33, 120000, N'test', 'paid', '2025-07-08 16:00:00'),
+(9, NULL, (SELECT request_id FROM TestRequests WHERE appointment_id = (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 9 AND bookingDate = '2025-07-08' ORDER BY created_at DESC) AND doctor_id = 4 AND request_date = '2025-07-08 11:30:00'), 120000, N'test', 'pending', '2025-07-08 16:00:00'),
 (10, (SELECT TOP 1 appointment_id FROM Appointments WHERE patient_id = 10 AND bookingDate = '2025-07-08' ORDER BY created_at DESC), NULL, 120000, N'test', 'pending', '2025-07-08 07:30:00');
-
 -- Thêm Prescriptions cho các appointments mới (sửa để khớp với schema)
 INSERT INTO Prescriptions (appointment_id, arv_regimen_id, support_drugs, counseling_notes, follow_up_plan, doctor_notes) VALUES
 -- Prescriptions cho các appointment từ 30/6 đến 8/7/2025

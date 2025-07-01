@@ -1,5 +1,5 @@
 const { poolPromise } = require("../config/db");
-const queueService = require("./queueService");
+const queueService = require("./queues/queueService");
 
 // Validation rules cho đặt lịch
 const validateAppointmentRules = async (
