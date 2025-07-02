@@ -322,17 +322,41 @@ const LabStaff = () => {
       const completed = await getAllLabTests('completed', selectedDate, lab_staff_id);
       const completedGrouped = groupByRequest(completed);
       // Tính toán summary từ dữ liệu thật
-      const screening = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("sàng lọc")
+      // Cần group theo request để tránh đếm gấp đôi
+      const groupedForSummary = groupByRequest(allTests);
+      
+      const screening = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            return test.type_names.some(name => name && name.toLowerCase().includes("sàng lọc"));
+          }
+          return test.type_name && test.type_name.toLowerCase().includes("sàng lọc");
+        }
       ).length;
-      const confirmation = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("khẳng định")
+      
+      const confirmation = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            return test.type_names.some(name => name && name.toLowerCase().includes("khẳng định"));
+          }
+          return test.type_name && test.type_name.toLowerCase().includes("khẳng định");
+        }
       ).length;
-      const periodic = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("cd4") && test.type_name.toLowerCase().includes("viral load")
+      
+      const periodic = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            // Kiểm tra nếu có cả CD4 và Viral Load trong cùng một request
+            const hasCD4 = test.type_names.some(name => name && name.toLowerCase().includes("cd4"));
+            const hasViralLoad = test.type_names.some(name => name && name.toLowerCase().includes("viral load"));
+            return hasCD4 || hasViralLoad;
+          }
+          // Cho self_booking, kiểm tra type_name
+          return test.type_name && (
+            test.type_name.toLowerCase().includes("cd4") || 
+            test.type_name.toLowerCase().includes("viral load")
+          );
+        }
       ).length;
       setSummary({ screening, confirmation, periodic });
       setSections((prevSections) => [
