@@ -1,5 +1,5 @@
 const { poolPromise } = require("../config/db");
-const queueService = require("./queueService");
+const queueService = require("./queues/queueService");
 
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {

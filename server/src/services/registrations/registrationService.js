@@ -1,5 +1,10 @@
-const { poolPromise, sql } = require("../config/db");
-const queueService = require("./queueService");
+const { poolPromise, sql } = require("../../config/db");
+
+// Import các module đã tách
+const registrationValidationService = require("./registrationValidationService");
+const registrationInvoiceService = require("./registrationInvoiceService");
+const registrationTestRequestService = require("./registrationTestRequestService");
+const registrationQueueService = require("./registrationQueueService");
 
 /**
  * Lấy danh sách TestRequests pending của ngày hiện tại và nhóm theo appointment_id
@@ -36,7 +41,7 @@ const getPendingTestRequests = async () => {
     LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
     LEFT JOIN Invoices i ON tr.request_id = i.request_id
     WHERE tr.status = 'requested' 
-      AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+      AND CAST(tr.request_date AS DATE) = CAST(GETDATE() AS DATE)
       AND (i.status = 'pending' OR i.status IS NULL)
     ORDER BY sl.start_time ASC, tr.request_date ASC
   `;
@@ -95,103 +100,76 @@ const getPendingTestRequests = async () => {
 };
 
 /**
- * Thu tiền cho TestRequest - chỉ cập nhật Invoice thành 'paid'
- * TestRequest vẫn giữ status 'requested' để Lab Staff xử lý sau
+ * Thu tiền cho TestRequest - Orchestrator function
  * @param {number} appointmentId - ID của appointment
  * @param {string} paymentMethod - Phương thức thanh toán (cash, qr_code)
+ * @param {number} registrationStaffId - ID của registration staff thực hiện
  */
-const approveTestRequest = async (appointmentId, paymentMethod = "cash") => {
+const approveTestRequest = async (
+  appointmentId,
+  paymentMethod = "cash",
+  registrationStaffId = 7
+) => {
+  // Validate tham số đầu vào
+  registrationValidationService.validateApprovalParams(
+    appointmentId,
+    paymentMethod,
+    registrationStaffId
+  );
+
   const pool = await poolPromise;
   const transaction = pool.transaction();
 
   try {
     await transaction.begin();
 
-    // 1. Lấy danh sách TestRequests cần approve
-    const testRequestsQuery = `
-      SELECT request_id, appointment_id
-      FROM TestRequests 
-      WHERE appointment_id = @appointmentId AND status = 'requested'
-    `;
-
-    const testRequestsResult = await transaction
-      .request()
-      .input("appointmentId", sql.Int, appointmentId)
-      .query(testRequestsQuery);
-
-    const testRequests = testRequestsResult.recordset;
-
-    if (testRequests.length === 0) {
-      await transaction.rollback();
-      return {
-        success: false,
-        affectedRows: 0,
-        message: `Không tìm thấy TestRequest nào cần thu tiền cho appointment ${appointmentId}`,
-      };
-    }
-
-    // 2. Chỉ cập nhật Invoice status thành 'paid' cho các test request này
-    // KHÔNG thay đổi TestRequest status - để Lab Staff xử lý sau
-    if (testRequests.length > 0) {
-      const requestIds = testRequests.map((tr) => tr.request_id);
-
-      // Sử dụng parameterized query để tránh SQL injection
-      const invoiceRequest = transaction.request();
-      requestIds.forEach((id, index) => {
-        invoiceRequest.input(`requestId${index}`, sql.Int, id);
-      });
-
-      const invoiceQuery = `
-        UPDATE Invoices 
-        SET status = 'paid', issued_at = GETDATE()
-        WHERE request_id IN (${requestIds
-          .map((_, index) => `@requestId${index}`)
-          .join(",")})
-          AND status = 'pending'
-      `;
-
-      const invoiceUpdateResult = await invoiceRequest.query(invoiceQuery);
-
-      console.log(
-        `📄 Updated ${invoiceUpdateResult.rowsAffected[0]} invoices to 'paid' status for appointment ${appointmentId}`
+    // 1. Validate và lấy danh sách TestRequests cần approve
+    const testRequests =
+      await registrationValidationService.validateTestRequest(
+        transaction,
+        appointmentId
       );
-    }
 
-    // 4. Cấp số thứ tự cho từng TestRequest được approve
-    const queueResults = [];
-    let queueErrors = [];
+    // 2. Validate và lấy phòng xét nghiệm khả dụng
+    const testRoom = await registrationValidationService.validateTestRoom(
+      transaction
+    );
 
-    for (const testRequest of testRequests) {
-      try {
-        // Cấp số thứ tự cho TestRequest (loại test)
-        const queueInfo = await queueService.createQueueForTestRequest(
-          testRequest.request_id
-        );
-        queueResults.push({
-          request_id: testRequest.request_id,
-          queue_info: queueInfo,
-        });
-      } catch (queueError) {
-        // Log lỗi nhưng không fail toàn bộ transaction
-        console.error(
-          `❌ Lỗi khi cấp số thứ tự cho TestRequest ${testRequest.request_id}:`,
-          queueError.message
-        );
-        queueErrors.push({
-          request_id: testRequest.request_id,
-          error: queueError.message,
-        });
-      }
-    }
+    // 3. Cập nhật TestRequest: approve và gán room
+    const updatedCount =
+      await registrationTestRequestService.updateTestRequestApproval(
+        transaction,
+        testRequests,
+        registrationStaffId,
+        testRoom.room_id
+      );
 
+    // 4. Xử lý Invoice: cập nhật existing hoặc tạo mới
+    const invoiceResult = await registrationInvoiceService.processInvoices(
+      transaction,
+      testRequests
+    );
+
+    console.log(
+      `📄 Processed ${invoiceResult.total} invoices (${invoiceResult.updated} updated, ${invoiceResult.created} created) for appointment ${appointmentId}`
+    );
+
+    // 5. Commit transaction trước khi cấp queue
     await transaction.commit();
+
+    // 6. Cấp số thứ tự cho từng TestRequest được approve (outside transaction)
+    const queueResult = await registrationQueueService.createQueueForRequests(
+      testRequests,
+      testRoom.room_id
+    );
 
     return {
       success: true,
-      affectedRows: testRequests.length,
-      message: `Đã thu tiền cho ${testRequests.length} yêu cầu xét nghiệm (appointment ${appointmentId})`,
-      queue_results: queueResults,
-      queue_errors: queueErrors.length > 0 ? queueErrors : null,
+      affectedRows: updatedCount,
+      message: `Đã thu tiền, approve và cấp phòng cho ${testRequests.length} yêu cầu xét nghiệm (appointment ${appointmentId})`,
+      room_assigned: testRoom.room_id,
+      invoice_result: invoiceResult,
+      queue_result: queueResult,
     };
   } catch (error) {
     await transaction.rollback();
@@ -211,10 +189,9 @@ const getRegistrationStatistics = async () => {
     const pendingQuery = `
       SELECT COUNT(DISTINCT tr.request_id) as pending_count
       FROM TestRequests tr
-      JOIN Appointments a ON tr.appointment_id = a.appointment_id
       LEFT JOIN Invoices i ON tr.request_id = i.request_id
       WHERE tr.status = 'requested' 
-        AND CAST(a.bookingDate AS DATE) = CAST(GETDATE() AS DATE)
+        AND CAST(tr.request_date AS DATE) = CAST(GETDATE() AS DATE)
         AND (i.status = 'pending' OR i.status IS NULL)
     `;
     const pendingResult = await pool.request().query(pendingQuery);
@@ -354,4 +331,9 @@ module.exports = {
   approveTestRequest,
   getRegistrationStatistics,
   getPaymentHistory,
+  // Export các service modules cho testing hoặc sử dụng riêng lẻ
+  validationService: registrationValidationService,
+  invoiceService: registrationInvoiceService,
+  testRequestService: registrationTestRequestService,
+  queueService: registrationQueueService,
 };
