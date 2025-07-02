@@ -57,14 +57,37 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
       console.log("Queue Result:", result.data?.queue_result);
 
       // Store queue info from API response
+      let queueData = {};
+      
+      // Lấy room_name từ response chính (ưu tiên cao nhất)
+      if (result.data?.room_name) {
+        queueData.room_name = result.data.room_name;
+      }
+      
+      // Lấy queue info từ queue_result
       if (
         result.data &&
         result.data.queue_result &&
         result.data.queue_result.results &&
         result.data.queue_result.results.length > 0
       ) {
-        setQueueInfo(result.data.queue_result.results[0].queue_info);
+        queueData = {
+          ...queueData,
+          ...result.data.queue_result.results[0].queue_info
+        };
+        
+        // Nếu chưa có room_name từ response chính, lấy từ queue_info
+        if (!queueData.room_name && result.data.queue_result.results[0].queue_info?.room_name) {
+          queueData.room_name = result.data.queue_result.results[0].queue_info.room_name;
+        }
       }
+
+      // Fallback cho room_name nếu không có từ cả hai nguồn
+      if (!queueData.room_name) {
+        queueData.room_name = "Phòng xét nghiệm - Tầng 2";
+      }
+
+      setQueueInfo(queueData);
 
       setShowReceipt(true);
     } catch (error) {
@@ -207,7 +230,7 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
                   <div>
                     <span className="text-gray-600">Phòng xét nghiệm:</span>
                     <p className="font-medium text-blue-600">
-                      Phòng XN - Tầng 2
+                      {queueInfo?.room_name || "Phòng xét nghiệm - Tầng 2"}
                     </p>
                   </div>
                   <div>

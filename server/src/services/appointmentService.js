@@ -9,7 +9,7 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
     .input("appointment_id", appointment_id)
     .input("status", status)
     .query(
-      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT * FROM Appointments WHERE appointment_id = @appointment_id"
+      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT a.*, r.room_name FROM Appointments a LEFT JOIN Rooms r ON a.room_id = r.room_id WHERE a.appointment_id = @appointment_id"
     );
   return result.recordset[0];
 };
@@ -71,10 +71,20 @@ exports.createAppointment = async (data) => {
     queueNumber = 1;
   }
 
-  // 3. Trả về appointment với queue number
+  // 3. Lấy thông tin room_name để trả về cho frontend
+  const pool2 = await poolPromise;
+  const roomResult = await pool2
+    .request()
+    .input("roomId", room_id)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
+  // 4. Trả về appointment với queue number và room_name
   return {
     ...appointment,
     queue_number: queueNumber,
+    room_name: room_name,
   };
 };
 exports.getServiceInfo = async (serviceId) => {
@@ -234,9 +244,18 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
 
   const invoice_id = invoiceResult.recordset[0].invoice_id;
 
+  // 6. Lấy thông tin room_name để trả về cho frontend
+  const roomResult = await pool
+    .request()
+    .input("roomId", finalRoomId)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
   return {
     ...appointment,
     invoice_id,
+    room_name, // Thêm room_name để frontend có thể sử dụng
   };
 };
 
