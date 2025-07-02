@@ -170,14 +170,14 @@ exports.getLatestTestResults = async (patientId) => {
         tt.name as test_name,
         ISNULL(latest_tr.result_value, '') AS result_value,
         ISNULL(latest_tr.unit, '') AS unit,
-        ISNULL(CONVERT(VARCHAR, latest_tr.finished_at, 120), '') AS test_date,
+        ISNULL(CONVERT(VARCHAR, latest_tr.created_at, 120), '') AS test_date,
         ISNULL(latest_tr.notes, '') AS notes
       FROM TestTypes tt
       OUTER APPLY (
           SELECT TOP 1 
               tr.result_value, 
               tr.unit, 
-              tr.finished_at, 
+              tr.created_at, 
               tn.notes
           FROM Appointments a
           JOIN TestNotes tn ON a.appointment_id = tn.appointment_id
@@ -185,7 +185,7 @@ exports.getLatestTestResults = async (patientId) => {
           WHERE 
               a.patient_id = @patient_id AND 
               tr.test_type_id = tt.test_type_id
-          ORDER BY tr.finished_at DESC
+          ORDER BY tr.created_at DESC
       ) AS latest_tr
     `;
 

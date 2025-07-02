@@ -98,7 +98,9 @@ INSERT INTO ServicesTestTypes (service_id, test_type_id) VALUES
 (3, 1), -- Xét nghiệm CD4 và Viral Load -> CD4
 (3, 2), -- Xét nghiệm CD4 và Viral Load -> HIV Viral Load
 (4, 3), -- Xét nghiệm sàng lọc -> Sàng lọc
-(5, 4)- Xét nghiệm khẳng định -> Khẳng định
+(5, 4),
+(5,1), 
+(5,2);-- Xét nghiệm khẳng định -> Khẳng định
 
 
 -- 10. WorkingShifts

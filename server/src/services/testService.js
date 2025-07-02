@@ -155,7 +155,7 @@ exports.createTestResultAndComplete = async ({
         .input("unit", unit)
         .input("reference_range", reference_range)
         .query(
-          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, finished_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
+          "UPDATE TestResults SET result_value = @result_value, unit = @unit, reference_range = @reference_range, created_at = GETDATE() OUTPUT INSERTED.* WHERE test_note_id = @test_note_id AND test_type_id = @test_type_id"
         );
       result = update.recordset[0];
     } else {
@@ -168,7 +168,7 @@ exports.createTestResultAndComplete = async ({
         .input("unit", unit)
         .input("reference_range", reference_range)
         .query(
-          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range, finished_at) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range, GETDATE())"
+          "INSERT INTO TestResults (test_note_id, test_type_id, result_value, unit, reference_range, created_at) OUTPUT INSERTED.* VALUES (@test_note_id, @test_type_id, @result_value, @unit, @reference_range, GETDATE())"
         );
       result = insert.recordset[0];
     }
@@ -331,13 +331,13 @@ exports.getAllLabTests = async (
           JOIN TestNotes tn2 ON tr2.test_note_id = tn2.test_note_id
           JOIN Appointments a2 ON tn2.appointment_id = a2.appointment_id
           WHERE a2.patient_id = p.patient_id AND tr2.test_type_id = 1
-          ORDER BY tr2.finished_at DESC) AS latest_cd4,
+          ORDER BY tr2.created_at DESC) AS latest_cd4,
         -- Viral Load gần nhất
         (SELECT TOP 1 result_value FROM TestResults tr3
           JOIN TestNotes tn3 ON tr3.test_note_id = tn3.test_note_id
           JOIN Appointments a3 ON tn3.appointment_id = a3.appointment_id
           WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
-          ORDER BY tr3.finished_at DESC) AS latest_viral_load
+          ORDER BY tr3.created_at DESC) AS latest_viral_load
     FROM TestRequests tr
     JOIN TestRequestDetails trd ON tr.request_id = trd.request_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
@@ -391,13 +391,13 @@ exports.getAllLabTests = async (
           JOIN TestNotes tn2 ON tr2.test_note_id = tn2.test_note_id
           JOIN Appointments a2 ON tn2.appointment_id = a2.appointment_id
           WHERE a2.patient_id = p.patient_id AND tr2.test_type_id = 1
-          ORDER BY tr2.finished_at DESC) AS latest_cd4,
+          ORDER BY tr2.created_at DESC) AS latest_cd4,
         -- Viral Load gần nhất
         (SELECT TOP 1 result_value FROM TestResults tr3
           JOIN TestNotes tn3 ON tr3.test_note_id = tn3.test_note_id
           JOIN Appointments a3 ON tn3.appointment_id = a3.appointment_id
           WHERE a3.patient_id = p.patient_id AND tr3.test_type_id = 2
-          ORDER BY tr3.finished_at DESC) AS latest_viral_load
+          ORDER BY tr3.created_at DESC) AS latest_viral_load
     FROM Appointments a
     JOIN Patients p ON a.patient_id = p.patient_id
     JOIN Services s ON a.service_id = s.service_id
@@ -439,7 +439,7 @@ exports.getAllLabTests = async (
     if (testNoteIds.length > 0) {
       const resultsQuery = `
         SELECT tr.test_note_id, tr.result_id, tr.test_type_id, tt.name AS test_type_name, 
-               tr.result_value, tr.unit, tr.reference_range, tr.finished_at
+               tr.result_value, tr.unit, tr.reference_range, tr.created_at
         FROM TestResults tr
         JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
         WHERE tr.test_note_id IN (${testNoteIds.join(",")})
@@ -576,7 +576,7 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
         tr.result_value, 
         tr.unit, 
         tr.reference_range, 
-        tr.finished_at
+        tr.created_at
       FROM TestResults tr
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id
       WHERE tr.test_note_id = @test_note_id
