@@ -9,7 +9,7 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
     .input("appointment_id", appointment_id)
     .input("status", status)
     .query(
-      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT * FROM Appointments WHERE appointment_id = @appointment_id"
+      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT a.*, r.room_name FROM Appointments a LEFT JOIN Rooms r ON a.room_id = r.room_id WHERE a.appointment_id = @appointment_id"
     );
   return result.recordset[0];
 };
@@ -71,23 +71,20 @@ exports.createAppointment = async (data) => {
     queueNumber = 1;
   }
 
-  // Sau khi tạo appointment
-  const appointmentId = appointment.appointment_id;
-  const resultWithRoom = await pool
+  // 3. Lấy thông tin room_name để trả về cho frontend
+  const pool2 = await poolPromise;
+  const roomResult = await pool2
     .request()
-    .input("appointment_id", appointmentId)
-    .query(`
-      SELECT a.*, r.room_name
-      FROM Appointments a
-      LEFT JOIN Rooms r ON a.room_id = r.room_id
-      WHERE a.appointment_id = @appointment_id
-    `);
-  const appointmentWithRoom = resultWithRoom.recordset[0];
+    .input("roomId", room_id)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
 
-  // 3. Trả về appointment với queue number và room_name
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
+  // 4. Trả về appointment với queue number và room_name
   return {
-    ...appointmentWithRoom,
+    ...appointment,
     queue_number: queueNumber,
+    room_name: room_name,
   };
 };
 exports.getServiceInfo = async (serviceId) => {

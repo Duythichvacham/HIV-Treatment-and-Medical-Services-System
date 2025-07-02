@@ -37,7 +37,7 @@ const getPendingTestRequests = async () => {
     JOIN Services s ON trd.service_id = s.service_id
     JOIN Appointments a ON tr.appointment_id = a.appointment_id
     JOIN Patients p ON a.patient_id = p.patient_id
-    JOIN Doctors d ON tr.doctor_id = d.doctor_id
+    LEFT JOIN Doctors d ON tr.doctor_id = d.doctor_id
     LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
     LEFT JOIN Invoices i ON tr.request_id = i.request_id
     WHERE tr.status = 'requested' 
@@ -163,11 +163,21 @@ const approveTestRequest = async (
       testRoom.room_id
     );
 
+    // 7. Lấy thông tin room_name để trả về cho frontend
+    const pool = await poolPromise;
+    const roomResult = await pool
+      .request()
+      .input("roomId", testRoom.room_id)
+      .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+    const room_name = roomResult.recordset[0]?.room_name || "Phòng xét nghiệm";
+
     return {
       success: true,
       affectedRows: updatedCount,
       message: `Đã thu tiền, approve và cấp phòng cho ${testRequests.length} yêu cầu xét nghiệm (appointment ${appointmentId})`,
       room_assigned: testRoom.room_id,
+      room_name: room_name, // Thêm room_name để frontend hiển thị
       invoice_result: invoiceResult,
       queue_result: queueResult,
     };

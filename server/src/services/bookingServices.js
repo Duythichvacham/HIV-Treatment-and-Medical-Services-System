@@ -228,9 +228,18 @@ exports.createBooking = async ({
         (@patientId, @appointmentId, @amount, @serviceType, @status)
     `);
 
+  // Bước 6: Lấy room_name để trả về cho frontend
+  const roomResult = await pool
+    .request()
+    .input("roomId", roomId)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
   return {
     message: "Tạo lịch hẹn và hóa đơn thành công",
     appointmentId,
+    room_name, // Thêm room_name để frontend có thể sử dụng
     queue_info: queueInfo, // Trả về thông tin queue number cho frontend
   };
 };

@@ -96,18 +96,15 @@ export const AuthProvider = ({ children }) => {
   const redirectToLogin = () => {
     const currentPath = window.location.pathname;
     const isLoginPage = currentPath.includes("/login");
-    
+
     // Lấy userType từ localStorage trước khi xóa
     const userType = localStorage.getItem("userType");
-    
+
     if (!isLoginPage && userType === "staff") {
       // Chỉ staff mới redirect về login
-        console.log(
-        "AuthContext: Redirecting to staff login",
-          currentPath
-        );
+      console.log("AuthContext: Redirecting to staff login", currentPath);
       localStorage.removeItem("userType"); // Xóa sau khi sử dụng
-        window.location.href = "/login/staff";
+      window.location.href = "/login/staff";
     }
     // Patient không redirect, ở lại trang hiện tại
   };
@@ -145,22 +142,25 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Thêm lab_staff_id nếu user là Lab-Staff
-      if (tokenPayload.role === 'Lab-Staff' && tokenPayload.lab_staff_id) {
+      if (tokenPayload.role === "Lab-Staff" && tokenPayload.lab_staff_id) {
         userData.lab_staff_id = tokenPayload.lab_staff_id;
       }
 
       // Thêm registration_staff_id nếu user là Registration-staff
-      if (tokenPayload.role === 'Registration-staff' && tokenPayload.registration_staff_id) {
+      if (
+        tokenPayload.role === "Registration-staff" &&
+        tokenPayload.registration_staff_id
+      ) {
         userData.registration_staff_id = tokenPayload.registration_staff_id;
       }
 
       // Thêm manager_id nếu user là Manager
-      if (tokenPayload.role === 'Manager' && tokenPayload.manager_id) {
+      if (tokenPayload.role === "Manager" && tokenPayload.manager_id) {
         userData.manager_id = tokenPayload.manager_id;
       }
 
       // Thêm patient_id nếu user là Patient
-      if (tokenPayload.role === 'Patient' && tokenPayload.patient_id) {
+      if (tokenPayload.role === "Patient" && tokenPayload.patient_id) {
         userData.patient_id = tokenPayload.patient_id;
       }
 
@@ -169,9 +169,10 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(userData));
-      
+
       // Lưu userType để logout redirect đúng
-      const userType = userData.role && userData.role !== "Patient" ? "staff" : "patient";
+      const userType =
+        userData.role && userData.role !== "Patient" ? "staff" : "patient";
       localStorage.setItem("userType", userType);
 
       return { success: true, user: userData };
@@ -189,8 +190,9 @@ export const AuthProvider = ({ children }) => {
   }; // Logout function
   const logout = () => {
     // Lưu userType trước khi xóa để redirect đúng
-    const userType = user?.role && user.role !== "Patient" ? "staff" : "patient";
-    
+    const userType =
+      user?.role && user.role !== "Patient" ? "staff" : "patient";
+
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
