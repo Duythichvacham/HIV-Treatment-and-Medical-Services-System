@@ -11,7 +11,10 @@ const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
 const registrationRouter = require("./registration");
 const queueRouter = require("./queue");
-
+const slotRouter = require("./slot");
+const arvRegimenRouter = require("./arvRegimen");
+const clinicalRouter = require("./clinical");
+const prescriptionRouter = require("./prescriptions");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
@@ -35,7 +38,7 @@ function route(app) {
   app.use("/api/v1/auth", authRouter);
   /**
    * API doctor
-   * Prefix: api/v1/doctor
+   * Prefix: api/v1/doctors
    */
   app.use("/api/v1/doctors", authMiddleware, doctorRouter);
   /**
@@ -71,6 +74,26 @@ function route(app) {
    * Prefix: api/v1/queue
    */
   app.use("/api/v1/queue", authMiddleware, queueRouter);
+  /**
+   * API public
+   * Prefix: api/public/
+   */
+  app.use("/api/v1/slots", slotRouter);
+  /**
+   * API ARV Regimens
+   * Prefix: api/v1/arv-regimens
+   */
+  app.use("/api/v1/arv-regimens", authMiddleware, arvRegimenRouter);
+  /**
+   * API Clinical Exams
+   * Prefix: api/v1/clinical-exams
+   */
+  app.use("/api/v1", authMiddleware, clinicalRouter);
+  /**
+   * API Prescriptions
+   * Prefix: api/prescriptions
+   */
+  app.use("/api", authMiddleware, prescriptionRouter);
 }
 
 module.exports = route;
