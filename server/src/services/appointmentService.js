@@ -247,8 +247,27 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
 
   const invoice_id = invoiceResult.recordset[0].invoice_id;
 
+  // 6. Lấy thông tin đầy đủ cho response (bao gồm doctor_name, room_name)
+  const pool2 = await poolPromise;
+  const fullInfoResult = await pool2
+    .request()
+    .input("appointmentId", appointment.appointment_id)
+    .query(`
+      SELECT a.*, 
+             r.room_name,
+             d.full_name as doctor_name,
+             s.name as service_name
+      FROM Appointments a
+      LEFT JOIN Rooms r ON a.room_id = r.room_id
+      LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+      LEFT JOIN Services s ON a.service_id = s.service_id
+      WHERE a.appointment_id = @appointmentId
+    `);
+
+  const fullAppointmentInfo = fullInfoResult.recordset[0];
+
   return {
-    ...appointment,
+    ...fullAppointmentInfo,
     invoice_id,
   };
 };
