@@ -96,34 +96,21 @@ export const AuthProvider = ({ children }) => {
   const redirectToLogin = () => {
     const currentPath = window.location.pathname;
     const isLoginPage = currentPath.includes("/login");
-    const isGuestPage =
-      currentPath === "/" ||
-      currentPath.startsWith("/appointment") ||
-      currentPath.startsWith("/doctor-detail") ||
-      currentPath.startsWith("/doctorpage") ||
-      currentPath.startsWith("/doctors") ||
-      currentPath.startsWith("/service"); // Chỉ redirect nếu không phải trang login
-    if (!isLoginPage) {
-      if (isGuestPage) {
-        // Từ guest page -> patient login
-        console.log(
-          "AuthContext: Redirecting to patient login from guest page",
-          currentPath
-        );
-        window.location.href = "/login/patient";
-      } else {
-        // Từ staff page -> staff login
-        console.log(
-          "AuthContext: Redirecting to staff login from staff page",
-          currentPath
-        );
-        window.location.href = "/login/staff";
-      }
+
+    // Lấy userType từ localStorage trước khi xóa
+    const userType = localStorage.getItem("userType");
+
+    if (!isLoginPage && userType === "staff") {
+      // Chỉ staff mới redirect về login
+      console.log("AuthContext: Redirecting to staff login", currentPath);
+      localStorage.removeItem("userType"); // Xóa sau khi sử dụng
+      window.location.href = "/login/staff";
     }
+    // Patient không redirect, ở lại trang hiện tại
   };
 
   // Login function
-  const login = async (username, password, userType = "auto") => {
+  const login = async (username, password, loginUserType = "auto") => {
     try {
       const response = await apiLogin(username, password);
 
@@ -135,10 +122,10 @@ export const AuthProvider = ({ children }) => {
       const tokenPayload = JSON.parse(atob(response.token.split(".")[1]));
 
       // Validate user type if specified
-      if (userType === "staff" && tokenPayload.role === "Patient") {
+      if (loginUserType === "staff" && tokenPayload.role === "Patient") {
         throw new Error("Tài khoản này không phải của nhân viên!");
       }
-      if (userType === "patient" && tokenPayload.role !== "Patient") {
+      if (loginUserType === "patient" && tokenPayload.role !== "Patient") {
         throw new Error("Tài khoản này không phải của bệnh nhân!");
       } // Create user object
       const userData = {
@@ -154,11 +141,39 @@ export const AuthProvider = ({ children }) => {
         userData.doctor_id = tokenPayload.doctor_id;
       }
 
+      // Thêm lab_staff_id nếu user là Lab-Staff
+      if (tokenPayload.role === "Lab-Staff" && tokenPayload.lab_staff_id) {
+        userData.lab_staff_id = tokenPayload.lab_staff_id;
+      }
+
+      // Thêm registration_staff_id nếu user là Registration-staff
+      if (
+        tokenPayload.role === "Registration-staff" &&
+        tokenPayload.registration_staff_id
+      ) {
+        userData.registration_staff_id = tokenPayload.registration_staff_id;
+      }
+
+      // Thêm manager_id nếu user là Manager
+      if (tokenPayload.role === "Manager" && tokenPayload.manager_id) {
+        userData.manager_id = tokenPayload.manager_id;
+      }
+
+      // Thêm patient_id nếu user là Patient
+      if (tokenPayload.role === "Patient" && tokenPayload.patient_id) {
+        userData.patient_id = tokenPayload.patient_id;
+      }
+
       // Store in state and localStorage
       setToken(response.token);
       setUser(userData);
       localStorage.setItem("token", response.token);
       localStorage.setItem("user", JSON.stringify(userData));
+
+      // Lưu userType để logout redirect đúng
+      const userType =
+        userData.role && userData.role !== "Patient" ? "staff" : "patient";
+      localStorage.setItem("userType", userType);
 
       return { success: true, user: userData };
     } catch (error) {
@@ -174,16 +189,28 @@ export const AuthProvider = ({ children }) => {
     }
   }; // Logout function
   const logout = () => {
+    // Lưu userType trước khi xóa để redirect đúng
+    const userType =
+      user?.role && user.role !== "Patient" ? "staff" : "patient";
+
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("userType");
     // Also remove old storage keys for backward compatibility
     localStorage.removeItem("staff");
     localStorage.removeItem("patient");
 
-    // Redirect về login với delay nhỏ để đảm bảo state đã update
-    setTimeout(() => redirectToLogin(), 50);
+    if (userType === "staff") {
+      setTimeout(() => {
+        window.location.href = "/login/staff";
+      }, 50);
+    } else {
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 50);
+    }
   };
 
   // Get default avatar based on role

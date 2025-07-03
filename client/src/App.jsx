@@ -18,12 +18,16 @@ import ProtectedRoute from "./components/common/ProtectedRoute";
 import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
-import RegistrationStaff from "./pages/Staff/RegistrationStaff";
-import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+import RegistrationStaff from "./pages/Staff/RegistrationStaff/RegistrationStaff";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboardRefactored";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
 import AppointmentHistory from "./pages/Patient/AppointmentHistory";
+import AboutPage from "./pages/Guest/Home/AboutPage";
+import NewsPage from "./pages/Guest/Home/NewsPage";
+import PatientProfile from "./pages/Patient/PatientProfile";
+import PatientRegister from "./pages/Auth/PatientRegister";
 
 function App() {
   return (
@@ -101,11 +105,36 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-          <Route path="/register" element={<RegisterPlaceholder />} />
+          <Route path="/register" element={<PatientRegister />} />
           <Route path="/service/:serviceId" element={<MainServiceDetail />} />
           <Route path="/doctors/:id" element={<DoctorDetail />} />
           <Route path="/doctorpage" element={<DoctorPage />} />
           <Route path="/appointment" element={<Appointment />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route
+            path="/profile"
+            element={
+              user?.role === "Patient" ? (
+                <ProtectedRoute>
+                  <PatientProfile />
+                </ProtectedRoute>
+              ) : user?.role === "Doctor" ? (
+                <ProtectedRoute staffOnly={true} requiredRole="Doctor">
+                  <DoctorProfile />
+                </ProtectedRoute>
+              ) : user?.role === "Lab-Staff" ||
+                user?.role === "Registration-staff" ? (
+                <ProtectedRoute staffOnly={true}>
+                  <StaffProfile />
+                </ProtectedRoute>
+              ) : (
+                <div className="min-h-[60vh] flex items-center justify-center text-gray-500">
+                  Bạn chưa đăng nhập hoặc không có quyền truy cập.
+                </div>
+              )
+            }
+          />
         </Routes>
       </main>
       {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
@@ -114,11 +143,18 @@ function AppContent() {
   );
 }
 
-function RegisterPlaceholder() {
+function DoctorProfile() {
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-      <h2 className="text-2xl font-bold text-green-700">Trang đăng ký</h2>
-      <div className="text-gray-500">Tính năng đang phát triển.</div>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">
+      Trang hồ sơ bác sĩ (đang phát triển)
+    </div>
+  );
+}
+
+function StaffProfile() {
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">
+      Trang hồ sơ nhân viên (đang phát triển)
     </div>
   );
 }
