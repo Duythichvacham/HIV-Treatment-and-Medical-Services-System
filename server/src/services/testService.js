@@ -575,7 +575,7 @@ exports.getTestResultsByTestNoteId = async (test_note_id) => {
         tt.name AS test_type_name,
         tr.result_value, 
         tr.unit, 
-        tr.reference_range, 
+        tt.normal_range AS reference_range, 
         tr.created_at
       FROM TestResults tr
       JOIN TestTypes tt ON tr.test_type_id = tt.test_type_id

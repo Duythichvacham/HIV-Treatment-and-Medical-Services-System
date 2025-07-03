@@ -73,15 +73,15 @@ const LabResult = () => {
   const sampleTime = note.test_datetime || '-';
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow p-6">
-        <Link to="/lab-staff" className="text-gray-600 hover:underline mb-4 inline-block">← Quay lại Dashboard</Link>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Kết quả xét nghiệm</h1>
+    <div className="bg-gradient-to-br from-blue-50 to-white min-h-screen p-8">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-8 border border-blue-100">
+        <Link to="/lab-staff" className="text-blue-700 hover:underline mb-6 inline-block text-base font-medium transition-colors duration-150">← Quay lại Dashboard</Link>
+        <h1 className="text-3xl font-bold text-blue-900 mb-8 tracking-tight">Kết quả xét nghiệm</h1>
 
         {/* Thông tin Bệnh nhân */}
-        <div className="mb-6">
-          <h2 className="text-xl font-medium mb-2">Thông tin Bệnh nhân</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-3 text-blue-800">Thông tin Bệnh nhân</h2>
+          <div className="grid grid-cols-2 gap-4 text-base text-gray-700 bg-blue-50 rounded-xl p-4 border border-blue-100 shadow-sm">
             <div><b>Tên:</b> {note?.patient_name || '-'}</div>
             <div><b>Tuổi:</b> {age}</div>
             <div><b>Năm sinh:</b> {birthYear}</div>
@@ -95,37 +95,39 @@ const LabResult = () => {
         </div>
 
         {/* Bảng Chi tiết Kết quả */}
-         <div>
-            <h2 className="text-xl font-medium mb-2">Chi tiết Kết quả</h2>
-          <table className="w-full border-collapse text-sm text-gray-700">
-             <thead>
-               <tr className="bg-gray-100">
-                <th className="border px-3 py-2 text-left">STT</th>
-                <th className="border px-3 py-2 text-left">Loại Xét nghiệm</th>
-                <th className="border px-3 py-2 text-left">Giá trị Tham chiếu</th>
-                <th className="border px-3 py-2 text-left">Kết quả</th>
-                <th className="border px-3 py-2 text-left">Đơn vị</th>
-               </tr>
-             </thead>
-             <tbody>
-               {latestResults.map((r, idx) => (
-                 <tr key={r.result_id} className="odd:bg-white even:bg-gray-50">
-                  <td className="border px-3 py-2">{idx + 1}</td>
-                  <td className="border px-3 py-2">{r.test_type_name || '-'}</td>
-                  <td className="border px-3 py-2">{r.reference_range || '-'}</td>
-                  <td className="border px-3 py-2">{r.result_value || '-'}</td>
-                  <td className="border px-3 py-2">{r.unit || '-'}</td>
-                 </tr>
-               ))}
-             </tbody>
-           </table>
+        <div>
+          <h2 className="text-xl font-semibold mb-3 text-blue-800">Chi tiết Kết quả</h2>
+          <div className="overflow-x-auto rounded-xl border border-blue-100 shadow-sm bg-blue-50">
+            <table className="w-full border-collapse text-base text-gray-800">
+              <thead>
+                <tr className="bg-blue-100">
+                  <th className="border px-4 py-3 text-left font-semibold">STT</th>
+                  <th className="border px-4 py-3 text-left font-semibold">Loại Xét nghiệm</th>
+                  <th className="border px-4 py-3 text-left font-semibold">Giá trị Tham chiếu</th>
+                  <th className="border px-4 py-3 text-left font-semibold">Kết quả</th>
+                  <th className="border px-4 py-3 text-left font-semibold">Đơn vị</th>
+                </tr>
+              </thead>
+              <tbody>
+                {latestResults.map((r, idx) => (
+                  <tr key={r.result_id} className="odd:bg-white even:bg-blue-50 hover:bg-blue-100 transition-colors">
+                    <td className="border px-4 py-2">{idx + 1}</td>
+                    <td className="border px-4 py-2">{r.test_type_name || '-'}</td>
+                    <td className="border px-4 py-2">{r.reference_range || '-'}</td>
+                    <td className="border px-4 py-2 font-bold text-blue-900">{r.result_value || '-'}</td>
+                    <td className="border px-4 py-2">{r.unit || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {/* Ghi chú chung dưới bảng */}
           {note.notes && (
-            <div className="mt-4 text-sm text-gray-600"><b>Ghi chú:</b> {note.notes}</div>
+            <div className="mt-6 text-base text-gray-700 bg-blue-50 rounded-lg p-4 border border-blue-100 shadow-sm"><b>Ghi chú:</b> {note.notes}</div>
           )}
-         </div>
-       </div>
-     </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
