@@ -1,37 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { createPortal } from "react-dom";
 
-const AppointmentConfirmModal = ({
-  isOpen,
-  onCancel,
-  onConfirm,
-  data,
-  onPaymentConfirm,
-}) => {
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
+const AppointmentConfirmModal = ({ isOpen, onCancel, onConfirm, data }) => {
   if (!isOpen || !data) return null;
-  const handlePayment = async () => {
-    setIsProcessingPayment(true);
-    try {
-      let success = true;
-
-      // If onPaymentConfirm is provided, use it (for appointment payments)
-      if (onPaymentConfirm) {
-        success = await onPaymentConfirm("cash"); // Default to cash payment
-      }
-
-      if (success) {
-        onConfirm(); // Close modal and show success
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
   // Đảm bảo lấy đúng dữ liệu, fallback nếu thiếu
   const serviceName = data.serviceName || data.service_name || "";
   const date = data.date || data.bookingDate || "";
@@ -112,11 +83,10 @@ const AppointmentConfirmModal = ({
               Hủy
             </button>
             <button
-              onClick={handlePayment}
-              disabled={isProcessingPayment}
-              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={onConfirm}
+              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
-              {isProcessingPayment ? "Đang xử lý..." : "Thanh toán"}
+              Thanh toán
             </button>
           </div>
         </div>
