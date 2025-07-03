@@ -1,67 +1,59 @@
-
 const bookingService = require("../services/bookingServices");
-const { poolPromise } = require('../config/db');
-
 exports.confirmPayment = async (req, res) => {
   try {
     const invoiceId = req.params.invoiceId; // Lấy từ URL
-    
+
     const updatedData = await bookingService.confirmPayment(invoiceId);
-    
+
     res.json({
-      message: updatedData.message
+      message: updatedData.message,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi server: ' + error.message });
+    res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };
 
 exports.cancelBooking = async (req, res) => {
   try {
     const invoiceId = req.params.invoiceId; // Lấy từ URL
-    
+
     const updatedData = await bookingService.cancelBooking(invoiceId);
-    
+
     res.json({
-      message: updatedData.message
+      message: updatedData.message,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Lỗi server: ' + error.message });
+    res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };
 
+// Thay vì query trực tiếp, sử dụng:
+const appointmentService = require("../services/appointmentService");
+
 exports.createBooking = async (req, res) => {
   try {
-    const accountId = req.user.userId; // lấy từ token đã verify
+    const accountId = req.user.userId;
 
-    if (!accountId) {
-      return res.status(401).json({ message: 'Không xác định được tài khoản người dùng' });
-    }
-
-    const pool = await poolPromise;
-
-    // Truy xuất patient_id từ account_id
-    const result = await pool.request()
-      .input('accountId', accountId)
-      .query('SELECT patient_id FROM Patients WHERE account_id = @accountId');
-
-    if (result.recordset.length === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy bệnh nhân tương ứng với tài khoản này' });
-    }
-
-    const patientId = result.recordset[0].patient_id;
+    // Sử dụng function có sẵn thay vì query trực tiếp
+    const patientId = await appointmentService.getPatientIdByAccountId(
+      accountId
+    );
 
     // Gọi service để tạo booking
     const bookingResult = await bookingService.createBooking({
       ...req.body,
-      patientId // ghi đè lên body nếu client cố tình gửi lên để đảm bảo an toàn
+      patientId,
     });
 
     res.status(201).json(bookingResult);
   } catch (error) {
-    console.error('Lỗi controller booking:', error);
-    res.status(500).json({ message: 'Lỗi server: ' + error.message });
+    if (error.message === "PATIENT_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Không tìm thấy bệnh nhân tương ứng với tài khoản này",
+      });
+    }
+    res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };

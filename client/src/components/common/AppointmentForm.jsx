@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppointmentSuccessModal from "./AppointmentSuccessModal";
 import AppointmentConfirmModal from "./AppointmentConfirmModal";
-import { createAppointment, getSlots } from "../../services/api";
+import { createAppointment, getSlots, confirmAppointmentPayment, checkExistingAppointment } from "../../services/api";
 
 const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const [reason, setReason] = useState("");
@@ -19,7 +19,8 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     const slotObj = slots.find((s) => String(s.value) === String(timeSlot));
@@ -31,20 +32,44 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       setError("Vui lòng chọn khung giờ khám!");
       return;
     }
-    setAppointmentData({
-      serviceName,
-      date,
-      time: isDoctor ? slotLabel : "Trong giờ làm việc",
-      fee:
-        typeof price === "number"
-          ? `${Number(price).toLocaleString()}đ`
-          : price,
-      isDoctor,
-      room: "", // Will be set from API response
-      doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
-      slotLabel,
-    });
-    setIsConfirmOpen(true);
+
+    // Kiểm tra lịch hẹn đã tồn tại trước khi đặt
+    if (isLoggedIn && date) {
+      try {
+        setLoading(true);
+        let serviceId = null;
+        let doctorId = null;
+
+        if (isDoctor) {
+          doctorId = serviceType.replace("doctor_", "");
+          serviceId = 1; // Khám bệnh
+        } else if (serviceType && serviceType.startsWith("service_")) {
+          serviceId = serviceType.replace("service_", "");
+        }
+
+        if (serviceId) {
+          const existingCheck = await checkExistingAppointment(
+            serviceId,
+            date,
+            doctorId
+          );
+
+          if (existingCheck.hasExisting) {
+            setError(existingCheck.message || "Bạn đã có lịch hẹn tương tự. Vui lòng kiểm tra lại.");
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Cannot check existing appointment:", err);
+        // Tiếp tục đặt lịch nếu không kiểm tra được
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Gọi API ngay khi submit form (giống như trang /appointment)
+    await handleConfirmBooking();
   };
 
   // Hàm thực hiện gọi API khi user xác nhận ở modal
@@ -72,48 +97,34 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       });
 
       // Lấy appointment_id từ response
-      const appointment_id =
-        res?.appointment?.appointment_id || res?.appointment_id;
-      // Gọi API lấy chi tiết lịch hẹn từ backend
-      const token = localStorage.getItem("token");
-      console.log("Token gửi lên BE:", token);
+      const appointment_id = res?.appointment?.appointment_id || res?.appointment_id;
 
-      const detailRes = await fetch(`/api/v1/appointments/${appointment_id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const detail = await detailRes.json();
+      console.log("🔍 DEBUG API Response:", JSON.stringify(res, null, 2));
+      console.log("🔍 DEBUG appointment:", res?.appointment);
+      console.log("🔍 DEBUG doctor_name:", res?.appointment?.doctor_name);
 
-      // Debug dữ liệu trả về từ backend
-      console.log("DEBUG chi tiết lịch hẹn từ BE:", detail);
-
-      // Map lại dữ liệu cho đúng format modal cần
+      // Tạo dữ liệu đầy đủ với appointmentId (giống như trang /appointment)
       const mappedData = {
-        queueNumber: detail.data?.queue_number,
-        serviceName: detail.data?.service_name || serviceName,
-        room: detail.data?.room_id,
-        doctorOrStaff:
-          detail.data?.doctor_name ||
-          detail.data?.staff_name ||
-          "Nhân viên xét nghiệm",
-        date: detail.data?.bookingDate
-          ? detail.data.bookingDate.slice(0, 10)
-          : "", // chỉ lấy YYYY-MM-DD
-        time: detail.data?.slot_label || "Trong giờ làm việc",
-        fee:
-          typeof price === "number"
-            ? `${Number(price).toLocaleString()}đ`
-            : price,
-        isDoctor,
+        appointmentId: appointment_id,
+        queueNumber: res?.queue_info?.queue_number || res?.queue_number || 1,
+        serviceName: serviceName,
+        room: res?.appointment?.room_name || "Chưa xác định",
+        doctorOrStaff: isDoctor ? (res?.appointment?.doctor_name || "Chưa xác định") : "Nhân viên xét nghiệm",
+        date: date,
+        time: isDoctor ? (slots.find(s => String(s.value) === String(timeSlot))?.label || "") : "Không cần đặt giờ cụ thể",
+        fee: typeof price === "number" ? `${Number(price).toLocaleString()}đ` : price,
+        isDoctor: isDoctor,
       };
 
-      // Debug dữ liệu truyền vào modal
-      console.log("DEBUG dữ liệu truyền vào modal:", mappedData);
+      console.log("🔍 DEBUG mappedData:", mappedData);
 
       setAppointmentData(mappedData);
-      setIsConfirmOpen(false);
-      setIsReceiptOpen(true);
+      setIsConfirmOpen(true); // Show payment confirmation modal
+
+      // Reset form after successful booking
+      setReason("");
+      setDate("");
+      setTimeSlot("");
       sessionStorage.removeItem(storageKey);
     } catch (err) {
       let msg = "Đặt lịch thất bại. Vui lòng thử lại!";
@@ -123,8 +134,40 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         msg = err.message;
       }
       setError(msg);
-      setIsConfirmOpen(false);
       console.error("DEBUG lỗi đặt lịch:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hàm xử lý thanh toán (giống như trang /appointment)
+  const handlePaymentConfirmation = async (paymentMethod = "cash") => {
+    if (!appointmentData?.appointmentId) {
+      setError("Không tìm thấy thông tin đặt lịch");
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      await confirmAppointmentPayment(
+        appointmentData.appointmentId,
+        paymentMethod
+      );
+      console.log(
+        "✅ Payment confirmed for appointment:",
+        appointmentData.appointmentId
+      );
+
+      // Chuyển sang modal thành công sau khi thanh toán
+      setIsConfirmOpen(false);
+      setIsReceiptOpen(true);
+
+      return true;
+    } catch (err) {
+      console.error("❌ Payment confirmation error:", err);
+      setError("Có lỗi xảy ra khi xác nhận thanh toán");
+      setAppointmentData(null);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -146,13 +189,6 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       }
     }
   }, [storageKey, isLoggedIn]);
-
-  // Khi đã đăng nhập, nếu có dữ liệu tạm trong sessionStorage thì xóa sau khi submit thành công
-  useEffect(() => {
-    if (isLoggedIn && appointmentData) {
-      sessionStorage.removeItem(storageKey);
-    }
-  }, [isLoggedIn, appointmentData, storageKey]);
 
   // Persist form state on change
   useEffect(() => {
@@ -180,10 +216,21 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           d.getMinutes().toString().padStart(2, "0")
         );
       }
-    } catch (err) {
-      console.error("Error formatting time:", err);
+    } catch {
+      console.error("Invalid date format:", timeStr);
     }
-    return timeStr;
+    return "";
+  }
+
+  // Hàm format an toàn cho giờ slot
+  function formatTimeStr(t) {
+    if (!t) return "";
+    if (/^\d{2}:\d{2}/.test(t)) return t.slice(0, 5);
+    if (typeof t === "string" && t.includes("T")) {
+      const match = t.match(/T(\d{2}:\d{2})/);
+      if (match) return match[1];
+    }
+    return "";
   }
 
   useEffect(() => {
@@ -294,7 +341,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
               className="bg-green-600 text-white w-full px-6 py-2 rounded-full hover:bg-green-700 transition disabled:opacity-50"
               disabled={!date || (isDoctor && !timeSlot) || loading}
             >
-              {loading ? "Đang xử lý..." : "Xác nhận đặt lịch"}
+              {loading ? "Đang xử lý..." : "Đặt lịch ngay"}
             </button>
           ) : (
             <Link
@@ -316,13 +363,23 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         <>
           <AppointmentConfirmModal
             isOpen={isConfirmOpen}
-            onCancel={() => setIsConfirmOpen(false)}
-            onConfirm={handleConfirmBooking}
+            onCancel={() => {
+              setIsConfirmOpen(false);
+              setAppointmentData(null);
+            }}
+            onConfirm={() => {
+              setIsConfirmOpen(false);
+              setIsReceiptOpen(true);
+            }}
             data={appointmentData}
+            onPaymentConfirm={handlePaymentConfirmation}
           />
           <AppointmentSuccessModal
             isOpen={isReceiptOpen}
-            onClose={() => setIsReceiptOpen(false)}
+            onClose={() => {
+              setIsReceiptOpen(false);
+              setAppointmentData(null);
+            }}
             appointmentData={appointmentData}
           />
         </>

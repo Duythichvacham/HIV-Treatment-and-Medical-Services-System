@@ -3,4 +3,5 @@ const router = express.Router();
 const slotController = require("../controllers/slotController");
 // GET, lấy danh sách slot theo doctor_id
 router.get("/", slotController.getSlots);
+router.get("/full-time-slots", slotController.getFullTimeSlots);
 module.exports = router;
