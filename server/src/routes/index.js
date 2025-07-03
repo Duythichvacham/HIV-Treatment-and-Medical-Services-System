@@ -1,99 +1,104 @@
+const express = require("express");
+const router = express.Router();
+
 require("dotenv").config(); // load biến môi trường từ file .env
 const authRouter = require("./auth");
 const patientRouter = require("./patients");
 const userRouter = require("./users");
 const bookingRouter = require("./booking");
-const authMiddleware = require("../middleware/authMiddleware");
+const authenticateToken = require("../middleware/authMiddleware");
 
 const appointmentRouter = require("./appointments");
-const labStaffRouter = require("./lab-staff");
+const testRouter = require("./test");
 const doctorRouter = require("./doctor");
-const publicRouter = require("./public");
-const registrationRouter = require("./registration");
-const queueRouter = require("./queue");
 const slotRouter = require("./slot");
-const arvRegimenRouter = require("./arvRegimen");
-const clinicalRouter = require("./clinical");
-const prescriptionRouter = require("./prescriptions");
+
+const serviceRouter = require("./service");
+
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
 
 function route(app) {
-  /**
-   * API public
-   * Prefix: api/public/
-   */
-  app.use("/api/public", publicRouter);
-  /**
-   * API auth
-   * Prefix: api/auth
-   */
+  //các thao tác liên quan đến appointments gắn với patient
+  app.use("/api/v1/appointments", appointmentRouter);
+
+  ///api/v1/lab/appointments/finished||in-progress||queue
+  app.use("/api/v1/lab/appointments", appointmentRouter);
+
+  ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
+  app.use("/api/v1/test-requests", testRouter);
+
+  ///api/v1/lab/test-notes/{test_note_id} (GET, lấy chi tiết phiếu xét nghiệm)
+  app.use("/api/v1/lab/test-notes", testRouter);
+
+  ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
+  app.use("/api/v1/lab/test-results", testRouter);
+
+  ///api/v1/doctor/appointments/finished||in-progress||queue
+  app.use("/api/v1/doctor/appointments", doctorRouter);
+
+  ///api/patient/:patientId/exam-history||current-exam
+  app.use("/api/v1/doctor/patient", doctorRouter);
+
+  //POST, cập nhật status cho appointments
+  app.use(`${process.env.API_PREFIX}/appointments`, appointmentRouter);
+
+  ///api/v1/lab/appointments/finished||in-progress||queue
+  app.use(`${process.env.API_PREFIX}/lab/appointments`, appointmentRouter);
+
+  ///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "examinationination")
+  app.use(`${process.env.API_PREFIX}/test-requests`, testRouter);
+
+  ///api/v1/lab/test-notes/{test_note_id} (GET, lấy chi tiết phiếu xét nghiệm)
+  app.use(`${process.env.API_PREFIX}/lab/test-notes`, testRouter);
+
+  ///api/v1/lab/test-results (POST, nhập kết quả xét nghiệm và hoàn thành)
+  app.use(`${process.env.API_PREFIX}/lab/test-results`, testRouter);
+  //GET, lấy danh sách bác sĩ
+  app.use("/api/public/doctors", doctorRouter);
+  //GET, lấy danh sách dịch vụ public
+  app.use("/api/public/services", serviceRouter);
+  //  GET, lấy slots theo lịch làm việc từng bác sĩ
+  app.use("/api/public/slots", slotRouter);
+
+  //     /api/v1/patients/search?name=...&phone=... (GET, tìm kiếm bệnh nhân) - search theo Sdt - tên
+  app.use("/api/v1/patients", patientRouter);
+
+  // /api/v1/doctor/appointments/queue (GET, lấy bệnh nhân chờ khám với service_type='examination' hoặc 'consultation')
+  //app.use('/api/v1/doctor/appointments',doctorRouter);
+
+  //api/v1/doctor/appointments/in-progress (GET, lấy bệnh nhân đang khám),
+  //app.use('/api/v1/doctor/appointments',doctorRouter);
+
+  // /api/v1/doctor/appointments/finished (GET, lấy bệnh nhân hoàn thành khám),
+  //app.use('/api/v1/doctor/appointments',doctorRouter);
+
+  // /api/v1/doctor/exams/{exam_id} (GET, lấy thẻ khám - thực tế chỉ có moi thông tin cơ bản),
+  app.use("/api/v1/doctor", doctorRouter);
+  // /api/v1/doctor/exams/{exam_id} (PATCH, cập nhật thẻ khám), -- liên quan nhiều bảng - tham khảo trang demo
+  app.use("/api/v1/", doctorRouter);
+
+  // /api/v1/doctor/prescriptions (POST, tạo đơn thuốc),
+  app.use("/api/v1/doctor/prescriptions", doctorRouter);
+
+  //PATCH /booking/pay/:invoiceId – xác nhận thanh toán
+  // app.use("/booking", bookingRouter);
+  //PATCH /booking/cancel/:invoiceId – huỷ cả appointment và invoice
+  // app.use("/booking", bookingRouter);
+
+  //POST login
   app.use("/api/auth", authRouter);
-  /**
-   * API users
-   * Prefix: api/v1/users
-   */
-  //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register
-  app.use("/api/v1/auth", authRouter);
-  /**
-   * API doctor
-   * Prefix: api/v1/doctors
-   */
-  app.use("/api/v1/doctors", authMiddleware, doctorRouter);
-  /**
-   * API patient
-   * Prefix: api/v1/patient
-   */
-  app.use("/api/v1/patients", authMiddleware, patientRouter);
-  /**
-   * API appointment -- tạm chưa xóa nhưng sẽ lấy theo role
-   * Prefix: api/v1/appointment
-   */
-  //các thao tác liên quan đến appointments
-  app.use("/api/v1/appointments", authMiddleware, appointmentRouter);
-  /**
-   * API lab staff
-   * Prefix: api/v1/lab
-   */
-  app.use("/api/v1/lab", authMiddleware, labStaffRouter);
-  /**
-   * API Registration staff
-   * Prefix: api/v1/registrations
-   */
-  // Registration Staff routes - temporarily bypass auth for testing
-  app.use("/api/v1/registrations", registrationRouter);
-  /**
-   * API booking
-   * Prefix: api/v1/booking
-   */
-  //quản lý luồng /booking – tạo appointment + invoice
-  app.use("/api/v1/booking", authMiddleware, bookingRouter);
-  /**
-   * API queue - Quản lý số thứ tự
-   * Prefix: api/v1/queue
-   */
-  app.use("/api/v1/queue", authMiddleware, queueRouter);
-  /**
-   * API public
-   * Prefix: api/public/
-   */
-  app.use("/api/v1/slots", slotRouter);
-  /**
-   * API ARV Regimens
-   * Prefix: api/v1/arv-regimens
-   */
-  app.use("/api/v1/arv-regimens", authMiddleware, arvRegimenRouter);
-  /**
-   * API Clinical Exams
-   * Prefix: api/v1/clinical-exams
-   */
-  app.use("/api/v1", authMiddleware, clinicalRouter);
-  /**
-   * API Prescriptions
-   * Prefix: api/prescriptions
-   */
-  app.use("/api", authMiddleware, prescriptionRouter);
+
+  //POST /booking – tạo appointment + invoice
+  app.use("/booking", bookingRouter);
+  //GET /appointments – lấy danh sách lịch hẹn của người dùng
+  app.use("/appointments", authenticateToken, appointmentRouter);
+  app.use("/api/v1/lab/queue", testRouter);
+  app.use("/api/v1/lab/in-progress", testRouter);
+  app.use("/api/v1/lab/done", testRouter);
+
+  app.use("/api/v1/lab", testRouter);
 }
 
 module.exports = route;

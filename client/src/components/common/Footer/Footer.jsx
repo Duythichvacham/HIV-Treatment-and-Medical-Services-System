@@ -28,10 +28,10 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-3">Liên kết nhanh</h3>
             <ul className="space-y-2 text-gray-300 text-sm">
               <li>
-                <Link to="/about" className="hover:text-red-400 transition">Giới thiệu</Link>
+                <Link to="/gioi-thieu" className="hover:text-red-400 transition">Giới thiệu</Link>
               </li>
               <li>
-                <Link to="/doctorpage" className="hover:text-red-400 transition">Đội ngũ bác sĩ</Link>
+                <Link to="/chuyen-gia" className="hover:text-red-400 transition">Đội ngũ bác sĩ</Link>
               </li>
               <li>
                 <Link to="/tu-van" className="hover:text-red-400 transition">Điều đạn tư vấn</Link>

@@ -1,11 +1,14 @@
-use master
+1. Đặt khám ngày 1 lần, xét nghiệm trong cùng 1 ngày, nếu có xét nghiệm cùng loại chưa hoàn thành => chặn ở back => bỏ ràng buộc
+2. QueueNumbers (bảng này nằm dưới cùng -> Bảng quản lý việc lưu stt (max 6/1slot cho type khám) - xóa max_patient_per_slot của Shift vì ko òn cần.
+3. Thêm bảng TestRequestDetails để quản lý danh sách service trong 1 lần, cho phép mỗi service xuất hiện trong nhiều TestRequests
+4. Chỉnh tên cho trường time trong bảng testnotes à testresults(Trường đòi)
+﻿﻿USE master
 GO
+DROP DATABASE HIV_HEATH_CARE
 GO
-DROP DATABASE HIV_HEALTH_CARE
+CREATE DATABASE HIV_HEATH_CARE
 GO
-CREATE DATABASE HIV_HEALTH_CARE
-GO
-USE HIV_HEALTH_CARE
+USE HIV_HEATH_CARE
 -- Accounts
 CREATE TABLE Accounts (
     account_id INT PRIMARY KEY IDENTITY(1,1),
@@ -106,7 +109,7 @@ CREATE TABLE Appointments (
     room_id INT NOT NULL FOREIGN KEY REFERENCES Rooms(room_id),
     bookingDate DATE, -- ngày khám
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    -- thực hiện ràng buộc ở back-end
+    CONSTRAINT uq_patient_time UNIQUE (patient_id, slot_id, bookingDate)
 
 );
 
@@ -116,7 +119,6 @@ CREATE TABLE TestRequests (
     doctor_id INT NOT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- người làm đơn
     appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- phát sinh từ đơn đặt lịch nào khi đang khám
     request_date DATETIME DEFAULT GETDATE(),
-    room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id), -- phòng xét nghiệm
     approved_by_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- registration-staff
     approved_at DATETIME NULL,
     status VARCHAR(20) CHECK (status IN ('requested', 'in_progress', 'completed', 'cancelled')),
@@ -149,7 +151,7 @@ CREATE TABLE TestNotes(
    request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id), -- có thể phát sinh không thông qua testrequest
    created_by_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- người xn và tạo phiếu này
-   test_datetime DATETIME NOT NULL,
+   created_at DATETIME NOT NULL DEFAULT GETDATE(),
    notes NVARCHAR(500) NULL, -- ghi chú của người làm xét nghiệm
    );
 -- TestResults
@@ -160,7 +162,7 @@ CREATE TABLE TestResults (
     result_value VARCHAR(100) NULL,
     unit VARCHAR(20) NULL,
     reference_range VARCHAR(100) NULL, -- khoảng tham chiếu
-    created_at DATETIME NOT NULL DEFAULT GETDATE()
+    finished_at DATETIME NOT NULL DEFAULT GETDATE() -- thời gian có kết quả
 );
 
 
@@ -235,15 +237,13 @@ CREATE TABLE Invoices (
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     pdf_url VARCHAR(255) NULL -- lưu đường dẫn file pdf hóa đơn nếu có (có thể không cần vì có thể tạo từ app)
 );
--- QueueNumbers - Bảng quản lý số thứ tự - không liên quan logic nên không cần liên kết
+-- QueueNumbers 
 CREATE TABLE QueueNumbers (
     queue_id INT PRIMARY KEY IDENTITY(1,1),
-    appointment_id INT NULL FOREIGN KEY REFERENCES Appointments(appointment_id),
-    request_id INT NULL FOREIGN KEY REFERENCES TestRequests(request_id),
     queue_type VARCHAR(20) NOT NULL CHECK (queue_type IN ('examination', 'test','consultation')), -- loại hàng đợi: khám, xét nghiệm, tư vấn
     slot_id INT NULL FOREIGN KEY REFERENCES Slots(slot_id), -- NULL cho xét nghiệm
     doctor_id INT NULL FOREIGN KEY REFERENCES Doctors(doctor_id), -- NULL cho xét nghiệm
     current_number INT NOT NULL DEFAULT 0 CHECK (current_number >= 0),
-    queue_date DATE NOT NULL DEFAULT GETDATE(), -- ngày áp dụng hàng đợi
     max_number INT NOT NULL CHECK (max_number > 0), -- 8 cho khám, 1000 cho xét nghiệm
+    CONSTRAINT uq_queue_type_slot_doctor UNIQUE (queue_type, slot_id, doctor_id)
 );

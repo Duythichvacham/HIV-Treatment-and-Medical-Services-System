@@ -36,3 +36,8 @@ export const ENV = {
   IS_DEVELOPMENT: import.meta.env.DEV,
   IS_PRODUCTION: import.meta.env.PROD,
 };
+
+// Validation
+if (ENV.IS_DEVELOPMENT) {
+  console.log("🔧 Environment Configuration:", ENV);
+}
