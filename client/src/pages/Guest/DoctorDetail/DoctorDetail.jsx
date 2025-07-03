@@ -51,52 +51,59 @@ const DoctorDetail = () => {
   if (error || !doctor) return <div className="p-6 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="px-4 py-8 max-w-7xl mx-auto">
-      <Link to="/" className="text-gray-500 hover:underline inline-block mb-6">← Quay lại</Link>
-      {/* Header Card */}
-      <section className="bg-white p-6 rounded-lg shadow mb-8 flex justify-between items-start">
-        <div className="flex items-start">
-          <img src={doctor.avatar} alt={doctor.name} className="w-32 h-32 rounded-lg object-cover shadow" />
-          <div className="ml-6">
-            <h1 className="text-3xl font-bold text-green-800">{doctor.name}</h1>
-            <div className="text-gray-600 mt-1">{doctor.degrees}</div>            <div className="mt-4 flex items-center">
-              <div className="flex items-center text-green-600">
-                <span className="mr-1">🎖️</span>
-                <span className="font-medium">{doctor.experience} năm</span>
-                <span className="ml-1">kinh nghiệm</span>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 py-10 px-2 animate-fade-in duration-700">
+      <div className="max-w-7xl mx-auto">
+        <Link to="/" className="inline-flex items-center gap-2 text-green-700 border border-green-200 bg-white rounded-full px-5 py-2 mb-6 text-lg font-semibold shadow hover:bg-green-50 hover:border-green-400 transition-all duration-200">
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Quay lại
+        </Link>
+        {/* Header Card */}
+        <section className="bg-white p-10 rounded-3xl shadow-2xl mb-10 flex flex-col md:flex-row items-center gap-10 animate-slide-up duration-700">
+          <img src={doctor.avatar} alt={doctor.name} className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-green-100" />
+          <div className="flex-1">
+            <h1 className="text-4xl font-extrabold text-green-800 mb-2 tracking-tight drop-shadow-lg">{doctor.name}</h1>
+            <div className="text-gray-600 text-lg mb-2">{doctor.degrees}</div>
+            <div className="flex items-center text-green-600 text-lg font-semibold mb-2">
+              <span className="mr-2">🎖️</span>
+              <span>{doctor.experience} năm kinh nghiệm</span>
+            </div>
+          </div>
+        </section>
+        {/* Tabs and Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in animate-slide-up duration-700">
+              <div className="flex border-b mb-6">
+                <button
+                  onClick={() => setActiveTab('Thông tin')}
+                  className={`flex-1 py-4 text-center text-xl font-bold transition-all duration-200 ${activeTab==='Thông tin' ? 'border-b-4 border-green-600 text-green-700 bg-green-50 rounded-t-2xl' : 'text-gray-600'}`}
+                >Thông tin</button>
+              </div>
+              <div className="p-2">
+                {activeTab === 'Thông tin' && (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-6 text-green-800">Thông tin chi tiết</h2>
+                    <ul className="text-gray-700 space-y-4 text-lg">
+                      <li><strong>Học vị:</strong> {doctor.degrees}</li>
+                      <li><strong>Kinh nghiệm:</strong> {doctor.experience} năm</li>
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
-      </section>
-      {/* Tabs and Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow">
-            <div className="flex border-b">
-              <button
-                onClick={() => setActiveTab('Thông tin')}
-                className={`flex-1 py-3 text-center font-medium ${activeTab==='Thông tin' ? 'border-b-2 border-green-600 text-green-600' : 'text-gray-600'}`}
-              >Thông tin</button>
-            </div>
-            <div className="p-6">
-              {activeTab === 'Thông tin' && (
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">Thông tin chi tiết</h2>                  <ul className="text-gray-700 space-y-2">
-                    <li><strong>Học vị:</strong> {doctor.degrees}</li>
-                    <li><strong>Kinh nghiệm:</strong> {doctor.experience} năm</li>
-                  </ul>
-                </div>
-              )}
+          {/* Appointment Form Section */}
+          <div className="animate-fade-in animate-slide-up duration-700 delay-200">
+            <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
+              <h2 className="text-2xl font-bold text-green-800 mb-6">Đặt lịch khám với bác sĩ</h2>
+              <AppointmentForm
+                serviceType={`doctor_${doctor.id}`}
+                serviceName={`Khám bác sĩ ${doctor.name}`}
+                price={serviceExamination ? serviceExamination.price : ''}
+                user={user}
+              />
             </div>
           </div>
-        </div>        {/* Appointment Form Section */}        <div>
-          <AppointmentForm
-            serviceType={`doctor_${doctor.id}`}
-            serviceName={`Khám bác sĩ ${doctor.name}`}
-            price={serviceExamination ? serviceExamination.price : ''} // Để rỗng nếu chưa có giá, tránh nhảy về 0
-            user={user}
-          />
         </div>
       </div>
     </div>
