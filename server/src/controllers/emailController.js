@@ -3,7 +3,7 @@ const { verifiedEmails, otpStore } = require('../utils/otpStore');
 const { getTestNoteDetail, getTestResultsByTestNoteId } = require('../services/testService');
 const { poolPromise } = require('../config/db');
 const { sendAppointmentEmail } = require('../services/emailService');
-const { getTomorrowAppointments } = require('../services/appointmentService');
+const { getTomorrowAppointmentsGroupedByPatient } = require('../services/appointmentService');
 
 
 exports.sendOtp = async (req, res) => {
@@ -72,26 +72,44 @@ exports.sendTestResult = async (req, res) => {
   }
 };
 
-exports.sendReminderEmail = async function (appt) {
-  let content = `Xin chào ${appt.full_name},\n\n`;
-  content += `Bạn có lịch hẹn vào ngày mai với thông tin sau:\n`;
-  content += `- Dịch vụ: ${appt.service_name}\n`;
-  if (appt.doctor_name) content += `- Bác sĩ: ${appt.doctor_name}\n`;
-  content += `- Thời gian: ${new Date(appt.appointment_datetime).toLocaleString('vi-VN')}\n`;
-  if (appt.room_name) content += `- Phòng: ${appt.room_name}\n`;
-  if (appt.notes) content += `- Ghi chú: ${appt.notes}\n`;
+exports.sendReminderEmail = async function (patient) {
+  let content = `Xin chào ${patient.full_name},\n\nBạn có các lịch hẹn vào ngày mai như sau:\n`;
+  for (const appt of patient.appointments) {
+    console.log('appointment_id:', appt.appointment_id, 'slot_id:', appt.slot_id, 'start_time:', appt.start_time, 'end_time:', appt.end_time);
+    content += `- Dịch vụ: ${appt.service_name}\n`;
+    // Nếu là lịch khám bác sĩ (service_id 1,2) thì hiện thời gian theo slot
+    if ([1, 2].includes(appt.service_id)) {
+      if (appt.doctor_name) content += `  + Bác sĩ: ${appt.doctor_name}\n`;
+      if (appt.start_time && appt.end_time) {
+        const formatTime = t => {
+          if (!t) return '';
+          const d = new Date(t);
+          const h = d.getUTCHours().toString().padStart(2, '0');
+          const m = d.getUTCMinutes().toString().padStart(2, '0');
+          return `${h}:${m}`;
+        };
+        content += `  + Thời gian: ${formatTime(appt.start_time)} - ${formatTime(appt.end_time)}\n`;
+      } else {
+        content += `  + Thời gian: Sẽ được thông báo sau\n`;
+      }
+    }
+    // Lịch xét nghiệm (service_id 3,4,5) không hiện thời gian
+    if (appt.room_name) content += `  + Phòng: ${appt.room_name}\n`;
+    if (appt.notes) content += `  + Ghi chú: ${appt.notes}\n`;
+    content += `-----------------------------\n`;
+  }
   content += `\nVui lòng đến đúng giờ. Nếu có thắc mắc, liên hệ phòng khám.\n\nTrân trọng,\nPhòng khám`;
 
-  const subject = 'Nhắc lịch hẹn khám bệnh ngày mai';
-  await sendAppointmentEmail(appt.email, subject, content);
+  const subject = 'Nhắc lịch hẹn khám/xét nghiệm ngày mai';
+  await sendAppointmentEmail(patient.email, subject, content);
 }
 
 exports.sendAllReminders = async (req, res) => {
   try {
-    const appointments = await getTomorrowAppointments();
+    const patients = await getTomorrowAppointmentsGroupedByPatient();
     let count = 0;
-    for (const appt of appointments) {
-      exports.sendReminderEmail(appt);
+    for (const patient of patients) {
+      await exports.sendReminderEmail(patient);
       count++;
     }
     res.json({ message: `Đã gửi nhắc lịch cho ${count} bệnh nhân!` });
