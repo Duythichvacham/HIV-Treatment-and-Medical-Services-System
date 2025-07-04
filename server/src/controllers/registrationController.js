@@ -1,4 +1,4 @@
-const registrationService = require("../services/registrationService");
+const registrationService = require("../services/registrations/registrationService");
 
 // GET /api/v1/test-requests/pending - Lấy danh sách TestRequests chờ xử lý
 exports.getPendingTestRequests = async (req, res, next) => {
@@ -17,14 +17,15 @@ exports.getPendingTestRequests = async (req, res, next) => {
 exports.approveTestRequest = async (req, res, next) => {
   try {
     const { id } = req.params; // appointment_id
-    const { payment_method = "cash" } = req.body; // Phương thức thanh toán
+    const { payment_method = "cash", registration_staff_id = 7 } = req.body; // Phương thức thanh toán và staff ID
     const result = await registrationService.approveTestRequest(
       id,
-      payment_method
+      payment_method,
+      registration_staff_id
     );
 
     res.json({
-      message: "Đã thu tiền và cập nhật đơn xét nghiệm thành công",
+      message: "Đã thu tiền, approve và cấp phòng xét nghiệm thành công",
       data: result,
     });
   } catch (error) {

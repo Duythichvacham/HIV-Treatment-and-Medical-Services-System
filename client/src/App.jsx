@@ -19,7 +19,7 @@ import LabStaff from "./pages/Staff/LabStaff";
 import LabProcess from "./pages/Staff/LabProcess";
 import LabResult from "./pages/Staff/LabResult";
 import RegistrationStaff from "./pages/Staff/RegistrationStaff/RegistrationStaff";
-import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
+import DoctorDashboard from "./pages/Doctor/DoctorDashboardRefactored";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
 import DoctorPage from "./pages/Guest/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
@@ -123,12 +123,15 @@ function AppContent() {
                 <ProtectedRoute staffOnly={true} requiredRole="Doctor">
                   <DoctorProfile />
                 </ProtectedRoute>
-              ) : user?.role === "Lab-Staff" || user?.role === "Registration-staff" ? (
+              ) : user?.role === "Lab-Staff" ||
+                user?.role === "Registration-staff" ? (
                 <ProtectedRoute staffOnly={true}>
                   <StaffProfile />
                 </ProtectedRoute>
               ) : (
-                <div className="min-h-[60vh] flex items-center justify-center text-gray-500">Bạn chưa đăng nhập hoặc không có quyền truy cập.</div>
+                <div className="min-h-[60vh] flex items-center justify-center text-gray-500">
+                  Bạn chưa đăng nhập hoặc không có quyền truy cập.
+                </div>
               )
             }
           />
@@ -141,11 +144,19 @@ function AppContent() {
 }
 
 function DoctorProfile() {
-  return <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">Trang hồ sơ bác sĩ (đang phát triển)</div>;
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">
+      Trang hồ sơ bác sĩ (đang phát triển)
+    </div>
+  );
 }
 
 function StaffProfile() {
-  return <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">Trang hồ sơ nhân viên (đang phát triển)</div>;
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">
+      Trang hồ sơ nhân viên (đang phát triển)
+    </div>
+  );
 }
 
 export default App;

@@ -52,4 +52,6 @@ router.post('/send-test-result', emailController.sendTestResult);
 
 router.post('/send-reminder', emailController.sendAllReminders);
 
+router.post('/test-results/bulk', testController.createBulkTestResults);
+
 module.exports = router;

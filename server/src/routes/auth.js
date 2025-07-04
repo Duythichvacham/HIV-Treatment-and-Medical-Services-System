@@ -14,7 +14,11 @@ router.post('/verify-otp', emailController.verifyOtp);
 
 router.post('/reset-password', authController.resetPassword);
 
+
 router.post('/refresh-token', authController.refreshToken);
+
+
+router.post('/check-email', authController.checkEmailExists);
 
 
 module.exports = router;

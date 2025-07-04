@@ -274,7 +274,7 @@ exports.getCurrentLabStaffShift = async (req, res, next) => {
 
 exports.createTestNote = async (req, res, next) => {
   try {
-    const { test_request_id, appointment_id, created_by_id, test_datetime } = req.body;
+    const { request_id, appointment_id, created_by_id, test_datetime } = req.body;
     const { poolPromise } = require('../config/db');
     const pool = await poolPromise;
 
@@ -293,13 +293,13 @@ exports.createTestNote = async (req, res, next) => {
         });
       }
     }
-    // Kiểm tra trùng cho test_request_id (không kiểm tra status)
-    if (test_request_id) {
+    // Kiểm tra trùng cho request_id (không kiểm tra status)
+    if (request_id) {
       const check = await pool.request()
-        .input('test_request_id', test_request_id)
+        .input('request_id', request_id)
         .query(`
           SELECT TOP 1 * FROM TestNotes
-          WHERE test_request_id = @test_request_id
+          WHERE request_id = @request_id
         `);
       if (check.recordset.length > 0) {
         return res.status(200).json({
@@ -324,7 +324,7 @@ exports.createTestNote = async (req, res, next) => {
     }
     
     const note = await testService.createTestNote({
-      test_request_id,
+      request_id,
       appointment_id,
       created_by_id,
       test_datetime: noteDatetime,
@@ -426,5 +426,15 @@ exports.getLatestTestResultsForPatient = async (req, res) => {
       message: 'Internal server error',
       error: error.message
     });
+  }
+};
+
+exports.createBulkTestResults = async (req, res, next) => {
+  try {
+    const { test_note_id, results, notes } = req.body;
+    await testService.createBulkTestResults({ test_note_id, results, notes });
+    res.json({ success: true, message: 'Lưu kết quả thành công!' });
+  } catch (err) {
+    next(err);
   }
 };

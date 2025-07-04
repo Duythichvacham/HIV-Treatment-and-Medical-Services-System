@@ -1,83 +1,35 @@
 const doctorService = require("../services/doctorService");
+const appointmentService = require("../services/appointmentService");
 // const doctor_id = 1;
-// GET: Lấy danh sách lịch hẹn đang chờ khám hoặc tư vấn theo ngày
-const getAppointmentQueue = async (req, res) => {
+
+const getAppointments = async (req, res) => {
   try {
-    const doctor_id = req.params.doctorId;
-    const date = req.query.date;
-    const queue = await doctorService.getAppointmentsByStatus(
-      doctor_id,
-      "requested",
-      date
+    // Lấy account_id từ JWT token (support cả account_id và userId)
+    const accountId = req.user.account_id || req.user.userId;
+
+    // Lấy doctor_id trực tiếp từ token hoặc query từ DB
+    let doctorId = req.user.doctor_id;
+    const { status, bookingDate, slot_id, patient_id } = req.query;
+    // Thực hiện query dựa trên các tham số
+    const appointments = await appointmentService.getDoctorAppointments(
+      doctorId,
+      status,
+      bookingDate,
+      slot_id,
+      patient_id
     );
-    res.status(200).json({
+
+    res.json({
       success: true,
-      data: queue,
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: "Internal Server Error" });
-  }
-};
-
-//GET lấy danh sách bệnh nhân đang khám theo ngày
-const getAppointmentInProgress = async (req, res) => {
-  try {
-    const doctor_id = req.params.doctorId;
-    const date = req.query.date;
-    const in_progress = await doctorService.getAppointmentsByStatus(
-      doctor_id,
-      "in_progress",
-      date
-    );
-    res.status(200).json({
-      message: "Lấy danh sách bệnh nhân đang khám thành công",
-      data: in_progress,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-//GET lấy danh sách bệnh nhân hoàn thành khám theo ngày
-const getAppointmentFinshed = async (req, res) => {
-  try {
-    const doctor_id = req.params.doctorId;
-    const date = req.query.date;
-    const finished = await doctorService.getAppointmentsByStatus(
-      doctor_id,
-      "completed",
-      date
-    );
-    res.status(200).json({
-      message: "Lấy danh sách bệnh nhân hoàn thành khám thành công",
-      data: finished,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-const getExamHistory = async (req, res) => {
-  try {
-    const patientId = req.params.patientId; // Lấy id từ URL
-    const examHistory = await doctorService.getExamHistory(patientId);
-    res.status(200).json({
-      success: true,
-      data: examHistory,
+      data: appointments,
     });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-const getCurrentExam = async (req, res) => {
-  try {
-    const patientId = req.params.patientId;
-    const appointmentId = req.query.appointmentId || null; // lấy từ query string
-    const result = await doctorService.getCurrentExam(patientId, appointmentId);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Lỗi server" });
+    console.error("Error fetching doctor appointments:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
 
@@ -100,71 +52,8 @@ const getDoctors = async (req, res) => {
       data: doctors,
     });
   } catch (error) {
+    console.error("Error fetching doctors:", error);
     res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-// POST: Lưu dữ liệu khám bệnh (chẩn đoán, kế hoạch điều trị, etc.)
-const saveExamData = async (req, res) => {
-  try {
-    const { 
-      appointment_id,
-      diagnosis,
-      treatment_plan,
-      note,
-      reExamDate,
-      vitals,
-      weight,
-      height,
-      clinical_signs
-    } = req.body;
-    
-    if (!appointment_id || !diagnosis) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "appointment_id và diagnosis là bắt buộc" 
-      });
-    }
-    
-    const result = await doctorService.saveExamData({
-      appointment_id,
-      diagnosis,
-      treatment_plan,
-      note,
-      reExamDate,
-      vitals,
-      weight,
-      height,
-      clinical_signs
-    });
-    
-    res.status(200).json({
-      success: true,
-      message: "Lưu dữ liệu khám bệnh thành công",
-      data: result
-    });
-  } catch (error) {
-    // Phân loại lỗi chi tiết hơn
-    let errorMessage = "Internal server error";
-    let statusCode = 500;
-    
-    if (error.message.includes('FK')) {
-      errorMessage = "Không tìm thấy cuộc hẹn trong hệ thống";
-      statusCode = 400;
-    } else if (error.message.includes('PRIMARY KEY')) {
-      errorMessage = "Dữ liệu khám bệnh đã tồn tại cho cuộc hẹn này";
-      statusCode = 400;
-    } else if (error.message.includes('Invalid column')) {
-      errorMessage = "Lỗi cấu trúc dữ liệu";
-      statusCode = 400;
-    }
-    
-    res.status(statusCode).json({ 
-      success: false, 
-      error: errorMessage,
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
   }
 };
 
@@ -173,25 +62,402 @@ const getDoctorByAccountId = async (req, res) => {
   try {
     const account_id = req.params.accountId;
     const pool = await require("../config/db").poolPromise;
-    const result = await pool.request()
-      .input('account_id', account_id)
-      .query('SELECT doctor_id FROM Doctors WHERE account_id = @account_id');
+    const result = await pool
+      .request()
+      .input("account_id", account_id)
+      .query("SELECT doctor_id FROM Doctors WHERE account_id = @account_id");
     if (result.recordset.length === 0) {
-      return res.status(404).json({ message: 'Không tìm thấy doctor_id' });
+      return res.status(404).json({ message: "Không tìm thấy doctor_id" });
     }
     res.json({ doctor_id: result.recordset[0].doctor_id });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error: error.message });
+    console.error("getDoctorByAccountId error:", error);
+    res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };
 
+//GET: lấy danh sách các loại thuốc
+const getPrescriptionDetails = async (req, res) => {
+  try {
+    const prescriptionDetails = await doctorService.getPrescriptionDetails();
+    res.status(200).json({
+      success: true,
+      data: prescriptionDetails,
+    });
+  } catch (err) {
+    console.error("[API] getPrescriptionDetails error:", err);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  }
+};
+
+// GET: Lấy kết quả xét nghiệm gần nhất của bệnh nhân
+const getLatestTestResults = async (req, res) => {
+  try {
+    const patientId = req.params.patientId;
+    console.log("[API] getLatestTestResults called with patientId:", patientId);
+
+    const testResults = await doctorService.getLatestTestResults(patientId);
+
+    res.status(200).json({
+      success: true,
+      data: testResults,
+      message: "Lấy kết quả xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getLatestTestResults error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy kết quả xét nghiệm",
+    });
+  }
+};
+
+// POST: Tạo test request cho bệnh nhân
+const createTestRequest = async (req, res) => {
+  try {
+    const { appointment_id, service_id, notes } = req.body;
+
+    // Get doctor_id from token
+    let doctor_id = req.user.doctor_id;
+    console.log(doctor_id);
+
+    const result = await doctorService.createIndependentTestRequest({
+      doctor_id,
+      appointment_id,
+      service_id,
+      notes: notes || "",
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: "Tạo chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] createTestRequest error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi tạo chỉ định xét nghiệm",
+    });
+  }
+};
+
+// GET: Lấy test request hiện tại của bệnh nhân
+const getCurrentTestRequest = async (req, res) => {
+  try {
+    const appointmentId = req.params.appointmentId;
+
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId là bắt buộc",
+      });
+    }
+
+    const rawData = await doctorService.getCurrentTestRequest(appointmentId);
+
+    if (!rawData || rawData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy chỉ định xét nghiệm cho cuộc hẹn này",
+      });
+    }
+
+    // Gom nhóm dữ liệu: phần chung + danh sách services
+    const {
+      request_id,
+      appointment_id,
+      doctor_id,
+      request_date,
+      status,
+      detail_created_at,
+    } = rawData[0];
+
+    const services = rawData.map((item) => ({
+      service_id: item.service_id,
+      name: item.name,
+      notes: item.notes,
+    }));
+
+    const formatted = {
+      request_id,
+      appointment_id,
+      doctor_id,
+      request_date,
+      status,
+      detail_created_at,
+      services,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: formatted,
+      message: "Lấy chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getCurrentTestRequest error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy chỉ định xét nghiệm",
+    });
+  }
+};
+
+// Test Types and Test Requests Controllers for independent test ordering
+
+// GET: Lấy danh sách test types
+const getTestTypes = async (req, res) => {
+  try {
+    console.log("[API] getTestTypes called");
+    const testTypes = await doctorService.getTestTypes();
+
+    res.status(200).json({
+      success: true,
+      data: testTypes,
+      message: "Lấy danh sách loại xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getTestTypes error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy danh sách loại xét nghiệm",
+    });
+  }
+};
+
+// POST: Tạo test request độc lập
+const createIndependentTestRequest = async (req, res) => {
+  try {
+    const doctorId = req.user?.doctor_id || req.user?.id;
+    const { appointment_id, service_id, notes } = req.body;
+
+    console.log("[API] createIndependentTestRequest called with:", {
+      doctorId,
+      appointment_id,
+      service_id,
+      notes,
+    });
+
+    if (!appointment_id || !service_id) {
+      return res.status(400).json({
+        success: false,
+        message: "appointment_id và service_id là bắt buộc",
+      });
+    }
+
+    const result = await doctorService.createIndependentTestRequest({
+      doctor_id: doctorId,
+      appointment_id,
+      service_id,
+      notes: notes || "",
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: "Tạo chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] createIndependentTestRequest error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi tạo chỉ định xét nghiệm",
+    });
+  }
+};
+
+// GET: Lấy danh sách test requests của bệnh nhân
+const getTestRequestsByPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    console.log(
+      "[API] getTestRequestsByPatient called with patientId:",
+      patientId
+    );
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId là bắt buộc",
+      });
+    }
+
+    const testRequests = await doctorService.getTestRequestsByPatient(
+      patientId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: testRequests,
+      message: "Lấy danh sách chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getTestRequestsByPatient error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy danh sách chỉ định xét nghiệm",
+    });
+  }
+};
+
+// GET: Lấy chi tiết test request
+const getTestRequestDetails = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+
+    console.log(
+      "[API] getTestRequestDetails called with requestId:",
+      requestId
+    );
+
+    if (!requestId) {
+      return res.status(400).json({
+        success: false,
+        message: "requestId là bắt buộc",
+      });
+    }
+
+    const testRequestDetails = await doctorService.getTestRequestDetails(
+      requestId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: testRequestDetails,
+      message: "Lấy chi tiết chỉ định xét nghiệm thành công",
+    });
+  } catch (error) {
+    console.error("[API] getTestRequestDetails error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy chi tiết chỉ định xét nghiệm",
+    });
+  }
+};
+const getClinicalExamData = async (req, res) => {
+  try {
+    const appointmentId = req.params.appointmentId;
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId là bắt buộc",
+      });
+    }
+
+    const clinicalExamData = await doctorService.getClinicalExamData(
+      appointmentId
+    );
+
+    if (!clinicalExamData) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dữ liệu khám lâm sàng cho cuộc hẹn này",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: clinicalExamData,
+      message: "Lấy dữ liệu khám lâm sàng thành công",
+    });
+  } catch (error) {
+    console.error("[API] getClinicalExamData error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy dữ liệu khám lâm sàng",
+    });
+  }
+};
+
+const getPrescriptionExamData = async (req, res) => {
+  try {
+    const appointmentId = req.params.appointmentId;
+    if (!appointmentId) {
+      return res.status(400).json({
+        success: false,
+        message: "appointmentId là bắt buộc",
+      });
+    }
+
+    const prescriptionExamData = await doctorService.getPrescriptionExamData(
+      appointmentId
+    );
+
+    res.status(200).json({
+      success: true,
+      data: prescriptionExamData,
+      message: "Lấy dữ liệu đơn thuốc thành công",
+    });
+  } catch (error) {
+    console.error("[API] getPrescriptionExamData error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy dữ liệu đơn thuốc",
+    });
+  }
+};
+
+const getPrescriptionDetail = async (req, res) => {
+  try {
+    const prescriptionId = req.params.prescriptionId;
+    if (!prescriptionId) {
+      return res.status(400).json({
+        success: false,
+        message: "prescriptionId là bắt buộc",
+      });
+    }
+
+    const prescriptionDetail = await doctorService.getPrescriptionDetail(
+      prescriptionId
+    );
+
+    if (!prescriptionDetail) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy chi tiết đơn thuốc",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: prescriptionDetail,
+      message: "Lấy chi tiết đơn thuốc thành công",
+    });
+  } catch (error) {
+    console.error("[API] getPrescriptionDetail error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      message: "Có lỗi xảy ra khi lấy chi tiết đơn thuốc",
+    });
+  }
+};
+
+// Export all functions
+
 module.exports = {
   getDoctors,
-  getAppointmentQueue,
-  getAppointmentInProgress,
-  getAppointmentFinshed,
-  getExamHistory,
-  getCurrentExam,
-  saveExamData,
   getDoctorByAccountId,
+  getAppointments,
+  getLatestTestResults,
+  getPrescriptionDetails,
+  createTestRequest,
+  getTestTypes,
+  createIndependentTestRequest,
+  getTestRequestsByPatient,
+  getTestRequestDetails,
+  getCurrentTestRequest,
+  getClinicalExamData,
+  getPrescriptionExamData,
+  getPrescriptionDetail,
 };

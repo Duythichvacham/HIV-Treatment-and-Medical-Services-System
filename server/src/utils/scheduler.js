@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const queueService = require("../services/queueService");
+const queueService = require("../services/queues/queueService");
 const appointmentService = require("../services/appointmentService");
 const { poolPromise } = require("../config/db");
 

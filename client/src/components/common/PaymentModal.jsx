@@ -26,6 +26,7 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [open, setOpen] = useState(false);
+  const [queueInfo, setQueueInfo] = useState(null);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -48,8 +49,49 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
 
     try {
       // Call the actual API to approve test request with payment method
-      await approveTestRequest(request.appointment_id, selectedPaymentMethod);
+      const result = await approveTestRequest(
+        request.appointment_id,
+        selectedPaymentMethod
+      );
       setIsProcessing(false);
+
+      // Debug: Log the entire response to see the structure
+      console.log("API Response:", result);
+      console.log("Queue Result:", result.data?.queue_result);
+
+      // Store queue info from API response
+      let queueData = {};
+      
+      // Lấy room_name từ response chính (ưu tiên cao nhất)
+      if (result.data?.room_name) {
+        queueData.room_name = result.data.room_name;
+      }
+      
+      // Lấy queue info từ queue_result
+      if (
+        result.data &&
+        result.data.queue_result &&
+        result.data.queue_result.results &&
+        result.data.queue_result.results.length > 0
+      ) {
+        queueData = {
+          ...queueData,
+          ...result.data.queue_result.results[0].queue_info
+        };
+        
+        // Nếu chưa có room_name từ response chính, lấy từ queue_info
+        if (!queueData.room_name && result.data.queue_result.results[0].queue_info?.room_name) {
+          queueData.room_name = result.data.queue_result.results[0].queue_info.room_name;
+        }
+      }
+
+      // Fallback cho room_name nếu không có từ cả hai nguồn
+      if (!queueData.room_name) {
+        queueData.room_name = "Phòng xét nghiệm - Tầng 2";
+      }
+
+      setQueueInfo(queueData);
+
       setShowReceipt(true);
     } catch (error) {
       setIsProcessing(false);
@@ -116,7 +158,10 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Số hóa đơn:</span>
-                <span className="font-mono">#{Date.now()}</span>
+                <span className="font-mono">
+                  XN{request.appointment_id}
+                  {Date.now().toString().slice(-4)}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="font-medium">Ngày giờ:</span>
@@ -135,25 +180,36 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
                     <p className="font-medium">{request.patient_name}</p>
                   </div>
                   <div>
+                    <span className="text-gray-600">Số điện thoại:</span>
+                    <p className="font-medium">{request.patient_phone}</p>
+                  </div>
+                  <div>
                     <span className="text-gray-600">Bác sĩ chỉ định:</span>
-                    <p className="font-medium">{request.doctor_name}</p>
+                    <p className="font-medium">BS. {request.doctor_name}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Thời gian tạo phiếu:</span>
+                    <p className="font-medium">
+                      {formatDateTime(request.created_at)}
+                    </p>
                   </div>
                 </div>
               </div>
               <div className="border-t pt-4">
                 <h3 className="font-semibold mb-2">Dịch vụ xét nghiệm:</h3>
                 <div className="space-y-2">
-                  {request.services.map((service, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center text-sm"
-                    >
-                      <span>{service.service_name}</span>
-                      <span className="font-medium">
-                        {formatCurrency(service.service_price)}
-                      </span>
-                    </div>
-                  ))}
+                  {request.services &&
+                    request.services.map((service, index) => (
+                      <div
+                        key={index}
+                        className="flex justify-between items-center text-sm"
+                      >
+                        <span>{service.service_name}</span>
+                        <span className="font-medium">
+                          {formatCurrency(service.service_price)}
+                        </span>
+                      </div>
+                    ))}
                 </div>
               </div>{" "}
               <div className="border-t pt-4">
@@ -182,13 +238,13 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
                   <div>
                     <span className="text-gray-600">Phòng xét nghiệm:</span>
                     <p className="font-medium text-blue-600">
-                      Phòng XN - Tầng 2
+                      {queueInfo?.room_name || "Phòng xét nghiệm - Tầng 2"}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-600">Số thứ tự:</span>
                     <p className="font-medium text-red-600">
-                      #{Math.floor(Math.random() * 100) + 1}
+                      #{queueInfo?.queue_number || "Đang cấp phát"}
                     </p>
                   </div>
                 </div>
@@ -225,25 +281,38 @@ const PaymentModal = ({ request, requestIndex, onPaymentComplete }) => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium">{request.patientName}</span>
+                      <span className="font-medium">
+                        {request.patient_name}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      SĐT: {request.patient_phone}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Stethoscope className="h-4 w-4" />
-                      <span>{request.doctorName}</span>
+                      <span>BS. {request.doctor_name}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Calendar className="h-4 w-4" />
-                      <span>{formatDateTime(request.createdAt)}</span>
+                      <span>{formatDateTime(request.created_at)}</span>
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <h4 className="font-medium">Dịch vụ xét nghiệm:</h4>
-                    <div className="flex justify-between text-sm">
-                      <span>{request.service_name}</span>
-                      <span className="font-medium">
-                        {formatCurrency(request.service_price)}
-                      </span>
+                    <div className="space-y-1">
+                      {request.services &&
+                        request.services.map((service, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between text-sm"
+                          >
+                            <span>{service.service_name}</span>
+                            <span className="font-medium">
+                              {formatCurrency(service.service_price)}
+                            </span>
+                          </div>
+                        ))}
                     </div>
                     <div className="border-t pt-2 flex justify-between font-bold text-green-600">
                       <span>Tổng cộng:</span>

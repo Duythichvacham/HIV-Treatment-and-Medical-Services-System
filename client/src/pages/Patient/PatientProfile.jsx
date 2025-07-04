@@ -1,62 +1,120 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
-const mockProfile = {
-  name: "Nguyễn Văn A",
-  id: "BN001234",
-  role: "Bệnh nhân",
-  avatar: "",
-  phone: "0123456789",
-  email: "patient@example.com",
-  address: "123 Đường ABC, Quận 1, TP.HCM",
-  dob: "1990-01-15",
-  // emergencyContact: "0987654321", // Bỏ
-  hivLoad: {
-    value: "Không phát hiện",
-    date: "2024-05-30",
-  },
-  cd4: {
-    value: 650,
-    unit: "cells/µL",
-    status: "Tốt",
-  },
-  regimen: {
-    name: "Tenofovir/Emtricitabine/Efavirenz",
-    dose: "600/200/600mg - 1 viên/ngày",
-    note: "Uống thuốc đều đặn cùng giờ mỗi ngày",
-  },
-  note: "Điều trị ARV từ 2020, tuân thủ tốt",
-};
+// Helper chuyển đổi ngày về yyyy-MM-dd cho input type='date'
+function formatDateForInput(dateStr) {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  if (dateStr.includes('T')) return dateStr.split('T')[0];
+  // Nếu là dạng mm/dd/yyyy
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+  }
+  return dateStr;
+}
 
 const PatientProfile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [profile, setProfile] = useState(mockProfile);
   const [edit, setEdit] = useState(false);
-  const [editData, setEditData] = useState(profile);
+  const [editData, setEditData] = useState(null);
   
   // Change password states
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otp: ''
   });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpMessage, setOtpMessage] = useState('');
   
   const { user } = useAuth();
+  const [medicalInfo, setMedicalInfo] = useState(null);
+  const [personalInfo, setPersonalInfo] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const patientId = user?.patient_id || "";
+
+  useEffect(() => {
+    if (!patientId) return;
+    setLoadingProfile(true);
+    const token = localStorage.getItem('token');
+    Promise.all([
+      fetch(`http://localhost:5000/api/v1/patients/${patientId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      }).then(async res => {
+        if (!res.ok) throw new Error(res.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Không tìm thấy thông tin cá nhân.');
+        return res.json();
+      })
+      // Medical info API is not available, commented out for now
+      // fetch(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}`, {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     ...(token && { 'Authorization': `Bearer ${token}` })
+      //   }
+      // }).then(async res => {
+      //   if (res.status === 404) return null; // Không có thông tin y tế
+      //   if (!res.ok) throw new Error(res.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Không tìm thấy thông tin y tế.');
+      //   return res.json();
+      // })
+    ]).then(([personalRes]) => {
+      setPersonalInfo(personalRes.data || personalRes);
+      setMedicalInfo(null); // No medical info for now
+    }).catch(err => {
+      alert(err.message);
+    }).finally(() => setLoadingProfile(false));
+  }, [patientId]);
 
   const handleEdit = () => {
-    setEditData(profile);
+    setEditData(personalInfo);
     setEdit(true);
   };
   const handleCancel = () => {
     setEdit(false);
-    setEditData(profile);
+    setEditData(personalInfo);
   };
-  const handleSave = () => {
-    setProfile(editData);
+  const handleSave = async () => {
     setEdit(false);
+    setLoadingProfile(true);
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/patients/${patientId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          full_name: editData.full_name,
+          dob: editData.dob,
+          gender: editData.gender,
+          email: editData.email,
+          phone: editData.phone,
+          address: editData.address
+        })
+      });
+      if (!response.ok) throw new Error(response.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Cập nhật thông tin thất bại');
+      // Reload lại thông tin cá nhân
+      const personalRes = await fetch(`http://localhost:5000/api/v1/patients/${patientId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      });
+      if (!personalRes.ok) throw new Error('Không lấy được thông tin cá nhân sau khi cập nhật');
+      const personalData = await personalRes.json();
+      setPersonalInfo(personalData.data || personalData);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoadingProfile(false);
+    }
   };
   const handleChange = (field, value) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
@@ -70,7 +128,7 @@ const PatientProfile = () => {
   };
 
   const validatePasswordForm = () => {
-    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+    if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword || !passwordData.otp) {
       setPasswordError('Vui lòng điền đầy đủ thông tin');
       return false;
     }
@@ -104,6 +162,23 @@ const PatientProfile = () => {
     setPasswordLoading(true);
 
     try {
+      // Log giá trị email và otp trước khi xác thực
+      console.log('Email gửi verify-otp:', personalInfo.email, 'OTP:', passwordData.otp);
+      // Xác thực OTP trước khi đổi mật khẩu
+      const verifyRes = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: personalInfo.email, otp: passwordData.otp })
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        setPasswordError(verifyData.message || 'Xác thực OTP thất bại');
+        setPasswordLoading(false);
+        return;
+      }
+      // Log trước khi đổi mật khẩu
+      console.log('Email gửi change-password:', personalInfo.email);
+      // Chỉ khi xác thực OTP thành công mới gọi đổi mật khẩu
       const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/auth/change-password', {
         method: 'POST',
@@ -112,39 +187,53 @@ const PatientProfile = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          email: personalInfo.email,
           oldPassword: passwordData.oldPassword,
           newPassword: passwordData.newPassword
         }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Đổi mật khẩu thất bại');
       }
-
       setPasswordSuccess('Đổi mật khẩu thành công!');
-      
-      // Reset form
-      setPasswordData({
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-
-      // Hide form after 2 seconds
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '', otp: '' });
       setTimeout(() => {
         setShowChangePassword(false);
         setPasswordSuccess('');
       }, 2000);
-
     } catch (err) {
-      console.error('Change password error:', err);
       setPasswordError(err.message);
     } finally {
       setPasswordLoading(false);
     }
   };
+
+  const handleGetOtp = async () => {
+    setOtpLoading(true);
+    setOtpMessage('');
+    try {
+      // Gửi OTP về email hoặc số điện thoại
+      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: personalInfo.email,
+          phone: personalInfo.phone
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Gửi OTP thất bại');
+      setOtpMessage('OTP đã được gửi!');
+    } catch (err) {
+      setOtpMessage(err.message);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  if (loadingProfile) return <div>Đang tải hồ sơ...</div>;
+  if (!personalInfo) return <div>Không tìm thấy thông tin cá nhân.</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-2">
@@ -153,16 +242,12 @@ const PatientProfile = () => {
         <div className="bg-white rounded-xl shadow p-6 flex flex-col gap-4">
           <div className="flex items-center gap-4 mb-2">
             <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-3xl text-gray-400">
-              {profile.avatar ? (
-                <img src={profile.avatar} alt={profile.name} className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <span className="material-icons">person</span>
-              )}
+              <span className="material-icons">person</span>
             </div>
             <div>
-              <div className="font-bold text-xl text-gray-800">{profile.name}</div>
-              <div className="text-gray-500 text-sm">{profile.role}</div>
-              <div className="text-xs bg-blue-50 text-blue-700 rounded px-2 py-1 mt-1 inline-block font-mono">ID: {profile.id}</div>
+              <div className="font-bold text-xl text-gray-800">{personalInfo.full_name}</div>
+              <div className="text-gray-500 text-sm">Bệnh nhân</div>
+              <div className="text-xs bg-blue-50 text-blue-700 rounded px-2 py-1 mt-1 inline-block font-mono">ID: {personalInfo.patient_id}</div>
             </div>
             {!edit ? (
               <button className="ml-auto px-4 py-2 rounded border border-gray-200 text-gray-600 hover:bg-gray-100 transition text-sm" onClick={handleEdit}>Chỉnh sửa</button>
@@ -173,8 +258,8 @@ const PatientProfile = () => {
               <label className="block text-xs text-gray-500 mb-1">Họ và tên</label>
               <input
                 className="w-full px-3 py-2 rounded border bg-gray-50"
-                value={edit ? editData.name : profile.name}
-                onChange={e => handleChange("name", e.target.value)}
+                value={edit ? editData.full_name : personalInfo.full_name}
+                onChange={e => handleChange("full_name", e.target.value)}
                 disabled={!edit}
               />
             </div>
@@ -182,7 +267,7 @@ const PatientProfile = () => {
               <label className="block text-xs text-gray-500 mb-1">Số điện thoại</label>
               <input
                 className="w-full px-3 py-2 rounded border bg-gray-50"
-                value={edit ? editData.phone : profile.phone}
+                value={edit ? editData.phone : personalInfo.phone}
                 onChange={e => handleChange("phone", e.target.value)}
                 disabled={!edit}
               />
@@ -191,7 +276,7 @@ const PatientProfile = () => {
               <label className="block text-xs text-gray-500 mb-1">Email</label>
               <input
                 className="w-full px-3 py-2 rounded border bg-gray-50"
-                value={edit ? editData.email : profile.email}
+                value={edit ? editData.email : personalInfo.email}
                 onChange={e => handleChange("email", e.target.value)}
                 disabled={!edit}
               />
@@ -200,7 +285,7 @@ const PatientProfile = () => {
               <label className="block text-xs text-gray-500 mb-1">Địa chỉ</label>
               <input
                 className="w-full px-3 py-2 rounded border bg-gray-50"
-                value={edit ? editData.address : profile.address}
+                value={edit ? editData.address : personalInfo.address}
                 onChange={e => handleChange("address", e.target.value)}
                 disabled={!edit}
               />
@@ -209,7 +294,7 @@ const PatientProfile = () => {
               <label className="block text-xs text-gray-500 mb-1">Ngày sinh</label>
               <input
                 className="w-full px-3 py-2 rounded border bg-gray-50"
-                value={edit ? editData.dob : profile.dob}
+                value={edit ? formatDateForInput(editData.dob) : formatDateForInput(personalInfo.dob)}
                 onChange={e => handleChange("dob", e.target.value)}
                 disabled={!edit}
                 type="date"
@@ -232,7 +317,29 @@ const PatientProfile = () => {
           {showChangePassword && !edit && (
             <div className="mt-2 p-4 bg-gray-100 rounded-xl border">
               <h4 className="font-semibold text-gray-800 mb-3">Đổi mật khẩu</h4>
-              
+              <div className="mb-3">
+                <label className="block text-xs text-gray-500 mb-1">Mã OTP</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    className="w-full px-3 py-2 rounded border focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    value={passwordData.otp}
+                    onChange={e => handlePasswordChange("otp", e.target.value)}
+                    placeholder="Nhập mã OTP được gửi về điện thoại/email"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGetOtp}
+                    className={`px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition ${otpLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={otpLoading}
+                  >
+                    {otpLoading ? 'Đang gửi...' : 'Lấy OTP'}
+                  </button>
+                </div>
+                {otpMessage && (
+                  <div className={`mt-2 text-sm ${otpMessage.includes('OTP đã được gửi') ? 'text-green-600' : 'text-red-600'}`}>{otpMessage}</div>
+                )}
+              </div>
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu cũ</label>
                 <input 
@@ -243,7 +350,6 @@ const PatientProfile = () => {
                   placeholder="Nhập mật khẩu hiện tại"
                 />
               </div>
-              
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Mật khẩu mới</label>
                 <input 
@@ -257,7 +363,6 @@ const PatientProfile = () => {
                   Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ thường, chữ hoa, số và ký tự đặc biệt (@$!%*?&)
                 </p>
               </div>
-              
               <div className="mb-3">
                 <label className="block text-xs text-gray-500 mb-1">Nhập lại mật khẩu mới</label>
                 <input 
@@ -303,7 +408,7 @@ const PatientProfile = () => {
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded font-semibold hover:bg-gray-300 transition"
                   onClick={() => {
                     setShowChangePassword(false);
-                    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+                    setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '', otp: '' });
                     setPasswordError('');
                     setPasswordSuccess('');
                   }}
@@ -320,27 +425,25 @@ const PatientProfile = () => {
             <span className="material-icons text-green-600">link</span> Thông tin y tế
           </div>
           <div className="rounded-xl bg-green-50 p-4 mb-2">
-            <div className="text-xs text-gray-500 mb-1">Tải lượng HIV</div>
-            <div className="text-2xl font-bold text-green-700 mb-1">{profile.hivLoad.value}</div>
-            <div className="text-xs text-gray-500">Xét nghiệm gần nhất: {profile.hivLoad.date}</div>
+            <div className="text-xs text-gray-500 mb-1">Tải lượng Virus Load</div>
+            <div className="text-2xl font-bold text-green-700 mb-1">
+              {medicalInfo && medicalInfo.viral_load ? medicalInfo.viral_load : <span className="text-gray-400 italic">Không có dữ liệu</span>}
+            </div>
           </div>
           <div className="rounded-xl bg-blue-50 p-4 mb-2">
             <div className="text-xs text-gray-500 mb-1">CD4 Count</div>
-            <div className="text-2xl font-bold text-blue-700 mb-1">{profile.cd4.value} {profile.cd4.unit}</div>
-            <div className="text-xs text-gray-500">Tình trạng miễn dịch: {profile.cd4.status}</div>
+            <div className="text-2xl font-bold text-blue-700 mb-1">
+              {medicalInfo && medicalInfo.cd4 ? medicalInfo.cd4 : <span className="text-gray-400 italic">Không có dữ liệu</span>}
+            </div>
           </div>
           <div className="rounded-xl bg-purple-50 p-4 mb-2">
             <div className="text-xs text-gray-500 mb-1">Phác đồ điều trị hiện tại</div>
-            <div className="font-bold text-purple-700 mb-1">{profile.regimen.name}</div>
-            <div className="text-xs text-gray-500 mb-1">{profile.regimen.dose}</div>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="material-icons text-orange-400 text-base">priority_high</span>
-              <span className="text-xs text-orange-600">Nhắc nhở: {profile.regimen.note}</span>
+            <div className="font-bold text-purple-700 mb-1">
+              {medicalInfo && medicalInfo.phac_do ? medicalInfo.phac_do : <span className="text-gray-400 italic">Không có dữ liệu</span>}
             </div>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Ghi chú y tế</label>
-            <textarea className="w-full px-3 py-2 rounded border bg-gray-50" value={profile.note} disabled />
+            <div className="text-xs text-gray-500 mb-1">
+              {medicalInfo && medicalInfo.phac_do_dose ? medicalInfo.phac_do_dose : ""}
+            </div>
           </div>
         </div>
       </div>
