@@ -9,7 +9,7 @@ import ClinicalSigns from "./components/PatientExam/CurrentExam/ClinicalSigns";
 import TestRequests from "./components/PatientExam/CurrentExam/TestRequests";
 import TestRequestsSection from "./components/PatientExam/CurrentExam/TestRequestsSection";
 import Diagnosis from "./components/PatientExam/CurrentExam/Diagnosis";
-import Prescription from "./components/PatientExam/CurrentExam/Prescription";
+import PrescriptionNew from "./components/PatientExam/CurrentExam/PrescriptionNew";
 import ExamActions from "./components/PatientExam/CurrentExam/ExamActions";
 import ExamHistoryList from "./components/PatientExam/ExamHistoryList";
 import LoadingSpinner from "./components/Dashboard/LoadingSpinner";
@@ -372,7 +372,7 @@ const PatientExamRefactored = ({
                 />
 
                 {/* Prescription */}
-                <Prescription
+                <PrescriptionNew
                   prescription={examForm.examData.prescription}
                   arvRegimens={examForm.arvRegimens}
                   currentARVRegimen={combinedPatientData?.currentArv}

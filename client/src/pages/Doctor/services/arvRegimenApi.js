@@ -12,6 +12,17 @@ export const arvRegimenApi = {
     }
   },
 
+  // Get ARV drugs for a selected regimen
+  getById: async (regimenId) => {
+    try {
+      const response = await api.get(`/api/v1/arv-regimens/${regimenId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching ARV regimen by ID:", error);
+      throw error;
+    }
+  },
+
   // Get prescription details
   getPrescriptionDetails: async () => {
     try {

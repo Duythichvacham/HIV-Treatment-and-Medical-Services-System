@@ -24,6 +24,10 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
       counseling_notes: "",
       follow_up_plan: "",
       doctor_notes: "",
+      // For managing ARV medications
+      arv_medications: [],
+      current_arv_medications: [],
+      regimen_type: "continue", // Track whether user is continuing or changing regimen
     },
   });
 
@@ -311,44 +315,57 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
   // Update prescription
   const updatePrescription = useCallback((fieldOrObject, value) => {
+    console.log(
+      "[useExamForm] updatePrescription called with:",
+      fieldOrObject,
+      value
+    );
+
     setExamData((prev) => {
       // If first param is an object, merge it
       if (typeof fieldOrObject === "object" && fieldOrObject !== null) {
+        const newPrescription = {
+          ...prev.prescription,
+          ...fieldOrObject,
+        };
+        console.log(
+          "[useExamForm] New prescription (object):",
+          newPrescription
+        );
         return {
           ...prev,
-          prescription: {
-            ...prev.prescription,
-            ...fieldOrObject,
-          },
+          prescription: newPrescription,
         };
       }
 
       // If it's a string field, use field/value pattern
+      const newPrescription = {
+        ...prev.prescription,
+        [fieldOrObject]: value,
+      };
+      console.log("[useExamForm] New prescription (field):", newPrescription);
       return {
         ...prev,
-        prescription: {
-          ...prev.prescription,
-          [fieldOrObject]: value,
-        },
+        prescription: newPrescription,
       };
     });
   }, []);
 
   // Add support drug
-  const addSupportDrug = useCallback(() => {
+  const addSupportDrug = useCallback((drugData) => {
     setExamData((prev) => ({
       ...prev,
       prescription: {
         ...prev.prescription,
         support_drugs: [
-          ...prev.prescription.support_drugs,
+          ...(prev.prescription.support_drugs || []),
           {
-            drug_name: "",
-            dosage: "",
-            frequency: "",
-            duration_days: "",
-            usage_instructions: "",
-            notes: "",
+            drug_name: drugData.drug_name || "",
+            dosage: drugData.dosage || "",
+            frequency: drugData.frequency || "",
+            duration_days: drugData.duration_days || "",
+            usage_instructions: drugData.usage_instructions || "",
+            notes: drugData.notes || "Thuốc hỗ trợ",
           },
         ],
       },
@@ -356,13 +373,13 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
   }, []);
 
   // Update support drug
-  const updateSupportDrug = useCallback((index, field, value) => {
+  const updateSupportDrug = useCallback((index, drugData) => {
     setExamData((prev) => ({
       ...prev,
       prescription: {
         ...prev.prescription,
-        support_drugs: prev.prescription.support_drugs.map((drug, i) =>
-          i === index ? { ...drug, [field]: value } : drug
+        support_drugs: (prev.prescription.support_drugs || []).map((drug, i) =>
+          i === index ? { ...drug, ...drugData } : drug
         ),
       },
     }));
@@ -374,7 +391,7 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
       ...prev,
       prescription: {
         ...prev.prescription,
-        support_drugs: prev.prescription.support_drugs.filter(
+        support_drugs: (prev.prescription.support_drugs || []).filter(
           (_, i) => i !== index
         ),
       },
