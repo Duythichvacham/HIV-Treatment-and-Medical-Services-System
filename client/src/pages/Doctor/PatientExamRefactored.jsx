@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 
 // Components
 import PatientInfoCard from "./components/PatientExam/PatientInfoCard";
@@ -32,10 +32,12 @@ const PatientExamRefactored = ({
   const [activeExamTab, setActiveExamTab] = useState(EXAM_TABS.CURRENT);
 
   // Custom hooks - always load for ARV and test results
-  const { patientDetail, loading: patientLoading } = usePatientDetail(
-    patientId,
-    appointmentId
-  );
+  const {
+    patientDetail,
+    loading: patientLoading,
+    lastRefresh,
+    refreshPatientDetail,
+  } = usePatientDetail(patientId, appointmentId);
 
   // Create patient data from patientInfo or fallback to usePatientDetail
   const combinedPatientData = useMemo(() => {
@@ -276,9 +278,31 @@ const PatientExamRefactored = ({
         {/* Latest Test Results */}
         {combinedPatientData?.latestTestResults ? (
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-green-800 mb-4 border-b pb-2">
-              Kết quả xét nghiệm gần nhất
-            </h3>
+            <div className="flex justify-between items-center mb-4 border-b pb-2">
+              <div>
+                <h3 className="text-lg font-semibold text-green-800">
+                  Kết quả xét nghiệm gần nhất
+                </h3>
+                {lastRefresh && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cập nhật lần cuối: {lastRefresh.toLocaleTimeString("vi-VN")}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={refreshPatientDetail}
+                disabled={patientLoading}
+                className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Cập nhật kết quả xét nghiệm"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${
+                    patientLoading ? "animate-spin" : ""
+                  }`}
+                />
+                Cập nhật
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(combinedPatientData.latestTestResults).map(
                 ([key, test]) => (
@@ -302,10 +326,25 @@ const PatientExamRefactored = ({
           </div>
         ) : (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <p className="text-gray-600 text-sm text-center">
-              <span className="font-medium">Chưa có kết quả xét nghiệm.</span>
-              Vui lòng yêu cầu xét nghiệm trong quá trình khám.
-            </p>
+            <div className="flex justify-between items-center">
+              <p className="text-gray-600 text-sm">
+                <span className="font-medium">Chưa có kết quả xét nghiệm.</span>
+                Vui lòng yêu cầu xét nghiệm trong quá trình khám.
+              </p>
+              <button
+                onClick={refreshPatientDetail}
+                disabled={patientLoading}
+                className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Cập nhật kết quả xét nghiệm"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${
+                    patientLoading ? "animate-spin" : ""
+                  }`}
+                />
+                Cập nhật
+              </button>
+            </div>
           </div>
         )}
 

@@ -37,7 +37,7 @@ export const arvRegimenApi = {
   // Get latest test results for a patient
   getLatestTests: async (patientId) => {
     try {
-      const response = await api.get(`/doctor/latest-tests/${patientId}`);
+      const response = await api.get(`/patients/latest-tests/${patientId}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching latest tests:", error);

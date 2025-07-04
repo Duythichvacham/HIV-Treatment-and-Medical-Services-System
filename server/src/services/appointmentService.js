@@ -248,8 +248,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
   const pool2 = await poolPromise;
   const fullInfoResult = await pool2
     .request()
-    .input("appointmentId", appointment.appointment_id)
-    .query(`
+    .input("appointmentId", appointment.appointment_id).query(`
       SELECT a.*, 
              r.room_name,
              d.full_name as doctor_name,
@@ -580,11 +579,13 @@ exports.getDoctorAppointments = async (
         a.status,
         FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') as created_at,
         a.doctor_id,
+        d.full_name as doctor_name,
         FORMAT(a.bookingDate, 'yyyy-MM-dd') as bookingDate
       FROM Appointments a
       JOIN Services s ON a.service_id = s.service_id
       JOIN Patients p on a.patient_id = p.patient_id
       JOIN Slots sl on sl.slot_id = a.slot_id
+      join Doctors d on a.doctor_id = d.doctor_id
       WHERE 
           s.service_type = 'examination' 
         and a.doctor_id = @doctorId 
@@ -640,4 +641,4 @@ exports.getTomorrowAppointments = async () => {
       AND a.status = 'requested'
   `);
   return result.recordset;
-}
+};
