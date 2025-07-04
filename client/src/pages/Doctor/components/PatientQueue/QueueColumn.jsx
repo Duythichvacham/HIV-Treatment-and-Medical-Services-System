@@ -11,6 +11,7 @@ const QueueColumn = ({
   patients,
   onPatientAction,
   loading = false,
+  processingAppointmentId,
 }) => {
   const getColumnConfig = () => {
     switch (type) {
@@ -100,6 +101,7 @@ const QueueColumn = ({
               index={index}
               type={type}
               onClick={() => onPatientAction(patient, type)}
+              processing={processingAppointmentId === patient.appointment_id}
             />
           ))
         )}
