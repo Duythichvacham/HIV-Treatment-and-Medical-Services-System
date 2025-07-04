@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsForPatient } from "../../services/api";
 import axios from "axios";
 import '../../styles/animations.css';
+import { User, Cake, Venus, Mars, HelpCircle, IdCard, Phone, FlaskConical, Dna, UserCheck, UserPlus, Stethoscope, Clock } from "lucide-react";
 
 const API_BASE = "http://localhost:5000/api/v1";
 
@@ -82,51 +83,66 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
     }
   }, [data.patient_id]);
 
+  const gender = (data.gender || '').toLowerCase();
+
   return (
-    <div className="bg-white rounded-3xl p-7 shadow-2xl border border-blue-100 mb-6 flex flex-col gap-2 transition-all hover:shadow-blue-200 animate-fade-in animate-slide-up duration-500">
+    <div className="bg-green-50 rounded-lg p-4 border border-green-200 mb-4 flex flex-col gap-2 shadow-sm">
       <div className="flex items-center mb-2 gap-3">
-        <div className="font-bold text-blue-700 text-lg bg-blue-50 rounded-full px-4 py-1 shadow-sm">
+        <div className="font-bold text-base text-green-800 bg-green-100 rounded px-3 py-1 border border-green-300 flex items-center gap-1">
+          <IdCard className="w-4 h-4 mr-1 text-green-600" />
           {data.queue_number !== undefined && data.queue_number !== null
             ? `STT: ${data.queue_number}`
             : data.id || data.code}
         </div>
-        <div className="font-semibold text-xl text-blue-900">
+        <div className="font-semibold text-base text-green-900 flex items-center gap-1">
+          <User className="w-4 h-4 mr-1 text-green-700" />
           {data.patient_name || data.name}
         </div>
       </div>
-      <div className="text-base text-gray-700 mb-1 flex gap-6">
-        <span className="font-medium">{data.age} tuổi</span>
-        <span className="font-medium">{data.gender}</span>
+      <div className="text-sm text-gray-700 mb-1 flex gap-6 items-center">
+        <Cake className="w-4 h-4 text-yellow-600" />
+        <span>{data.age} tuổi</span>
+        {gender === "male" || gender === "nam" ? (
+          <>
+            <Mars className="w-4 h-4 text-blue-500" />
+            <span>Nam</span>
+          </>
+        ) : gender === "female" || gender === "nữ" ? (
+          <>
+            <Venus className="w-4 h-4 text-pink-500" />
+            <span>Nữ</span>
+          </>
+        ) : (
+          <>
+            <HelpCircle className="w-4 h-4 text-gray-500" />
+            <span>Khác</span>
+          </>
+        )}
       </div>
-      <div className="text-xs text-gray-400 mb-1">
+      <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+        <Clock className="w-4 h-4 text-gray-400" />
         Đặt lúc: {formatDateTime(data.bookTime)}
       </div>
       {data.phone && (
-        <div className="text-sm text-gray-700 mb-1">📞 {data.phone}</div>
+        <div className="text-sm text-gray-700 mb-1 flex items-center gap-1"><Phone className="w-4 h-4 text-green-500" /> {data.phone}</div>
       )}
-      <div className="flex flex-wrap gap-2 my-2">
+      <div className="flex flex-wrap gap-2 my-2 items-center">
+        <FlaskConical className="w-4 h-4 text-green-700" />
         {data.source === 'doctor_request' && Array.isArray(data.type_names) ? (
           [...new Set(data.type_names)].map((tn, idx) => (
             <span key={idx}
-              className="px-3 py-1 rounded-full text-sm bg-gradient-to-r from-purple-200 to-purple-100 text-purple-800 font-semibold shadow">
+              className="px-2 py-1 rounded text-xs bg-green-100 text-green-700 border border-green-300">
               {tn}
             </span>
           ))
         ) : (
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-semibold shadow ${
-              data.type === "Sàng lọc"
-                ? "bg-yellow-100 text-yellow-700"
-                : data.type === "Khẳng định"
-                ? "bg-red-100 text-red-700"
-                : "bg-purple-100 text-purple-700"
-            }`}
-          >
+          <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700 border border-green-300">
             {data.type_name}
           </span>
         )}
       </div>
-      <div className="text-sm text-gray-600 mb-1 flex gap-6">
+      <div className="text-xs text-gray-600 mb-1 flex gap-6 items-center">
+        <Dna className="w-4 h-4 text-blue-600" />
         {section === "Hoàn thành" ? (
           (() => {
             const cd4s = (data.results || []).filter(r => r.test_type_id === 1);
@@ -135,8 +151,8 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
             const latestVL = vls.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), vls[0]);
             return (
               <>
-                <div>CD4: <b>{latestCD4 ? latestCD4.result_value : 'Chưa có'}</b></div>
-                <div>Viral Load: <b>{latestVL ? latestVL.result_value : 'Chưa có'}</b></div>
+                <span>CD4: <b>{latestCD4 ? latestCD4.result_value : 'Chưa có'}</b></span>
+                <span>Viral Load: <b>{latestVL ? latestVL.result_value : 'Chưa có'}</b></span>
               </>
             );
           })()
@@ -145,16 +161,17 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
             <div className="text-gray-400">Đang tải lịch sử xét nghiệm...</div>
           ) : (
             <>
-              <div>CD4: <b>{latest.cd4 || 'Chưa có'}</b></div>
-              <div>Viral Load: <b>{latest.vl || 'Chưa có'}</b></div>
+              <span>CD4: <b>{latest.cd4 || 'Chưa có'}</b></span>
+              <span>Viral Load: <b>{latest.vl || 'Chưa có'}</b></span>
             </>
           )
         )}
       </div>
-      <div className="text-xs text-gray-500 mb-1">
+      <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
         {data.source === "doctor_request" ? (
           <>
-            Nguồn: <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>
+            <Stethoscope className="w-4 h-4 text-blue-500" />
+            Nguồn: <span className="font-semibold text-gray-700">Bác sĩ chỉ định</span>
             {data.doctor ? (
               <>
                 {" "}- BS: <b>{data.doctor}</b>
@@ -162,17 +179,17 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
             ) : null}
           </>
         ) : data.source === "self_booking" ? (
-          <span className="font-semibold text-green-700">Bệnh nhân tự đăng ký</span>
+          <><UserPlus className="w-4 h-4 text-green-500" /> <span className="font-semibold text-gray-700">Bệnh nhân tự đăng ký</span></>
         ) : data.id ? (
-          <>BS chỉ định: <b>{data.doctor}</b></>
+          <><UserCheck className="w-4 h-4 text-green-500" /> BS chỉ định: <b>{data.doctor}</b></>
         ) : (
-          <b>Đăng kí xét nghiệm</b>
+          <><UserPlus className="w-4 h-4 text-green-500" /> <b>Đăng kí xét nghiệm</b></>
         )}
       </div>
       {section === "Chờ xét nghiệm" && (
         <button
           onClick={() => onStart(data)}
-          className="w-full mt-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white py-3 rounded-full font-bold text-lg hover:from-blue-800 hover:to-blue-600 transition-all shadow-lg"
+          className="w-full mt-3 bg-green-600 text-white py-2 rounded-full font-bold hover:bg-green-700 transition text-base"
         >
           Bắt đầu xét nghiệm
         </button>
@@ -180,14 +197,14 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       {section === "Đang xét nghiệm" && (
         <button
           onClick={() => onProcess(data)}
-          className="w-full mt-3 bg-gradient-to-r from-yellow-400 to-yellow-200 text-yellow-900 py-3 rounded-full font-bold text-lg hover:from-yellow-500 hover:to-yellow-300 transition-all shadow-lg"
+          className="w-full mt-3 bg-blue-600 text-white py-2 rounded-full font-bold hover:bg-blue-700 transition text-base"
         >
           Nhập kết quả
         </button>
       )}
       {section === "Hoàn thành" && (
         <>
-          <div className="bg-green-50 border border-green-200 rounded-xl p-3 my-2 text-sm text-green-700 flex flex-col gap-1">
+          <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-gray-700 flex flex-col gap-1">
             {(() => {
               const results = data.results || [];
               let doneTime = "-";
@@ -205,16 +222,22 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
             })()}
             {(() => {
               const r = getResultByType(data.results, 3);
-              return r ? <div>Kết quả sàng lọc: <b>{r.result_value}</b></div> : null;
+              let val = r?.result_value;
+              if (val === "negative" || val === "Âm tính") val = "Âm tính";
+              else if (val === "positive" || val === "Dương tính") val = "Dương tính";
+              return r ? <div>Kết quả sàng lọc: <b>{val}</b></div> : null;
             })()}
             {(() => {
               const r = getResultByType(data.results, 4);
-              return r ? <div>Kết quả khẳng định: <b>{r.result_value}</b></div> : null;
+              let val = r?.result_value;
+              if (val === "negative" || val === "Âm tính") val = "Âm tính";
+              else if (val === "positive" || val === "Dương tính") val = "Dương tính";
+              return r ? <div>Kết quả khẳng định: <b>{val}</b></div> : null;
             })()}
           </div>
           <button
             onClick={() => onResult && onResult(data)}
-            className="w-full mt-1 bg-gradient-to-r from-green-400 to-green-200 border border-green-400 text-green-900 py-3 rounded-full font-bold text-lg hover:from-green-500 hover:to-green-300 transition-all shadow-lg"
+            className="w-full mt-1 bg-gray-600 text-white py-2 rounded-full font-bold hover:bg-gray-700 transition text-base"
           >
             Xem kết quả
           </button>
@@ -513,21 +536,21 @@ const LabStaff = () => {
       </div>
     );
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-10 px-2 animate-fade-in duration-700">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-10 px-2">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-extrabold text-blue-900 mb-8 tracking-tight text-center drop-shadow-lg animate-slide-up duration-700">Quản lý xét nghiệm</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">Quản lý xét nghiệm</h1>
         {user?.id && !hasShift && !loading && (
           <div className="text-center text-red-600 font-semibold text-lg my-8">
             Bạn không được phân công ca làm việc trong ngày này. Chỉ xem được danh sách bệnh nhân.
           </div>
         )}
-        <div className="text-gray-600 mb-8 text-center text-lg">Quản lý mẫu xét nghiệm từ bác sĩ chỉ định và đăng ký xét nghiệm</div>
+       
         {/* Chọn ngày */}
-        <div className="mb-8 flex flex-col md:flex-row items-center gap-4 justify-center">
+        <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
           <label className="font-semibold text-lg">Chọn ngày:</label>
           <input
             type="date"
-            className="px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-300 text-lg shadow"
+            className="px-4 py-3 border rounded-xl text-lg"
             value={selectedDate}
             onChange={(e) => {
               setSelectedDate(e.target.value);
@@ -536,39 +559,39 @@ const LabStaff = () => {
           />
           <button
             onClick={fetchData}
-            className="px-6 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-full font-bold text-lg hover:from-blue-800 hover:to-blue-600 transition-all shadow-lg"
+            className="px-6 py-3 bg-gray-700 text-white rounded-full font-bold text-lg hover:bg-gray-800 transition"
           >
             Làm mới
           </button>
         </div>
         {/* Summary - dùng dữ liệu thật */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-          <div className="bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-yellow-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up">
+          <div className="bg-white rounded-2xl border p-7 flex items-center gap-6">
             <div className="text-4xl">🧪</div>
             <div>
-              <div className="text-3xl font-extrabold text-yellow-700">{summary.screening}</div>
-              <div className="text-yellow-800 font-semibold text-lg">XN Sàng lọc</div>
+              <div className="text-3xl font-bold text-gray-700">{summary.screening}</div>
+              <div className="text-gray-800 font-semibold text-lg">XN Sàng lọc</div>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-red-100 to-red-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-red-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up delay-100">
+          <div className="bg-white rounded-2xl border p-7 flex items-center gap-6">
             <div className="text-4xl">📄</div>
             <div>
-              <div className="text-3xl font-extrabold text-red-700">{summary.confirmation}</div>
-              <div className="text-red-800 font-semibold text-lg">XN Khẳng định</div>
+              <div className="text-3xl font-bold text-gray-700">{summary.confirmation}</div>
+              <div className="text-gray-800 font-semibold text-lg">XN Khẳng định</div>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-100 to-purple-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-purple-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up delay-200">
+          <div className="bg-white rounded-2xl border p-7 flex items-center gap-6">
             <div className="text-4xl">✔️</div>
             <div>
-              <div className="text-3xl font-extrabold text-purple-700">{summary.periodic}</div>
-              <div className="text-purple-800 font-semibold text-lg">XN CD4 & Viral Load</div>
+              <div className="text-3xl font-bold text-gray-700">{summary.periodic}</div>
+              <div className="text-gray-800 font-semibold text-lg">XN CD4 & Viral Load</div>
             </div>
           </div>
         </div>
         {/* Search */}
-        <div className="mb-10 max-w-2xl mx-auto animate-fade-in animate-slide-up delay-200">
+        <div className="mb-10">
           <input
-            className="w-full px-6 py-4 rounded-xl border-2 border-blue-200 focus:ring-2 focus:ring-blue-300 text-lg shadow transition-all duration-300 focus:scale-105"
+            className="w-full px-6 py-4 rounded-xl border text-lg"
             placeholder="Tìm theo tên, mã bệnh nhân hoặc xét nghiệm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -579,12 +602,12 @@ const LabStaff = () => {
           {filteredSections.map((section, idx) => (
             <div
               key={section.title}
-              className={`border-t-8 ${section.color} bg-white rounded-2xl shadow-xl p-6 flex-1 min-w-0 transition-all hover:shadow-blue-200 animate-fade-in animate-slide-up duration-700 delay-${idx * 100}`}
+              className={`border-t-4 ${section.color} bg-white rounded-2xl border p-6 flex-1 min-w-0`}
             >
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-2xl">{section.icon}</span>
                 <span
-                  className={`font-extrabold text-2xl ${section.color.replace(
+                  className={`font-bold text-2xl ${section.color.replace(
                     "border-",
                     "text-"
                   )}`}
