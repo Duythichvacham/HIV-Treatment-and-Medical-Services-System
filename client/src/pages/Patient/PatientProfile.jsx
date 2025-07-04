@@ -51,20 +51,21 @@ const PatientProfile = () => {
       }).then(async res => {
         if (!res.ok) throw new Error(res.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Không tìm thấy thông tin cá nhân.');
         return res.json();
-      }),
-      fetch(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      }).then(async res => {
-        if (res.status === 404) return null; // Không có thông tin y tế
-        if (!res.ok) throw new Error(res.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Không tìm thấy thông tin y tế.');
-        return res.json();
       })
-    ]).then(([personalRes, medicalRes]) => {
+      // Medical info API is not available, commented out for now
+      // fetch(`http://localhost:5000/api/v1/doctor/current-exam/${patientId}`, {
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     ...(token && { 'Authorization': `Bearer ${token}` })
+      //   }
+      // }).then(async res => {
+      //   if (res.status === 404) return null; // Không có thông tin y tế
+      //   if (!res.ok) throw new Error(res.status === 401 ? 'Bạn cần đăng nhập lại.' : 'Không tìm thấy thông tin y tế.');
+      //   return res.json();
+      // })
+    ]).then(([personalRes]) => {
       setPersonalInfo(personalRes.data || personalRes);
-      setMedicalInfo(medicalRes && medicalRes.data && medicalRes.data[0] ? medicalRes.data[0] : null);
+      setMedicalInfo(null); // No medical info for now
     }).catch(err => {
       alert(err.message);
     }).finally(() => setLoadingProfile(false));

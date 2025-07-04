@@ -59,7 +59,6 @@ export const API_ENDPOINTS = {
     EXAM_HISTORY: (patientId) => `/api/v1/doctors/exam-history/${patientId}`,
   },
   EXAMS: {
-    CURRENT: (patientId) => `/api/v1/doctors/current-exam/${patientId}`,
     SAVE: () => `/api/v1/doctors/save-exam-data`,
   },
   TESTS: {

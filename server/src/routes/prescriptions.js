@@ -4,17 +4,8 @@ const prescriptionController = require("../controllers/prescriptionController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 // POST /api/prescriptions - Create/Update prescription
-router.post(
-  "/prescriptions",
-  authMiddleware,
-  prescriptionController.savePrescription
-);
+router.post("/", prescriptionController.savePrescription);
 
-// POST /api/prescription-details - Create/Update prescription details
-router.post(
-  "/prescription-details",
-  authMiddleware,
-  prescriptionController.savePrescriptionDetails
-);
+router.get("/:appointmentId", prescriptionController.getPrescriptionExamData);
 
 module.exports = router;

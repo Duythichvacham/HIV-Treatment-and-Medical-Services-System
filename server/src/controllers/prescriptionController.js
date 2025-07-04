@@ -2,6 +2,8 @@ const prescriptionService = require("../services/prescriptionService");
 
 const savePrescription = async (req, res) => {
   try {
+    console.log("[savePrescription] Request body:", req.body);
+
     const {
       appointment_id,
       arv_regimen_id,
@@ -9,7 +11,18 @@ const savePrescription = async (req, res) => {
       counseling_notes,
       follow_up_plan,
       doctor_notes,
+      prescription_detail, // Thêm prescription_detail từ frontend
     } = req.body;
+
+    console.log("[savePrescription] Destructured data:", {
+      appointment_id,
+      arv_regimen_id,
+      support_drugs,
+      counseling_notes,
+      follow_up_plan,
+      doctor_notes,
+      prescription_detail,
+    });
 
     // Validate required fields
     if (!appointment_id) {
@@ -19,20 +32,32 @@ const savePrescription = async (req, res) => {
       });
     }
 
-    const result = await prescriptionService.savePrescription({
+    // arv_regimen_id có thể null nếu tiếp tục phác đồ hiện tại
+    if (arv_regimen_id !== undefined && arv_regimen_id !== null) {
+      console.log("[savePrescription] Using ARV regimen ID:", arv_regimen_id);
+    } else {
+      console.log(
+        "[savePrescription] No ARV regimen change (continuing current regimen)"
+      );
+    }
+
+    const result = await prescriptionService.savePrescription(
       appointment_id,
       arv_regimen_id,
       support_drugs,
       counseling_notes,
       follow_up_plan,
       doctor_notes,
-    });
+      prescription_detail // Thêm prescription_detail
+    );
 
-    res.status(200).json({
-      success: true,
-      message: "Prescription saved successfully",
-      data: result,
-    });
+    if (result) {
+      res.status(200).json({
+        success: true,
+        message: "Prescription saved successfully",
+        data: result,
+      });
+    }
   } catch (error) {
     console.error("Error saving prescription:", error);
     res.status(500).json({
@@ -43,30 +68,27 @@ const savePrescription = async (req, res) => {
   }
 };
 
-const savePrescriptionDetails = async (req, res) => {
+const getPrescriptionExamData = async (req, res) => {
+  const { appointmentId } = req.params;
   try {
-    const { arv_regimen_id, drug } = req.body;
+    console.log("[getPrescriptionExamData] Appointment ID:", appointmentId);
+    const prescriptionData = await prescriptionService.getPrescriptionExamData(
+      appointmentId
+    );
 
-    // Validate required fields
-    if (!arv_regimen_id || !drug || !Array.isArray(drug)) {
-      return res.status(400).json({
+    if (!prescriptionData) {
+      return res.status(404).json({
         success: false,
-        message: "arv_regimen_id and drug array are required",
+        message: "No prescription data found for this appointment",
       });
     }
 
-    const result = await prescriptionService.savePrescriptionDetails({
-      arv_regimen_id,
-      drug,
-    });
-
     res.status(200).json({
       success: true,
-      message: "Prescription details saved successfully",
-      data: result,
+      data: prescriptionData,
     });
   } catch (error) {
-    console.error("Error saving prescription details:", error);
+    console.error("Error fetching prescription exam data:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -77,5 +99,5 @@ const savePrescriptionDetails = async (req, res) => {
 
 module.exports = {
   savePrescription,
-  savePrescriptionDetails,
+  getPrescriptionExamData,
 };
