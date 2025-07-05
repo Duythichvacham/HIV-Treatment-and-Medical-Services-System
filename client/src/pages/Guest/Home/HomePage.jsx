@@ -156,8 +156,31 @@ const HomePage = () => {
           </section>
         </SectionFadeIn>
 
-        {/* Dịch vụ nổi bật */}
+        {/* Đội ngũ bác sĩ chuyên nghiệp */}
         <SectionFadeIn delay={0.3}>
+          <section className="bg-white py-16">
+            <div className="max-w-6xl mx-auto px-4">
+              <h2 className="text-3xl font-bold text-center text-green-700 mb-2">
+                Đội ngũ bác sĩ chuyên nghiệp
+              </h2>
+              <p className="text-center text-gray-500 mb-10">
+                Các chuyên gia hàng đầu trong lĩnh vực HIV/AIDS
+              </p>
+              {loadingDoctors ? (
+                <div className="text-center p-6">
+                  Đang tải danh sách bác sĩ...
+                </div>
+              ) : doctorsError ? (
+                <div className="text-center p-6 text-red-500">{doctorsError}</div>
+              ) : (
+                <DoctorSlider doctors={doctors} />
+              )}
+            </div>
+          </section>
+        </SectionFadeIn>
+
+        {/* Dịch vụ nổi bật */}
+        <SectionFadeIn delay={0.45}>
           <section className="bg-green-50 py-16">
             <div className="max-w-6xl mx-auto px-4">
               <h2 className="text-3xl font-bold text-center text-green-700 mb-2">
@@ -176,7 +199,6 @@ const HomePage = () => {
                 </div>
               ) : (
                 <div className="grid md:grid-cols-3 gap-8">
-                  {" "}
                   {services && services.length > 0 ? (
                     services.slice(0, 3).map((service) => {
                       const displayData = getServiceDisplayData(
@@ -214,29 +236,6 @@ const HomePage = () => {
         </SectionFadeIn>
 
         <NewsSection />
-
-        {/* Đội ngũ bác sĩ chuyên nghiệp */}
-        <SectionFadeIn delay={0.45}>
-          <section className="bg-white py-16">
-            <div className="max-w-6xl mx-auto px-4">
-              <h2 className="text-3xl font-bold text-center text-green-700 mb-2">
-                Đội ngũ bác sĩ chuyên nghiệp
-              </h2>
-              <p className="text-center text-gray-500 mb-10">
-                Các chuyên gia hàng đầu trong lĩnh vực HIV/AIDS
-              </p>
-              {loadingDoctors ? (
-                <div className="text-center p-6">
-                  Đang tải danh sách bác sĩ...
-                </div>
-              ) : doctorsError ? (
-                <div className="text-center p-6 text-red-500">{doctorsError}</div>
-              ) : (
-                <DoctorSlider doctors={doctors} />
-              )}
-            </div>
-          </section>
-        </SectionFadeIn>
 
         {/* Chứng nhận & Giấy phép */}
         <SectionFadeIn delay={0.6}>

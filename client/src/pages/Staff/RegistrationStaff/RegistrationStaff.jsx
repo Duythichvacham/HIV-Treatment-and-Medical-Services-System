@@ -106,7 +106,6 @@ const RegistrationStaff = () => {
                           request={request}
                           index={index}
                           formatCurrency={formatCurrency}
-                          formatDateTime={formatDateTime}
                           onProcessPayment={handleProcessPayment}
                           isProcessing={loading}
                         />

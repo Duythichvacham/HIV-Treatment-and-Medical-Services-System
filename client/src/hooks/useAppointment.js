@@ -10,7 +10,6 @@ import {
   getRegistrationStatistics,
   getPendingTestRequests,
   getPaymentHistory,
-  approveTestRequest,
 } from "../services/api";
 import { getCurrentDate } from "../utils/dateUtil";
 import { useAuth } from "../contexts/AuthContext";
@@ -190,8 +189,8 @@ export const useDoctorAppointment = () => {
         appointmentId: res?.appointment?.appointment_id,
         queueNumber: queueNumber,
         serviceName: `Khám bệnh - ${selectedDoctor.name}`,
-        room: res?.room || "Chưa xác định",
-        doctorOrStaff: selectedDoctor.name,
+        room: res?.appointment?.room_name || "Chưa xác định",
+        doctorOrStaff: res?.appointment?.doctor_name || selectedDoctor.name,
         date: selectedDate,
         time: selectedTime.time_slot || selectedTime.time,
         fee: getExamPrice(),
@@ -941,13 +940,12 @@ export const useRegistrationStaff = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleProcessPayment = async (requestIndex, paymentMethod = "cash") => {
+  const handleProcessPayment = async (requestIndex) => {
     const request = testRequests[requestIndex];
 
     try {
       setLoading(true);
-      await approveTestRequest(request.appointment_id, paymentMethod);
-
+      // API call is already handled in PaymentModal, just update UI
       // Update UI
       setTestRequests((prev) =>
         prev.filter((_, index) => index !== requestIndex)
@@ -956,6 +954,7 @@ export const useRegistrationStaff = () => {
         ...prev,
         pending_requests: prev.pending_requests - 1,
         processed_today: prev.processed_today + 1,
+        today_revenue: prev.today_revenue + (request.total_price || 0),
       }));
 
       console.log("✅ Test request approved successfully");

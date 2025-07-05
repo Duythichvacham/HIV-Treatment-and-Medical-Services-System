@@ -22,6 +22,7 @@ exports.verifyOtp = (req, res) => {
   }
   delete otpStore[email];
   verifiedEmails[email] = Date.now() + 10 * 60 * 1000; // Cho phép đăng ký/đổi mật khẩu trong 10 phút
+  console.log('Set verifiedEmails:', email, verifiedEmails[email]);
   res.json({ message: 'OTP verified' });
 };
 

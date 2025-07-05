@@ -1,5 +1,5 @@
 const { poolPromise } = require("../config/db");
-const queueService = require("./queueService");
+const queueService = require("./queues/queueService");
 
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {
@@ -9,7 +9,7 @@ exports.updateAppointmentStatus = async (appointment_id, status) => {
     .input("appointment_id", appointment_id)
     .input("status", status)
     .query(
-      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT * FROM Appointments WHERE appointment_id = @appointment_id"
+      "UPDATE Appointments SET status = @status WHERE appointment_id = @appointment_id; SELECT a.*, r.room_name FROM Appointments a LEFT JOIN Rooms r ON a.room_id = r.room_id WHERE a.appointment_id = @appointment_id"
     );
   return result.recordset[0];
 };
@@ -71,10 +71,20 @@ exports.createAppointment = async (data) => {
     queueNumber = 1;
   }
 
-  // 3. Trả về appointment với queue number
+  // 3. Lấy thông tin room_name để trả về cho frontend
+  const pool2 = await poolPromise;
+  const roomResult = await pool2
+    .request()
+    .input("roomId", room_id)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
+  // 4. Trả về appointment với queue number và room_name
   return {
     ...appointment,
     queue_number: queueNumber,
+    room_name: room_name,
   };
 };
 exports.getServiceInfo = async (serviceId) => {
@@ -234,8 +244,27 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
 
   const invoice_id = invoiceResult.recordset[0].invoice_id;
 
+  // 6. Lấy thông tin đầy đủ cho response (bao gồm doctor_name, room_name)
+  const pool2 = await poolPromise;
+  const fullInfoResult = await pool2
+    .request()
+    .input("appointmentId", appointment.appointment_id)
+    .query(`
+      SELECT a.*, 
+             r.room_name,
+             d.full_name as doctor_name,
+             s.name as service_name
+      FROM Appointments a
+      LEFT JOIN Rooms r ON a.room_id = r.room_id
+      LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
+      LEFT JOIN Services s ON a.service_id = s.service_id
+      WHERE a.appointment_id = @appointmentId
+    `);
+
+  const fullAppointmentInfo = fullInfoResult.recordset[0];
+
   return {
-    ...appointment,
+    ...fullAppointmentInfo,
     invoice_id,
   };
 };
@@ -521,6 +550,77 @@ exports.getInvoiceByAppointmentId = async (appointment_id) => {
     `);
 
   return result.recordset[0] || null;
+};
+
+// Lấy tất cả cuộc hẹn của bác sĩ, có thể lọc theo status và bookingDate
+exports.getDoctorAppointments = async (
+  doctorId,
+  status,
+  bookingDate,
+  slot_id,
+  patient_id
+) => {
+  const pool = await poolPromise;
+  try {
+    const request = pool.request().input("doctorId", parseInt(doctorId, 10));
+
+    // Xây dựng câu query với các điều kiện lọc
+    let query = `
+      SELECT 
+          a.appointment_id,
+          a.patient_id,
+          p.full_name,
+        DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
+        p.gender,
+        p.phone,
+        p.address,
+        sl.slot_id,
+        CONVERT(VARCHAR(5), sl.start_time, 108) + ' - ' + CONVERT(VARCHAR(5), sl.end_time, 108) AS slot_time,
+        s.service_type,
+        a.status,
+        FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') as created_at,
+        a.doctor_id,
+        FORMAT(a.bookingDate, 'yyyy-MM-dd') as bookingDate
+      FROM Appointments a
+      JOIN Services s ON a.service_id = s.service_id
+      JOIN Patients p on a.patient_id = p.patient_id
+      JOIN Slots sl on sl.slot_id = a.slot_id
+      WHERE 
+          s.service_type = 'examination' 
+        and a.doctor_id = @doctorId 
+    `;
+
+    // Thêm điều kiện lọc theo status nếu có
+    if (status) {
+      request.input("status", status);
+      query += " AND a.status = @status";
+    }
+
+    // Thêm điều kiện lọc theo ngày nếu có
+    if (bookingDate) {
+      request.input("bookingDate", bookingDate);
+      query += " AND CAST(a.bookingDate AS DATE) = @bookingDate";
+    }
+
+    // Thêm điều kiện lọc theo slot_id nếu có
+    if (slot_id) {
+      request.input("slot_id", parseInt(slot_id, 10));
+      query += " AND a.slot_id = @slot_id";
+    }
+    if (patient_id) {
+      request.input("patient_id", parseInt(patient_id, 10));
+      query += " AND a.patient_id = @patient_id";
+    }
+    // Sắp xếp
+    //query += " ORDER BY a.queue_number ASC";
+
+    const result = await request.query(query);
+
+    return result.recordset || [];
+  } catch (error) {
+    console.error("Error in getDoctorAppointments:", error);
+    throw error;
+  }
 };
 
 // Lấy danh sách lịch hẹn ngày mai

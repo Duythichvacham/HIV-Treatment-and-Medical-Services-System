@@ -97,21 +97,26 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       });
 
       // Lấy appointment_id từ response
-      const appointment_id =
-        res?.appointment?.appointment_id || res?.appointment_id;
+      const appointment_id = res?.appointment?.appointment_id || res?.appointment_id;
+
+      console.log("🔍 DEBUG API Response:", JSON.stringify(res, null, 2));
+      console.log("🔍 DEBUG appointment:", res?.appointment);
+      console.log("🔍 DEBUG doctor_name:", res?.appointment?.doctor_name);
 
       // Tạo dữ liệu đầy đủ với appointmentId (giống như trang /appointment)
       const mappedData = {
         appointmentId: appointment_id,
         queueNumber: res?.queue_info?.queue_number || res?.queue_number || 1,
         serviceName: serviceName,
-        room: res?.room || (isDoctor ? "Chưa xác định" : "Phòng xét nghiệm"),
-        doctorOrStaff: isDoctor ? user?.name : "Nhân viên xét nghiệm",
+        room: res?.appointment?.room_name || "Chưa xác định",
+        doctorOrStaff: isDoctor ? (res?.appointment?.doctor_name || "Chưa xác định") : "Nhân viên xét nghiệm",
         date: date,
         time: isDoctor ? (slots.find(s => String(s.value) === String(timeSlot))?.label || "") : "Không cần đặt giờ cụ thể",
         fee: typeof price === "number" ? `${Number(price).toLocaleString()}đ` : price,
         isDoctor: isDoctor,
       };
+
+      console.log("🔍 DEBUG mappedData:", mappedData);
 
       setAppointmentData(mappedData);
       setIsConfirmOpen(true); // Show payment confirmation modal
