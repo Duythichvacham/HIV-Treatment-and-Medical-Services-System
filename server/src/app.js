@@ -34,9 +34,4 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  // Lên lịch chạy lúc 7h sáng mỗi ngày
-  // cron.schedule("* * * * *", () => {
-  //   console.log("Bắt đầu gửi email nhắc lịch hẹn...");
-  //   sendRemindersForTomorrow();
-  // });
 });

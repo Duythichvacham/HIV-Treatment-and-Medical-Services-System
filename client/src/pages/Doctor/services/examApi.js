@@ -2,6 +2,14 @@ import apiClient from "./appointmentApi";
 import { API_ENDPOINTS } from "../utils/constants";
 
 export const examApi = {
+  // Get current exam data
+  getCurrent: async (patientId, appointmentId = null) => {
+    const url = API_ENDPOINTS.EXAMS.CURRENT(patientId);
+    const params = appointmentId ? { appointment_id: appointmentId } : {};
+    const response = await apiClient.get(url, { params });
+    return response.data;
+  },
+
   // Get exam data by appointment ID (for loading saved temp data)
   getExamData: async (appointmentId) => {
     // Use the clinical exam endpoint to get existing exam data

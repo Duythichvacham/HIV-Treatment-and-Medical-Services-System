@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsForPatient } from "../../services/api";
 import axios from "axios";
+import '../../styles/animations.css';
 
 const API_BASE = "http://localhost:5000/api/v1";
 
@@ -67,14 +68,12 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       setLoadingLatest(true);
       getLatestTestResultsForPatient(data.patient_id)
         .then(res => {
-          console.log("Latest results for patient", data.patient_id, ":", res);
           setLatest({
             cd4: res?.data?.latest_cd4 || null,
             vl: res?.data?.latest_viral_load || null
           });
         })
         .catch(error => {
-          console.error("Error fetching latest results:", error);
           setLatest({ cd4: null, vl: null });
         })
         .finally(() => {
@@ -84,21 +83,20 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
   }, [data.patient_id]);
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow border mb-4">
-      <div className="flex items-center mb-2">
-        {/* Hiển thị số thứ tự từ queue_number */}
-        <div className="font-bold text-blue-700 mr-2">
+    <div className="bg-white rounded-3xl p-7 shadow-2xl border border-blue-100 mb-6 flex flex-col gap-2 transition-all hover:shadow-blue-200 animate-fade-in animate-slide-up duration-500">
+      <div className="flex items-center mb-2 gap-3">
+        <div className="font-bold text-blue-700 text-lg bg-blue-50 rounded-full px-4 py-1 shadow-sm">
           {data.queue_number !== undefined && data.queue_number !== null
             ? `STT: ${data.queue_number}`
             : data.id || data.code}
         </div>
-        <div className="font-semibold text-lg">
+        <div className="font-semibold text-xl text-blue-900">
           {data.patient_name || data.name}
         </div>
       </div>
-      <div className="text-xs text-gray-500 mb-1">{data.code}</div>
-      <div className="text-sm text-gray-700 mb-1">
-        {data.age} tuổi - {data.gender}
+      <div className="text-base text-gray-700 mb-1 flex gap-6">
+        <span className="font-medium">{data.age} tuổi</span>
+        <span className="font-medium">{data.gender}</span>
       </div>
       <div className="text-xs text-gray-400 mb-1">
         Đặt lúc: {formatDateTime(data.bookTime)}
@@ -110,14 +108,13 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
         {data.source === 'doctor_request' && Array.isArray(data.type_names) ? (
           [...new Set(data.type_names)].map((tn, idx) => (
             <span key={idx}
-              className={`px-2 py-1 rounded text-xs bg-purple-100 text-purple-700`}
-            >
+              className="px-3 py-1 rounded-full text-sm bg-gradient-to-r from-purple-200 to-purple-100 text-purple-800 font-semibold shadow">
               {tn}
             </span>
           ))
         ) : (
           <span
-            className={`px-2 py-1 rounded text-xs ${
+            className={`px-3 py-1 rounded-full text-sm font-semibold shadow ${
               data.type === "Sàng lọc"
                 ? "bg-yellow-100 text-yellow-700"
                 : data.type === "Khẳng định"
@@ -129,32 +126,27 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
           </span>
         )}
       </div>
-      {/* Hiển thị tải lượng CD4 và Viral Load gần nhất, mỗi loại một dòng */}
-      <div className="text-xs text-gray-600 mb-1">
+      <div className="text-sm text-gray-600 mb-1 flex gap-6">
         {section === "Hoàn thành" ? (
-          // Ở bảng hoàn thành: hiển thị kết quả của chính test note này
           (() => {
-            // Lấy kết quả CD4 mới nhất trong test_note hiện tại
             const cd4s = (data.results || []).filter(r => r.test_type_id === 1);
             const latestCD4 = cd4s.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), cd4s[0]);
-            // Lấy kết quả Viral Load mới nhất trong test_note hiện tại
             const vls = (data.results || []).filter(r => r.test_type_id === 2);
             const latestVL = vls.reduce((a, b) => (a && a.created_at > b.created_at ? a : b), vls[0]);
             return (
               <>
-                <div>CD4 gần nhất: <b>{latestCD4 ? latestCD4.result_value : 'Chưa có'}</b></div>
-                <div>Viral Load gần nhất: <b>{latestVL ? latestVL.result_value : 'Chưa có'}</b></div>
+                <div>CD4: <b>{latestCD4 ? latestCD4.result_value : 'Chưa có'}</b></div>
+                <div>Viral Load: <b>{latestVL ? latestVL.result_value : 'Chưa có'}</b></div>
               </>
             );
           })()
         ) : (
-          // Ở bảng chờ xét nghiệm và đang xét nghiệm: hiển thị kết quả mới nhất của bệnh nhân
           loadingLatest ? (
             <div className="text-gray-400">Đang tải lịch sử xét nghiệm...</div>
           ) : (
             <>
-              <div>CD4 gần nhất: <b>{latest.cd4 || 'Chưa có'}</b></div>
-              <div>Viral Load gần nhất: <b>{latest.vl || 'Chưa có'}</b></div>
+              <div>CD4: <b>{latest.cd4 || 'Chưa có'}</b></div>
+              <div>Viral Load: <b>{latest.vl || 'Chưa có'}</b></div>
             </>
           )
         )}
@@ -162,25 +154,17 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       <div className="text-xs text-gray-500 mb-1">
         {data.source === "doctor_request" ? (
           <>
-            Nguồn:{" "}
-            <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>
+            Nguồn: <span className="font-semibold text-blue-700">Bác sĩ chỉ định</span>
             {data.doctor ? (
               <>
-                {" "}
-                - BS: <b>{data.doctor}</b>
+                {" "}- BS: <b>{data.doctor}</b>
               </>
             ) : null}
           </>
         ) : data.source === "self_booking" ? (
-          <>
-            <span className="font-semibold text-green-700">
-              Bệnh nhân tự đăng ký
-            </span>
-          </>
+          <span className="font-semibold text-green-700">Bệnh nhân tự đăng ký</span>
         ) : data.id ? (
-          <>
-            BS chỉ định: <b>{data.doctor}</b>
-          </>
+          <>BS chỉ định: <b>{data.doctor}</b></>
         ) : (
           <b>Đăng kí xét nghiệm</b>
         )}
@@ -188,7 +172,7 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       {section === "Chờ xét nghiệm" && (
         <button
           onClick={() => onStart(data)}
-          className="w-full mt-3 bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 transition"
+          className="w-full mt-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white py-3 rounded-full font-bold text-lg hover:from-blue-800 hover:to-blue-600 transition-all shadow-lg"
         >
           Bắt đầu xét nghiệm
         </button>
@@ -196,46 +180,41 @@ const Card = ({ data, section, onStart, onProcess, onResult }) => {
       {section === "Đang xét nghiệm" && (
         <button
           onClick={() => onProcess(data)}
-          className="w-full mt-3 bg-gray-200 text-gray-800 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
+          className="w-full mt-3 bg-gradient-to-r from-yellow-400 to-yellow-200 text-yellow-900 py-3 rounded-full font-bold text-lg hover:from-yellow-500 hover:to-yellow-300 transition-all shadow-lg"
         >
           Nhập kết quả
         </button>
       )}
       {section === "Hoàn thành" && (
         <>
-          <div className="bg-green-50 border border-green-200 rounded p-2 my-2 text-xs text-green-700">
-            {/* Thời gian hoàn thành */}
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 my-2 text-sm text-green-700 flex flex-col gap-1">
             {(() => {
               const results = data.results || [];
               let doneTime = "-";
               if (results.length > 0) {
                 const latest = results.reduce((a, b) => {
-                  // So sánh trực tiếp chuỗi thời gian
                   const aTime = a.created_at || "";
                   const bTime = b.created_at || "";
                   return aTime > bTime ? a : b;
                 });
-                // Sử dụng hàm formatDateTime đã được cập nhật
                 if (latest && latest.created_at) {
                   doneTime = formatDateTime(latest.created_at);
                 }
               }
               return <div>Hoàn thành: {doneTime}</div>;
             })()}
-            {/* Kết quả Sàng lọc */}
             {(() => {
-              const r = getResultByType(data.results, 3); // 3 = Sàng lọc
+              const r = getResultByType(data.results, 3);
               return r ? <div>Kết quả sàng lọc: <b>{r.result_value}</b></div> : null;
             })()}
-            {/* Kết quả Khẳng định */}
             {(() => {
-              const r = getResultByType(data.results, 4); // 4 = Khẳng định
+              const r = getResultByType(data.results, 4);
               return r ? <div>Kết quả khẳng định: <b>{r.result_value}</b></div> : null;
             })()}
           </div>
           <button
             onClick={() => onResult && onResult(data)}
-            className="w-full mt-1 bg-white border border-green-400 text-green-700 py-2 rounded-lg font-semibold hover:bg-green-50 transition"
+            className="w-full mt-1 bg-gradient-to-r from-green-400 to-green-200 border border-green-400 text-green-900 py-3 rounded-full font-bold text-lg hover:from-green-500 hover:to-green-300 transition-all shadow-lg"
           >
             Xem kết quả
           </button>
@@ -322,17 +301,41 @@ const LabStaff = () => {
       const completed = await getAllLabTests('completed', selectedDate, lab_staff_id);
       const completedGrouped = groupByRequest(completed);
       // Tính toán summary từ dữ liệu thật
-      const screening = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("sàng lọc")
+      // Cần group theo request để tránh đếm gấp đôi
+      const groupedForSummary = groupByRequest(allTests);
+      
+      const screening = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            return test.type_names.some(name => name && name.toLowerCase().includes("sàng lọc"));
+          }
+          return test.type_name && test.type_name.toLowerCase().includes("sàng lọc");
+        }
       ).length;
-      const confirmation = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("khẳng định")
+      
+      const confirmation = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            return test.type_names.some(name => name && name.toLowerCase().includes("khẳng định"));
+          }
+          return test.type_name && test.type_name.toLowerCase().includes("khẳng định");
+        }
       ).length;
-      const periodic = allTests.filter(
-        (test) =>
-          test.type_name && test.type_name.toLowerCase().includes("cd4") && test.type_name.toLowerCase().includes("viral load")
+      
+      const periodic = groupedForSummary.filter(
+        (test) => {
+          if (test.source === 'doctor_request' && test.type_names) {
+            // Kiểm tra nếu có cả CD4 và Viral Load trong cùng một request
+            const hasCD4 = test.type_names.some(name => name && name.toLowerCase().includes("cd4"));
+            const hasViralLoad = test.type_names.some(name => name && name.toLowerCase().includes("viral load"));
+            return hasCD4 || hasViralLoad;
+          }
+          // Cho self_booking, kiểm tra type_name
+          return test.type_name && (
+            test.type_name.toLowerCase().includes("cd4") || 
+            test.type_name.toLowerCase().includes("viral load")
+          );
+        }
       ).length;
       setSummary({ screening, confirmation, periodic });
       setSections((prevSections) => [
@@ -510,25 +513,21 @@ const LabStaff = () => {
       </div>
     );
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-4">Quản lý xét nghiệm</h1>
-      {/* Nếu không có ca làm việc và có lab_staff_id thì báo */}
-      {user?.id && !hasShift && !loading && (
-        <div className="text-center text-red-600 font-semibold text-lg my-8">
-          Bạn không được phân công ca làm việc trong ngày này. Chỉ xem được danh
-          sách bệnh nhân.
-        </div>
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-10 px-2 animate-fade-in duration-700">
       <div className="max-w-7xl mx-auto">
-        <div className="text-gray-600 mb-6">
-          Quản lý mẫu xét nghiệm từ bác sĩ chỉ định và đăng ký xét nghiệm
-        </div>
+        <h1 className="text-4xl font-extrabold text-blue-900 mb-8 tracking-tight text-center drop-shadow-lg animate-slide-up duration-700">Quản lý xét nghiệm</h1>
+        {user?.id && !hasShift && !loading && (
+          <div className="text-center text-red-600 font-semibold text-lg my-8">
+            Bạn không được phân công ca làm việc trong ngày này. Chỉ xem được danh sách bệnh nhân.
+          </div>
+        )}
+        <div className="text-gray-600 mb-8 text-center text-lg">Quản lý mẫu xét nghiệm từ bác sĩ chỉ định và đăng ký xét nghiệm</div>
         {/* Chọn ngày */}
-        <div className="mb-6 flex items-center gap-3">
-          <label className="font-medium">Chọn ngày:</label>
+        <div className="mb-8 flex flex-col md:flex-row items-center gap-4 justify-center">
+          <label className="font-semibold text-lg">Chọn ngày:</label>
           <input
             type="date"
-            className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200"
+            className="px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-300 text-lg shadow"
             value={selectedDate}
             onChange={(e) => {
               setSelectedDate(e.target.value);
@@ -537,61 +536,55 @@ const LabStaff = () => {
           />
           <button
             onClick={fetchData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="px-6 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-full font-bold text-lg hover:from-blue-800 hover:to-blue-600 transition-all shadow-lg"
           >
             Làm mới
           </button>
         </div>
         {/* Summary - dùng dữ liệu thật */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
-            <div className="text-3xl text-yellow-500">🧪</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+          <div className="bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-yellow-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up">
+            <div className="text-4xl">🧪</div>
             <div>
-              <div className="text-2xl font-bold">{summary.screening}</div>
-              <div className="text-gray-700 font-medium text-sm">
-                XN Sàng lọc
-              </div>
+              <div className="text-3xl font-extrabold text-yellow-700">{summary.screening}</div>
+              <div className="text-yellow-800 font-semibold text-lg">XN Sàng lọc</div>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
-            <div className="text-3xl text-red-500">📄</div>
+          <div className="bg-gradient-to-r from-red-100 to-red-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-red-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up delay-100">
+            <div className="text-4xl">📄</div>
             <div>
-              <div className="text-2xl font-bold">{summary.confirmation}</div>
-              <div className="text-gray-700 font-medium text-sm">
-                XN Khẳng định
-              </div>
+              <div className="text-3xl font-extrabold text-red-700">{summary.confirmation}</div>
+              <div className="text-red-800 font-semibold text-lg">XN Khẳng định</div>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
-            <div className="text-3xl text-purple-500">✔️</div>
+          <div className="bg-gradient-to-r from-purple-100 to-purple-50 rounded-2xl shadow-xl p-7 flex items-center gap-6 border-2 border-purple-200 transition-all duration-500 hover:scale-105 animate-fade-in animate-slide-up delay-200">
+            <div className="text-4xl">✔️</div>
             <div>
-              <div className="text-2xl font-bold">{summary.periodic}</div>
-              <div className="text-gray-700 font-medium text-sm">
-                XN CD4 & Viral Load
-              </div>
+              <div className="text-3xl font-extrabold text-purple-700">{summary.periodic}</div>
+              <div className="text-purple-800 font-semibold text-lg">XN CD4 & Viral Load</div>
             </div>
           </div>
         </div>
         {/* Search */}
-        <div className="mb-6">
+        <div className="mb-10 max-w-2xl mx-auto animate-fade-in animate-slide-up delay-200">
           <input
-            className="w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-blue-200"
+            className="w-full px-6 py-4 rounded-xl border-2 border-blue-200 focus:ring-2 focus:ring-blue-300 text-lg shadow transition-all duration-300 focus:scale-105"
             placeholder="Tìm theo tên, mã bệnh nhân hoặc xét nghiệm..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         {/* Sections */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {filteredSections.map((section) => (
+        <div className="grid md:grid-cols-3 gap-10">
+          {filteredSections.map((section, idx) => (
             <div
               key={section.title}
-              className={`border-t-4 ${section.color} bg-white rounded-xl shadow p-4 flex-1 min-w-0`}
+              className={`border-t-8 ${section.color} bg-white rounded-2xl shadow-xl p-6 flex-1 min-w-0 transition-all hover:shadow-blue-200 animate-fade-in animate-slide-up duration-700 delay-${idx * 100}`}
             >
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xl">{section.icon}</span>
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-2xl">{section.icon}</span>
                 <span
-                  className={`font-bold text-lg ${section.color.replace(
+                  className={`font-extrabold text-2xl ${section.color.replace(
                     "border-",
                     "text-"
                   )}`}
@@ -600,7 +593,7 @@ const LabStaff = () => {
                 </span>
               </div>
               {section.cards.length === 0 ? (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-gray-400 py-6 text-lg">
                   {searchTerm
                     ? "Không tìm thấy kết quả phù hợp."
                     : "Không có mẫu xét nghiệm nào."}
