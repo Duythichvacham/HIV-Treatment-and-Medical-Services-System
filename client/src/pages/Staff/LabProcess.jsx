@@ -163,17 +163,17 @@ const LabProcess = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-50 py-10 px-2">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 py-10 px-2">
       <div className="max-w-4xl mx-auto">
-        <Link to="/lab-staff" className="inline-flex items-center gap-2 text-blue-700 hover:text-blue-900 font-semibold text-base mb-8 transition-colors">
+        <Link to="/lab-staff" className="inline-flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 rounded-full font-bold px-6 py-2 mb-8 hover:bg-green-100 transition">
           <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
           Quay lại hàng đợi
         </Link>
-        <div className="bg-white rounded-3xl shadow-2xl border border-blue-200 p-10 md:p-14 flex flex-col gap-10">
-          <h1 className="text-4xl font-extrabold text-blue-900 mb-2 tracking-tight text-center drop-shadow-lg">Xử lý mẫu xét nghiệm</h1>
+        <div className="bg-white rounded-3xl border p-10 md:p-14 flex flex-col gap-10">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 text-center">Xử lý mẫu xét nghiệm</h1>
           {/* Thông tin mẫu */}
-          <section className="bg-blue-50 rounded-2xl border border-blue-100 shadow-sm p-6 mb-2">
-            <h2 className="text-2xl font-bold text-blue-800 mb-4 flex items-center gap-2">
+          <section className="bg-gray-50 rounded-2xl border p-6 mb-2">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#2563eb" strokeWidth="2" d="M12 20v-6m0 0V4m0 10H6m6 0h6"/></svg>
               Thông tin mẫu
             </h2>
@@ -189,15 +189,15 @@ const LabProcess = () => {
                 '—'
               }</div>
             </div>
-            <div className="font-semibold mt-2 mb-1 text-blue-700">Thông tin xét nghiệm</div>
+            <div className="font-semibold mt-2 mb-1 text-gray-700">Thông tin xét nghiệm</div>
             {Array.isArray(testDetail?.service_names) && testDetail.service_names.length > 0 ? (
               <div className="flex flex-wrap gap-2 mb-1">
                 {testDetail.service_names.map(name => (
-                  <span key={name} className="inline-block bg-gradient-to-r from-blue-200 to-blue-100 text-blue-900 px-4 py-1 rounded-full text-sm font-semibold shadow">{name}</span>
+                  <span key={name} className="inline-block bg-gray-200 text-gray-900 px-4 py-1 rounded-full text-sm font-semibold">{name}</span>
                 ))}
               </div>
             ) : (
-              <span className="inline-block bg-gradient-to-r from-blue-200 to-blue-100 text-blue-900 px-4 py-1 rounded-full text-sm font-semibold mb-1 shadow">
+              <span className="inline-block bg-gray-200 text-gray-900 px-4 py-1 rounded-full text-sm font-semibold mb-1">
                 {testDetail?.service_name || testDetail?.test_name || data.service_name || data.test || data.type || 'test'}
               </span>
             )}
@@ -210,8 +210,8 @@ const LabProcess = () => {
             <div className="text-green-700 font-semibold mt-1">{testDetail?.status_text || data.status_text || 'Đang xử lý'}</div>
           </section>
           {/* Nhập kết quả */}
-          <section className="bg-white rounded-2xl border border-blue-100 shadow p-8">
-            <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2">
+          <section className="bg-white rounded-2xl border p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
               <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#2563eb" strokeWidth="2" d="M12 20v-6m0 0V4m0 10H6m6 0h6"/></svg>
               Nhập kết quả xét nghiệm
             </h2>
@@ -223,7 +223,7 @@ const LabProcess = () => {
                       <label className="block text-base font-semibold mb-2 text-gray-700">{tt.name} {tt.unit ? `(${tt.unit})` : ''} <span className="text-red-500">*</span></label>
                       {(tt.name.toLowerCase().includes('sàng lọc') || tt.name.toLowerCase().includes('khẳng định') || tt.service_id === 4 || tt.service_id === 5) ? (
                         <select
-                          className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                          className="w-full border rounded-xl px-4 py-3 text-lg"
                           value={dynamicResults[tt.test_type_id] || ''}
                           onChange={e => handleDynamicChange(tt.test_type_id, e.target.value)}
                           required
@@ -235,7 +235,7 @@ const LabProcess = () => {
                       ) : (
                         <input
                           type="text"
-                          className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                          className="w-full border rounded-xl px-4 py-3 text-lg"
                           value={dynamicResults[tt.test_type_id] || ''}
                           onChange={e => handleDynamicChange(tt.test_type_id, e.target.value)}
                           placeholder={`Nhập kết quả ${tt.name}`}
@@ -260,7 +260,7 @@ const LabProcess = () => {
                             <label className="block text-base font-semibold mb-2 text-gray-700">Giá trị CD4 (cells/µL) <span className="text-red-500">*</span></label>
                             <input
                               type="number"
-                              className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                              className="w-full border rounded-xl px-4 py-3 text-lg"
                               value={cd4Value}
                               onChange={(e) => setCd4Value(e.target.value)}
                               placeholder="Nhập giá trị CD4"
@@ -271,7 +271,7 @@ const LabProcess = () => {
                             <label className="block text-base font-semibold mb-2 text-gray-700">Giá trị Viral Load (copies/mL) <span className="text-red-500">*</span></label>
                             <input
                               type="number"
-                              className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                              className="w-full border rounded-xl px-4 py-3 text-lg"
                               value={viralLoadValue}
                               onChange={(e) => setViralLoadValue(e.target.value)}
                               placeholder="Nhập giá trị Viral Load"
@@ -286,7 +286,7 @@ const LabProcess = () => {
                         <div className="mb-2">
                           <label className="block text-base font-semibold mb-2 text-gray-700">Kết quả sàng lọc <span className="text-red-500">*</span></label>
                           <select
-                            className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                            className="w-full border rounded-xl px-4 py-3 text-lg"
                             value={screeningResult}
                             onChange={e => setScreeningResult(e.target.value)}
                             required
@@ -303,7 +303,7 @@ const LabProcess = () => {
                         <div className="mb-2">
                           <label className="block text-base font-semibold mb-2 text-gray-700">Kết luận khẳng định <span className="text-red-500">*</span></label>
                           <select
-                            className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                            className="w-full border rounded-xl px-4 py-3 text-lg"
                             value={review}
                             onChange={(e) => setReview(e.target.value)}
                             required
@@ -322,7 +322,7 @@ const LabProcess = () => {
               <div>
                 <label className="block text-base font-semibold mb-2 text-gray-700">Ghi chú thêm</label>
                 <textarea
-                  className="w-full border border-blue-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all shadow bg-blue-50 text-lg"
+                  className="w-full border rounded-xl px-4 py-3 text-lg"
                   rows={2}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
@@ -331,13 +331,13 @@ const LabProcess = () => {
               </div>
               <div className="flex flex-col md:flex-row justify-between mt-10 gap-4">
                 <button
-                  className="px-8 py-3 border-2 border-blue-400 rounded-full font-bold bg-gradient-to-r from-blue-200 to-blue-100 text-blue-900 hover:from-blue-300 hover:to-blue-200 hover:border-blue-600 transition-all shadow-lg text-lg"
+                  className="px-8 py-3 border rounded-full font-bold bg-gray-200 text-gray-900 text-lg"
                   onClick={handleDraft}
                 >
                   Lưu tạm
                 </button>
                 <button
-                  className="px-8 py-3 bg-gradient-to-r from-blue-700 to-blue-500 text-white rounded-full font-bold hover:from-blue-800 hover:to-blue-600 transition-all shadow-xl text-lg"
+                  className="px-8 py-3 bg-gray-700 text-white rounded-full font-bold text-lg"
                   onClick={handleSubmit}
                   disabled={submitting}
                 >

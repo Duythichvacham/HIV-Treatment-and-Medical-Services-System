@@ -256,7 +256,7 @@ const MainServiceDetail = () => {
           <div className="animate-fade-in animate-slide-up duration-700 delay-200">
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-6">Đặt lịch dịch vụ</h2>
-              <AppointmentForm serviceType={service.service_type} serviceName={service.name} price={service.price} user={user} />
+              <AppointmentForm serviceType={`service_${service.service_id}`} serviceName={service.name} price={service.price} user={user} />
             </div>
           </div>
         </div>
