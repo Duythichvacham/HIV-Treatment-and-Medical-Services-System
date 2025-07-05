@@ -28,8 +28,8 @@ export const QUEUE_TYPES = {
 };
 
 export const VITAL_SIGNS_DEFAULTS = {
-  heart_rate: "",
-  blood_pressure: "",
+  heartRate: "",
+  bloodPressure: "",
   temperature: "",
   weight: "",
   height: "",
