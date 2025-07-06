@@ -658,16 +658,16 @@ ORDER BY a.patient_id, sl.start_time
 
   // Gom lịch theo bệnh nhân
   const grouped = {};
-for (const row of result.recordset) {
-  if (!grouped[row.patient_id]) {
-    grouped[row.patient_id] = {
-      full_name: row.full_name,
-      email: row.email,
-      appointments: []
-    };
+  for (const row of result.recordset) {
+    if (!grouped[row.patient_id]) {
+      grouped[row.patient_id] = {
+        full_name: row.full_name,
+        email: row.email,
+        appointments: [],
+      };
+    }
+    grouped[row.patient_id].appointments.push(row);
   }
-  grouped[row.patient_id].appointments.push(row);
-}
 
 return Object.values(grouped);
 }

@@ -2,12 +2,68 @@ import apiClient from "./appointmentApi";
 import { API_ENDPOINTS } from "../utils/constants";
 
 export const examApi = {
+  // Get current exam data
+  getCurrent: async (patientId, appointmentId = null) => {
+    const url = API_ENDPOINTS.EXAMS.CURRENT(patientId);
+    const params = appointmentId ? { appointment_id: appointmentId } : {};
+    const response = await apiClient.get(url, { params });
+    return response.data;
+  },
+
   // Get exam data by appointment ID (for loading saved temp data)
   getExamData: async (appointmentId) => {
     // Use the clinical exam endpoint to get existing exam data
     const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
     const response = await apiClient.get(url);
     return response.data;
+  },
+
+  // Get saved prescription and clinical data for continuing exam
+  getSavedExamData: async (appointmentId) => {
+    try {
+      console.log(
+        "[examApi.getSavedExamData] Loading saved data for appointment:",
+        appointmentId
+      );
+
+      // Load both clinical exam and prescription data
+      const [clinicalResponse, prescriptionResponse] = await Promise.all([
+        apiClient.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
+        apiClient.get(`/api/v1/prescriptions/${appointmentId}`),
+      ]);
+
+      console.log(
+        "[examApi.getSavedExamData] Clinical data:",
+        clinicalResponse.data
+      );
+      console.log(
+        "[examApi.getSavedExamData] Prescription data:",
+        prescriptionResponse.data
+      );
+
+      return {
+        success: true,
+        data: {
+          clinical: clinicalResponse.data?.data || null,
+          prescription: prescriptionResponse.data?.data || null,
+        },
+      };
+    } catch (error) {
+      console.error("[examApi.getSavedExamData] Error:", error);
+
+      // Handle 404 errors gracefully (no saved data)
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          data: {
+            clinical: null,
+            prescription: null,
+          },
+        };
+      }
+
+      throw error;
+    }
   },
 
   // Save exam (temp) - save clinical exam + prescription
@@ -28,14 +84,8 @@ export const examApi = {
       // Step 1: Save clinical exam
       const clinicalExamData = {
         appointment_id: appointmentId,
-        huyet_ap:
-          examData.vital_signs?.blood_pressure ||
-          examData.vital_signs?.bloodPressure ||
-          "",
-        mach:
-          examData.vital_signs?.heart_rate ||
-          examData.vital_signs?.heartRate ||
-          "",
+        huyet_ap: examData.vital_signs?.bloodPressure || "",
+        mach: examData.vital_signs?.heartRate || "",
         nhiet_do: examData.vital_signs?.temperature || "",
         weight: examData.vital_signs?.weight || null,
         height: examData.vital_signs?.height || null,

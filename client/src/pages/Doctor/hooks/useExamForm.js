@@ -131,14 +131,95 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
         );
       }
 
-      // Fallback to original API calls if exam-data API failed
+      // Fallback to original getCurrent API if exam-detail failed
       if (!examDataLoaded) {
-        const arvResponse = await prescriptionApi.getARVRegimens();
+        const [examRes, arvResponse] = await Promise.all([
+          examApi.getCurrent(patientId, appointmentId),
+          prescriptionApi.getARVRegimens(),
+        ]);
 
         arvRes = arvResponse;
-        console.log("[useExamForm] Using fallback - no exam data loaded");
+        console.log("[useExamForm] Exam API response:", examRes);
 
-        // Keep default empty state since no exam data was found
+        if (examRes.data?.exam_data) {
+          const serverExamData = examRes.data.exam_data;
+          console.log(
+            "[useExamForm] Initial exam data loaded:",
+            serverExamData
+          );
+
+          // Parse vitals từ server về dạng object
+          const parseVitals = (vitalsString, weight, height, bmi) => {
+            const vitals = { ...VITAL_SIGNS_DEFAULTS };
+
+            // Parse vitals string nếu có và không rỗng
+            if (
+              vitalsString &&
+              vitalsString !== "Chưa có thông tin" &&
+              vitalsString.trim() !== ""
+            ) {
+              // Parse string như "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
+              const bloodPressureMatch =
+                vitalsString.match(/Huyết áp:\s*([^,]+)/);
+              const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
+              const temperatureMatch =
+                vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+
+              if (bloodPressureMatch)
+                vitals.bloodPressure = bloodPressureMatch[1].trim();
+              if (heartRateMatch) vitals.heartRate = heartRateMatch[1];
+              if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+            }
+
+            // Set physical measurements - chỉ set nếu có giá trị thực
+            if (weight && weight > 0) vitals.weight = weight;
+            if (height && height > 0) vitals.height = height;
+            if (bmi && bmi > 0) vitals.bmi = bmi;
+
+            return vitals;
+          };
+
+          // Parse support drugs từ prescription details
+          let supportDrugs = [];
+          if (
+            serverExamData.prescription_details &&
+            Array.isArray(serverExamData.prescription_details)
+          ) {
+            supportDrugs = serverExamData.prescription_details.map(
+              (detail) => ({
+                drug_name: detail.drug_name || "",
+                dosage: detail.dosage || "",
+                frequency: detail.frequency || "",
+                duration_days: detail.duration_days || "",
+                usage_instructions: detail.usage_instructions || "",
+                notes: detail.notes || "",
+              })
+            );
+          }
+
+          setExamData({
+            vital_signs: parseVitals(
+              serverExamData.vitals,
+              serverExamData.weight,
+              serverExamData.height,
+              serverExamData.bmi
+            ),
+            clinical_signs: serverExamData.clinical_signs || "",
+            diagnosis_primary: serverExamData.diagnosis_primary || "",
+            diagnosis_secondary: serverExamData.diagnosis_secondary || "",
+            follow_up_date: "",
+            prescription: {
+              arv_regimen_id: serverExamData.arv_regimen_id || null,
+              support_drugs: supportDrugs,
+              counseling_notes: serverExamData.counseling_notes || "",
+              follow_up_plan: serverExamData.follow_up_plan || "",
+              doctor_notes: serverExamData.doctor_notes || "",
+            },
+          });
+        } else {
+          // Không có exam_data hoặc exam_data là null, giữ nguyên form trống với defaults
+          console.log("[useExamForm] No exam data found, keeping defaults");
+        }
       }
 
       setARVRegimens(arvRes.data || []);

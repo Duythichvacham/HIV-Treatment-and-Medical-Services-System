@@ -9,9 +9,9 @@ const authenticateToken = (req, res, next) => {
   console.log("[AUTH] Authorization header:", req.headers["authorization"]);
 
   // Lấy token từ header
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
-  
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
+
   if (!token) {
     console.log("[AUTH] No token provided - sending 401");
     return res.status(401).json({ message: "No token provided" });
