@@ -27,11 +27,41 @@ exports.login = async (req, res) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
     );
 
-    res.json({ token });
+    // Tạo refresh token
+    const refreshToken = jwt.sign(
+      { userId: user.account_id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
+    );
+
+    res.json({ token, refreshToken });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
   // bcrypt.hash('@1', 10).then(hash => console.log(hash));
+};
+
+exports.refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) return res.status(401).json({ message: 'No refresh token provided' });
+
+  try {
+    const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    // Có thể kiểm tra refreshToken trong DB ở đây nếu muốn bảo mật hơn
+
+    // Tạo access token mới
+    const accessToken = jwt.sign(
+      {
+        userId: payload.userId,
+        // Có thể thêm các thông tin khác nếu cần
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+    res.json({ accessToken });
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired refresh token' });
+  }
 };
 
 exports.registerPatient = async (req, res) => {
