@@ -2,11 +2,11 @@ const jwt = require("jsonwebtoken");
 
 const authenticateToken = (req, res, next) => {
   // Debug logging
-  console.log("[AUTH] =================");
-  console.log("[AUTH] Request URL:", req.path);
-  console.log("[AUTH] Method:", req.method);
-  console.log("[AUTH] Headers received:", req.headers);
-  console.log("[AUTH] Authorization header:", req.headers["authorization"]);
+  // console.log("[AUTH] =================");
+  // console.log("[AUTH] Request URL:", req.path);
+  // console.log("[AUTH] Method:", req.method);
+  // console.log("[AUTH] Headers received:", req.headers);
+  // console.log("[AUTH] Authorization header:", req.headers["authorization"]);
 
   // Lấy token từ header
   const authHeader = req.headers["authorization"];
