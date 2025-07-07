@@ -22,6 +22,7 @@ const DoctorDashboard = () => {
   const [viewingPatientId, setViewingPatientId] = useState(null);
   const [viewingAppointmentId, setViewingAppointmentId] = useState(null);
   const [viewMode, setViewMode] = useState("edit");
+  const [processingAppointmentId, setProcessingAppointmentId] = useState(null);
 
   // Note: Consultation feature is not yet implemented in the backend
   // Only examination appointments are currently supported
@@ -43,6 +44,8 @@ const DoctorDashboard = () => {
 
   // Handle patient actions
   const handlePatientAction = async (patient, actionType) => {
+    if (processingAppointmentId === patient.appointment_id) return;
+    setProcessingAppointmentId(patient.appointment_id);
     try {
       switch (actionType) {
         case QUEUE_TYPES.WAITING: {
@@ -87,6 +90,8 @@ const DoctorDashboard = () => {
     } catch (error) {
       console.error("Error handling patient action:", error);
       alert("Có lỗi xảy ra khi thực hiện thao tác");
+    } finally {
+      setProcessingAppointmentId(null);
     }
   };
 
@@ -115,7 +120,6 @@ const DoctorDashboard = () => {
         setViewingPatientId(null);
         setViewingAppointmentId(null);
         setViewMode("edit");
-        alert("Hoàn thành khám bệnh thành công!");
       } else {
         throw new Error(result.error);
       }
@@ -209,6 +213,8 @@ const DoctorDashboard = () => {
                   filters.search
                 )}
                 onPatientAction={handlePatientAction}
+                loading={appointments.loading}
+                processingAppointmentId={processingAppointmentId}
               />
 
               {/* In Progress Column */}
@@ -221,6 +227,8 @@ const DoctorDashboard = () => {
                   filters.search
                 )}
                 onPatientAction={handlePatientAction}
+                loading={appointments.loading}
+                processingAppointmentId={processingAppointmentId}
               />
 
               {/* Completed Column */}
@@ -233,6 +241,8 @@ const DoctorDashboard = () => {
                   filters.search
                 )}
                 onPatientAction={handlePatientAction}
+                loading={appointments.loading}
+                processingAppointmentId={processingAppointmentId}
               />
             </div>
           )

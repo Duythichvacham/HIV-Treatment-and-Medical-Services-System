@@ -54,7 +54,7 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     if (ENV.ENABLE_LOGGING) {
       console.error(`❌ API Error:`, error.response?.data || error.message);
     }
@@ -63,16 +63,42 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Only redirect if it's not a login request (token expired case)
       const isLoginRequest = error.config?.url?.includes("/login");
+      const isRefreshRequest = error.config?.url?.includes("/refresh-token");
 
-      if (!isLoginRequest) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user");
-        const userType = localStorage.getItem("userType");
-        localStorage.removeItem("userType");
-        if (userType === "staff") {
-          window.location.href = "/login/staff";
+      if (!isLoginRequest && !isRefreshRequest) {
+        // Thử refresh token nếu có
+        const refresh_token = localStorage.getItem("refresh_token");
+        if (refresh_token) {
+          try {
+            const newAccessToken = await refreshToken();
+            // Gắn token mới vào header và retry request gốc
+            error.config.headers["Authorization"] = `Bearer ${newAccessToken}`;
+            // Đánh dấu đã retry để tránh lặp vô hạn
+            error.config._retry = true;
+            return api.request(error.config);
+          } catch (refreshErr) {
+            // Nếu refresh thất bại, xóa token và redirect
+            localStorage.removeItem("token");
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            localStorage.removeItem("user");
+            const userType = localStorage.getItem("userType");
+            localStorage.removeItem("userType");
+            if (userType === "staff") {
+              window.location.href = "/login/staff";
+            }
+          }
+        } else {
+          // Không có refresh token, xử lý như cũ
+          localStorage.removeItem("token");
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+          const userType = localStorage.getItem("userType");
+          localStorage.removeItem("userType");
+          if (userType === "staff") {
+            window.location.href = "/login/staff";
+          }
         }
       }
     }
@@ -615,6 +641,20 @@ export const createTestResult = async (resultData) => {
     console.error("❌ createTestResult error:", error);
     throw error;
   }
+};
+
+/**
+ * Refresh access token using refresh token
+ */
+export const refreshToken = async () => {
+  const refresh_token = localStorage.getItem("refresh_token");
+  if (!refresh_token) throw new Error("No refresh token available");
+  const response = await api.post("/api/auth/refresh-token", { refreshToken: refresh_token });
+  if (response.data && response.data.accessToken) {
+    localStorage.setItem("token", response.data.accessToken);
+    return response.data.accessToken;
+  }
+  throw new Error("Failed to refresh token");
 };
 
 export default api;

@@ -669,5 +669,5 @@ ORDER BY a.patient_id, sl.start_time
     grouped[row.patient_id].appointments.push(row);
   }
 
-  return Object.values(grouped);
-};
+return Object.values(grouped);
+}
