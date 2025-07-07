@@ -1,0 +1,227 @@
+// Validation functions for exam forms
+
+export const validateVitalSigns = (vitalSigns) => {
+  const errors = {};
+
+  // Heart rate validation (50-120 bpm normal range)
+  if (vitalSigns.heartRate) {
+    const heartRate = parseFloat(vitalSigns.heartRate);
+    if (isNaN(heartRate) || heartRate < 30 || heartRate > 200) {
+      errors.heartRate = "Nhịp tim phải từ 30-200 bpm";
+    }
+  }
+
+  // Blood pressure validation (format: systolic/diastolic)
+  if (vitalSigns.bloodPressure) {
+    const bpRegex = /^\d{2,3}\/\d{2,3}$/;
+    if (!bpRegex.test(vitalSigns.bloodPressure)) {
+      errors.bloodPressure = "Huyết áp phải có định dạng: 120/80";
+    } else {
+      const [systolic, diastolic] = vitalSigns.bloodPressure
+        .split("/")
+        .map(Number);
+      if (
+        systolic < 70 ||
+        systolic > 250 ||
+        diastolic < 40 ||
+        diastolic > 150
+      ) {
+        errors.bloodPressure = "Huyết áp không hợp lệ";
+      }
+    }
+  }
+
+  // Temperature validation (35-42°C)
+  if (vitalSigns.temperature) {
+    const temp = parseFloat(vitalSigns.temperature);
+    if (isNaN(temp) || temp < 35 || temp > 42) {
+      errors.temperature = "Nhiệt độ phải từ 35-42°C";
+    }
+  }
+
+  // Weight validation (10-200kg)
+  if (vitalSigns.weight) {
+    const weight = parseFloat(vitalSigns.weight);
+    if (isNaN(weight) || weight < 10 || weight > 200) {
+      errors.weight = "Cân nặng phải từ 10-200kg";
+    }
+  }
+
+  // Height validation (50-250cm)
+  if (vitalSigns.height) {
+    const height = parseFloat(vitalSigns.height);
+    if (isNaN(height) || height < 50 || height > 250) {
+      errors.height = "Chiều cao phải từ 50-250cm";
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validateDiagnosis = (diagnosis) => {
+  const errors = {};
+
+  if (!diagnosis.primary || diagnosis.primary.trim().length === 0) {
+    errors.primary = "Chẩn đoán chính là bắt buộc";
+  }
+
+  if (diagnosis.primary && diagnosis.primary.length > 255) {
+    errors.primary = "Chẩn đoán chính không được quá 255 ký tự";
+  }
+
+  if (diagnosis.secondary && diagnosis.secondary.length > 500) {
+    errors.secondary = "Chẩn đoán phụ không được quá 500 ký tự";
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validatePrescription = (prescription) => {
+  const errors = {};
+
+  // Validate support drugs
+  if (prescription.support_drugs && prescription.support_drugs.length > 0) {
+    prescription.support_drugs.forEach((drug, index) => {
+      if (!drug.drug_name || drug.drug_name.trim().length === 0) {
+        errors[`support_drugs.${index}.drug_name`] = "Tên thuốc là bắt buộc";
+      }
+
+      if (!drug.dosage || drug.dosage.trim().length === 0) {
+        errors[`support_drugs.${index}.dosage`] = "Liều lượng là bắt buộc";
+      }
+
+      if (!drug.frequency || drug.frequency.trim().length === 0) {
+        errors[`support_drugs.${index}.frequency`] =
+          "Tần suất dùng là bắt buộc";
+      }
+
+      if (
+        drug.duration_days &&
+        (isNaN(drug.duration_days) || drug.duration_days < 1)
+      ) {
+        errors[`support_drugs.${index}.duration_days`] =
+          "Số ngày dùng phải > 0";
+      }
+    });
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validateExamCompletion = (examData) => {
+  const errors = {};
+
+  // Required fields for completion
+  if (
+    !examData.diagnosis_primary ||
+    examData.diagnosis_primary.trim().length === 0
+  ) {
+    errors.diagnosis_primary = "Chẩn đoán chính là bắt buộc để hoàn thành khám";
+  }
+
+  if (!examData.vital_signs) {
+    errors.vital_signs = "Sinh hiệu là bắt buộc để hoàn thành khám";
+  } else {
+    // Require essential vital signs
+    if (
+      !examData.vital_signs.heartRate ||
+      !examData.vital_signs.bloodPressure ||
+      !examData.vital_signs.temperature
+    ) {
+      errors.vital_signs =
+        "Phải nhập đầy đủ nhịp tim, huyết áp và nhiệt độ để hoàn thành khám";
+    }
+    if (!examData.vital_signs.weight || !examData.vital_signs.height) {
+      errors.physical_measurements =
+        "Phải nhập cân nặng và chiều cao để hoàn thành khám";
+    }
+  }
+
+  // Require clinical signs
+  if (!examData.clinical_signs || examData.clinical_signs.trim().length === 0) {
+    errors.clinical_signs = "Dấu hiệu lâm sàng là bắt buộc để hoàn thành khám";
+  }
+
+  // Require prescription notes (counseling, follow-up plan, doctor notes)
+  if (!examData.prescription) {
+    errors.prescription = "Thông tin đơn thuốc là bắt buộc để hoàn thành khám";
+  } else {
+    if (
+      !examData.prescription.counseling_notes ||
+      examData.prescription.counseling_notes.trim().length === 0
+    ) {
+      errors.counseling_notes =
+        "Lời khuyên và tư vấn là bắt buộc để hoàn thành khám";
+    }
+    if (
+      !examData.prescription.follow_up_plan ||
+      examData.prescription.follow_up_plan.trim().length === 0
+    ) {
+      errors.follow_up_plan =
+        "Kế hoạch tái khám là bắt buộc để hoàn thành khám";
+    }
+    if (
+      !examData.prescription.doctor_notes ||
+      examData.prescription.doctor_notes.trim().length === 0
+    ) {
+      errors.doctor_notes = "Ghi chú của bác sĩ là bắt buộc để hoàn thành khám";
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validateSearchTerm = (searchTerm) => {
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return { isValid: true, errors: {} };
+  }
+
+  const errors = {};
+
+  if (searchTerm.length < 2) {
+    errors.search = "Từ khóa tìm kiếm phải có ít nhất 2 ký tự";
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+export const validateDateRange = (startDate, endDate) => {
+  const errors = {};
+
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start > end) {
+      errors.dateRange = "Ngày bắt đầu phải trước ngày kết thúc";
+    }
+
+    // Check if date range is not too far in the future
+    const maxFutureDate = new Date();
+    maxFutureDate.setFullYear(maxFutureDate.getFullYear() + 1);
+
+    if (end > maxFutureDate) {
+      errors.dateRange = "Ngày kết thúc không được quá 1 năm từ hiện tại";
+    }
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
