@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const doctorController = require("../controllers/doctorController");
-const authenticateToken = require("../middleware/authMiddleware");
+const authenticateToken = require("../middlewares/authMiddleware");
 
 // // GET api/v1/doctor/appointments/queue/:doctorId
 // router.get(

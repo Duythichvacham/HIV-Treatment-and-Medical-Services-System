@@ -1,11 +1,11 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const authRouter = require("./auth");
-const patientRouter = require("./patients");
-const userRouter = require("./users");
+const patientRouter = require("./patient");
+const userRouter = require("./user");
 const bookingRouter = require("./booking");
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../middlewares/authMiddleware");
 
-const appointmentRouter = require("./appointments");
+const appointmentRouter = require("./appointment");
 const labStaffRouter = require("./lab-staff");
 const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
@@ -15,6 +15,7 @@ const slotRouter = require("./slot");
 const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
 const prescriptionRouter = require("./prescriptions");
+const managerRouter = require("./manager");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
@@ -94,6 +95,11 @@ function route(app) {
    * Prefix: api/prescriptions
    */
   app.use("/api", authMiddleware, prescriptionRouter);
+  /**
+   * API manager
+   * Prefix: api/v1/manager
+   */
+  app.use("/api/v1/managers", authMiddleware, managerRouter);
 }
 
 module.exports = route;
