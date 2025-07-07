@@ -10,4 +10,11 @@ router.post(
   clinicalController.saveClinicalExam
 );
 
+// GET /api/v1/clinical-exams/:appointmentId - Get clinical exam data by appointment ID
+router.get(
+  "/clinical-exams/:appointmentId",
+  authMiddleware,
+  clinicalController.getClinicalExamByAppointmentId
+);
+
 module.exports = router;

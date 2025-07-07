@@ -4,20 +4,20 @@ export const validateVitalSigns = (vitalSigns) => {
   const errors = {};
 
   // Heart rate validation (50-120 bpm normal range)
-  if (vitalSigns.heart_rate) {
-    const heartRate = parseFloat(vitalSigns.heart_rate);
+  if (vitalSigns.heartRate) {
+    const heartRate = parseFloat(vitalSigns.heartRate);
     if (isNaN(heartRate) || heartRate < 30 || heartRate > 200) {
-      errors.heart_rate = "Nhịp tim phải từ 30-200 bpm";
+      errors.heartRate = "Nhịp tim phải từ 30-200 bpm";
     }
   }
 
   // Blood pressure validation (format: systolic/diastolic)
-  if (vitalSigns.blood_pressure) {
+  if (vitalSigns.bloodPressure) {
     const bpRegex = /^\d{2,3}\/\d{2,3}$/;
-    if (!bpRegex.test(vitalSigns.blood_pressure)) {
-      errors.blood_pressure = "Huyết áp phải có định dạng: 120/80";
+    if (!bpRegex.test(vitalSigns.bloodPressure)) {
+      errors.bloodPressure = "Huyết áp phải có định dạng: 120/80";
     } else {
-      const [systolic, diastolic] = vitalSigns.blood_pressure
+      const [systolic, diastolic] = vitalSigns.bloodPressure
         .split("/")
         .map(Number);
       if (
@@ -26,7 +26,7 @@ export const validateVitalSigns = (vitalSigns) => {
         diastolic < 40 ||
         diastolic > 150
       ) {
-        errors.blood_pressure = "Huyết áp không hợp lệ";
+        errors.bloodPressure = "Huyết áp không hợp lệ";
       }
     }
   }
@@ -133,8 +133,8 @@ export const validateExamCompletion = (examData) => {
   } else {
     // Require essential vital signs
     if (
-      !examData.vital_signs.heart_rate ||
-      !examData.vital_signs.blood_pressure ||
+      !examData.vital_signs.heartRate ||
+      !examData.vital_signs.bloodPressure ||
       !examData.vital_signs.temperature
     ) {
       errors.vital_signs =

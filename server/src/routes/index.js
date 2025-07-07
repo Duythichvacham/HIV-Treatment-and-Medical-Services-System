@@ -88,12 +88,12 @@ function route(app) {
    * API Clinical Exams
    * Prefix: api/v1/clinical-exams
    */
-  app.use("/api/v1", authMiddleware, clinicalRouter);
+  app.use("/api/v1/clinical", authMiddleware, clinicalRouter);
   /**
    * API Prescriptions
    * Prefix: api/prescriptions
    */
-  app.use("/api", authMiddleware, prescriptionRouter);
+  app.use("/api/v1/prescriptions", authMiddleware, prescriptionRouter);
 }
 
 module.exports = route;

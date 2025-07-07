@@ -9,19 +9,21 @@ export const patientApi = {
     return response.data;
   },
 
-  // Get patient exam history
+  // Get patient exam history - only completed appointments
   getExamHistory: async (patientId, page = 1, limit = 20) => {
     try {
       console.log(
-        "[patientApi.getExamHistory] Fetching exam history for patient:",
+        "[patientApi.getExamHistory] Fetching completed exam history for patient:",
         patientId
       );
-      const response = await apiClient.get(
-        `/api/v1/doctors/exam-history/${patientId}`,
-        {
-          params: { page, limit },
-        }
-      );
+      const response = await apiClient.get(`/api/v1/doctors/appointments`, {
+        params: {
+          patient_id: patientId,
+          status: "completed",
+          page,
+          limit,
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("[patientApi.getExamHistory] Error:", error);
@@ -29,37 +31,70 @@ export const patientApi = {
     }
   },
 
-  // Get exam detail
-  getExamDetail: async (patientId, appointmentId) => {
+  // Get clinical exam details
+  getClinicalExamDetail: async (appointmentId) => {
     try {
       console.log(
-        "[patientApi.getExamDetail] Fetching exam detail for patient:",
-        patientId,
-        "appointment:",
+        "[patientApi.getClinicalExamDetail] Fetching clinical exam detail for appointment:",
         appointmentId
       );
       const response = await apiClient.get(
-        `/api/v1/doctors/exam-detail/${patientId}/${appointmentId}`
+        `/api/v1/clinical/clinical-exams/${appointmentId}`
       );
       return response.data;
     } catch (error) {
-      console.error("[patientApi.getExamDetail] Error:", error);
+      console.error("[patientApi.getClinicalExamDetail] Error:", error);
+      throw error;
+    }
+  },
+
+  // Get prescription details
+  getPrescriptionDetail: async (appointmentId) => {
+    try {
+      console.log(
+        "[patientApi.getPrescriptionDetail] Fetching prescription detail for appointment:",
+        appointmentId
+      );
+      const response = await apiClient.get(
+        `/api/v1/prescriptions/${appointmentId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("[patientApi.getPrescriptionDetail] Error:", error);
       throw error;
     }
   },
 
   // Get patient's current treatment info
   getCurrentTreatment: async (patientId) => {
-    const url = `/api/v1/doctors/current-arv/${patientId}`;
-    const response = await apiClient.get(url);
-    return response.data;
+    try {
+      console.log(
+        "[patientApi.getCurrentTreatment] Fetching current ARV regimen for patient:",
+        patientId
+      );
+      const url = `/api/v1/patients/current-arv-regimen/${patientId}`;
+      const response = await apiClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("[patientApi.getCurrentTreatment] Error:", error);
+      throw error;
+    }
   },
 
   // Get patient's latest test results
   getLatestTests: async (patientId) => {
-    const url = `/api/v1/doctors/latest-tests/${patientId}`;
-    const response = await apiClient.get(url);
-    return response.data;
+    try {
+      console.log(
+        "[patientApi.getLatestTests] Fetching latest tests for patient:",
+        patientId
+      );
+      const url = `/api/v1/patients/latest-tests/${patientId}`;
+      const response = await apiClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error("[patientApi.getLatestTests] Error:", error);
+      throw error;
+    }
   },
 
   // Search patients
