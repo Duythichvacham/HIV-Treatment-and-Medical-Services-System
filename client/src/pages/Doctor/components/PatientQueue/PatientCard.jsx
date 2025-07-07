@@ -9,7 +9,7 @@ import {
 } from "../../utils/formatters";
 import { QUEUE_TYPES } from "../../utils/constants";
 
-const PatientCard = ({ patient, index, type, onClick, processing }) => {
+const PatientCard = ({ patient, index, type, onClick }) => {
   const getActionButton = () => {
     switch (type) {
       case QUEUE_TYPES.WAITING:
@@ -17,7 +17,7 @@ const PatientCard = ({ patient, index, type, onClick, processing }) => {
           <button
             onClick={onClick}
             className="w-full mt-3 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-            disabled={processing}
+            
           >
             Bắt đầu khám
           </button>
@@ -61,6 +61,7 @@ const PatientCard = ({ patient, index, type, onClick, processing }) => {
   return (
     <div
       className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-pointer ${getCardBorder()}`}
+      onClick={onClick}
     >
       {/* Queue Number Badge */}
       {(patient.queue_number || index + 1) && (

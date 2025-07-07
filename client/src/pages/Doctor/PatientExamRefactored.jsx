@@ -30,7 +30,7 @@ const PatientExamRefactored = ({
   mode = EXAM_MODES.EDIT,
 }) => {
   const [activeExamTab, setActiveExamTab] = useState(EXAM_TABS.CURRENT);
-  const [isCompleting, setIsCompleting] = useState(false);
+
 
   // Custom hooks - always load for ARV and test results
   const {
@@ -121,8 +121,7 @@ const PatientExamRefactored = ({
 
   // Handle complete exam
   const handleCompleteExam = async () => {
-    if (isCompleting) return;
-    setIsCompleting(true);
+  
     try {
       // Validate for completion first
       const validationResult = examForm.validateForm(true); // true = strict validation for completion
@@ -136,7 +135,7 @@ const PatientExamRefactored = ({
             "- Kế hoạch tái khám\n" +
             "- Ghi chú của bác sĩ"
         );
-        setIsCompleting(false);
+        
         return;
       }
 
@@ -150,8 +149,7 @@ const PatientExamRefactored = ({
     } catch (error) {
       console.error("[handleCompleteExam] Error:", error);
       alert("Có lỗi xảy ra khi hoàn thành khám bệnh");
-    } finally {
-      setIsCompleting(false);
+    
     }
   };
 
@@ -434,7 +432,7 @@ const PatientExamRefactored = ({
                   onSaveTemp={handleSaveTemp}
                   onComplete={handleCompleteExam}
                   onBack={onBack}
-                  saving={examForm.saving || isCompleting}
+                  saving={examForm.saving }
                   canComplete={canCompleteExam}
                   readOnly={isReadOnly}
                 />
