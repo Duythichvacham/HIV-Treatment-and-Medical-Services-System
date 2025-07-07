@@ -47,9 +47,9 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
       let arvRes;
 
       try {
-        console.log("[useExamForm] Trying exam-data API...");
+        console.log("[useExamForm] Trying getSavedExamData API...");
         const [examDataRes, arvResponse] = await Promise.all([
-          examApi.getExamData(appointmentId),
+          examApi.getSavedExamData(appointmentId),
           prescriptionApi.getARVRegimens(),
         ]);
 
@@ -59,74 +59,151 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
           const data = examDataRes.data;
           console.log("[useExamForm] Exam data loaded:", data);
 
-          // Parse vitals from string format "Huyết áp: 120/80, Mạch: 72/phút, Nhiệt độ: 36.5°C"
-          const parseVitals = (vitalsString) => {
-            const vitals = {
-              bloodPressure: "",
-              heartRate: "",
-              temperature: "",
-            };
+          // Lấy dữ liệu khám lâm sàng và đơn thuốc
+          const clinicalData = data.clinical;
+          const prescriptionData = data.prescription;
 
-            if (vitalsString) {
-              const bloodPressureMatch =
-                vitalsString.match(/Huyết áp:\s*([^,]+)/);
-              const heartRateMatch = vitalsString.match(/Mạch:\s*(\d+)/);
-              const temperatureMatch =
-                vitalsString.match(/Nhiệt độ:\s*([\d.]+)/);
+          console.log("[useExamForm] Clinical data:", clinicalData);
+          console.log("[useExamForm] Prescription data:", prescriptionData);
 
-              if (bloodPressureMatch)
-                vitals.bloodPressure = bloodPressureMatch[1].trim();
-              if (heartRateMatch) vitals.heartRate = heartRateMatch[1];
-              if (temperatureMatch) vitals.temperature = temperatureMatch[1];
+          // Parse vital signs from database fields (huyet_ap, mach, nhiet_do)
+          const vitals = {
+            bloodPressure: clinicalData?.huyet_ap || "",
+            heartRate: clinicalData?.mach || "",
+            temperature: clinicalData?.nhiet_do || "",
+            weight: clinicalData?.weight || "",
+            height: clinicalData?.height || "",
+            bmi: clinicalData?.bmi || "",
+          };
+
+          console.log("[useExamForm] Parsed vital signs from API:", vitals);
+          console.log("[useExamForm] Original clinical data:", {
+            huyet_ap: clinicalData?.huyet_ap,
+            mach: clinicalData?.mach,
+            nhiet_do: clinicalData?.nhiet_do,
+            weight: clinicalData?.weight,
+            height: clinicalData?.height,
+            bmi: clinicalData?.bmi,
+          });
+
+          // Classify prescription details into main ARV drugs and support drugs
+          let mainDrugs = [];
+          let supportDrugs = [];
+
+          if (prescriptionData) {
+            console.log("[useExamForm] Processing prescription data");
+
+            // Handle different API response structures
+            const prescriptionDetails =
+              prescriptionData.prescription_details ||
+              prescriptionData.prescriptionDetails ||
+              [];
+
+            if (
+              Array.isArray(prescriptionDetails) &&
+              prescriptionDetails.length > 0
+            ) {
+              console.log(
+                "[useExamForm] Processing prescription details:",
+                prescriptionDetails
+              );
+
+              // Extract regimen components if available
+              let regimenComponents = [];
+              if (prescriptionData.components) {
+                console.log(
+                  "[useExamForm] Regimen components:",
+                  prescriptionData.components
+                );
+                regimenComponents = prescriptionData.components
+                  .split("+")
+                  .map((comp) => comp.trim());
+              }
+
+              // Process each prescription detail
+              prescriptionDetails.forEach((detail) => {
+                const drugItem = {
+                  drug_name: detail.drug_name,
+                  dosage: detail.dosage,
+                  frequency: detail.frequency,
+                  duration_days: detail.duration_days,
+                  usage_instructions: detail.usage_instructions,
+                  notes: detail.notes,
+                };
+
+                // Check if this is a main ARV drug based on:
+                // 1. Notes field contains "Phác đồ chính" or "Phác đồ hiện tại"
+                // 2. The drug name appears in the regimen components
+                const isMainByNotes =
+                  detail.notes &&
+                  (detail.notes.includes("Phác đồ chính") ||
+                    detail.notes.includes("Phác đồ hiện tại"));
+
+                const isMainByRegimen = regimenComponents.some(
+                  (comp) =>
+                    comp
+                      .toLowerCase()
+                      .includes(detail.drug_name.toLowerCase()) ||
+                    detail.drug_name.toLowerCase().includes(comp.toLowerCase())
+                );
+
+                console.log(`[useExamForm] Classifying ${detail.drug_name}: `, {
+                  isMainByNotes,
+                  isMainByRegimen,
+                  notes: detail.notes,
+                });
+
+                if (isMainByNotes || isMainByRegimen) {
+                  mainDrugs.push(drugItem);
+                } else {
+                  supportDrugs.push(drugItem);
+                }
+              });
+            } else {
+              console.log(
+                "[useExamForm] No prescription details found or invalid format"
+              );
             }
 
-            return vitals;
-          };
-
-          const parsedVitals = parseVitals(data.clinicalExam?.vitals);
-
-          const vitals = {
-            bloodPressure: parsedVitals.bloodPressure,
-            heartRate: parsedVitals.heartRate,
-            temperature: parsedVitals.temperature,
-            weight: data.clinicalExam?.weight || "",
-            height: data.clinicalExam?.height || "",
-            bmi: data.clinicalExam?.bmi || "",
-          };
-
-          // Transform prescription details to support drugs format
-          const supportDrugs =
-            data.prescriptionDetails?.map((detail) => ({
-              id: detail.detail_id,
-              name: detail.drug_name,
-              dosage: detail.dosage,
-              frequency: detail.frequency,
-              duration_days: detail.duration_days,
-              usage_instructions: detail.usage_instructions,
-              notes: detail.notes,
-            })) || [];
+            console.log("[useExamForm] Final classification:");
+            console.log("[useExamForm] Main ARV drugs:", mainDrugs);
+            console.log("[useExamForm] Support drugs:", supportDrugs);
+          }
 
           setExamData({
             vital_signs: vitals,
-            clinical_signs: data.clinicalExam?.clinical_signs || "",
-            diagnosis_primary: data.clinicalExam?.diagnosis_primary || "",
-            diagnosis_secondary: data.clinicalExam?.diagnosis_secondary || "",
+            clinical_signs: clinicalData?.clinical_signs || "",
+            diagnosis_primary: clinicalData?.diagnosis_primary || "",
+            diagnosis_secondary: clinicalData?.diagnosis_secondary || "",
             follow_up_date: "",
             prescription: {
-              arv_regimen_id: data.prescription?.arv_regimen_id || null,
+              arv_regimen_id: prescriptionData?.arv_regimen_id || null,
               support_drugs: supportDrugs,
-              counseling_notes: data.prescription?.counseling_notes || "",
-              follow_up_plan: data.prescription?.follow_up_plan || "",
-              doctor_notes: data.prescription?.doctor_notes || "",
+              counseling_notes: prescriptionData?.counseling_notes || "",
+              follow_up_plan: prescriptionData?.follow_up_plan || "",
+              doctor_notes: prescriptionData?.doctor_notes || "",
+              // Đặt loại phác đồ mặc định là "continue" nếu có arv_regimen_id
+              regimen_type: prescriptionData?.arv_regimen_id
+                ? "continue"
+                : "change",
+              // Phân loại thuốc thành thuốc chính và thuốc hỗ trợ
+              arv_medications: [], // Sẽ được điền sau khi chọn phác đồ mới
+              current_arv_medications: mainDrugs, // Thuốc chính hiện tại
             },
           });
 
+          console.log("[useExamForm] Final exam data after loading:", {
+            vital_signs: vitals,
+            current_arv_medications: mainDrugs,
+            support_drugs: supportDrugs,
+          });
+
           examDataLoaded = true;
-          console.log("[useExamForm] Data loaded from exam-data API");
+          console.log("[useExamForm] Data loaded from getSavedExamData API");
         }
       } catch (error) {
         console.log(
-          "[useExamForm] exam-data API failed, trying fallback:",
+          "[useExamForm] getSavedExamData API failed, trying fallback:",
           error
         );
       }
@@ -231,8 +308,44 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
   }, [patientId, appointmentId]);
   // Force reload data (useful when patient status changes)
   const reloadData = useCallback(async () => {
+    console.log(
+      "[useExamForm] Reloading data for appointment ID:",
+      appointmentId
+    );
     await loadInitialData();
-  }, [loadInitialData]);
+
+    // Log the state after reload to ensure vital signs are loaded properly
+    setExamData((current) => {
+      console.log(
+        "[useExamForm] After reload - Vital signs data:",
+        current.vital_signs
+      );
+
+      // Double-check that vital signs are in the expected format (camelCase keys)
+      if (current.vital_signs) {
+        // Ensure all vital signs fields are properly set using camelCase keys
+        const vitals = {
+          ...current.vital_signs,
+          // Explicitly set these fields to ensure they're present with the right keys
+          heartRate: current.vital_signs.heartRate || "",
+          bloodPressure: current.vital_signs.bloodPressure || "",
+          temperature: current.vital_signs.temperature || "",
+          weight: current.vital_signs.weight || "",
+          height: current.vital_signs.height || "",
+          bmi: current.vital_signs.bmi || "",
+        };
+
+        return {
+          ...current,
+          vital_signs: vitals,
+        };
+      }
+
+      return current;
+    });
+
+    console.log("[useExamForm] Data reloaded successfully");
+  }, [loadInitialData, appointmentId]);
   // Update vital signs
   const updateVitalSigns = useCallback(
     (field, value) => {
@@ -447,8 +560,23 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
     setSaving(true);
     try {
+      // Log the current exam data before saving, especially vital signs
       console.log("[useExamForm] Saving temp exam data:", examData);
+      console.log("[useExamForm] Saving vital signs:", examData.vital_signs);
+
       await examApi.saveTemp(appointmentId, examData, patientData);
+
+      // Reload data after saving temp
+      console.log("[useExamForm] Save temp successful, reloading data...");
+
+      // Wait for reload to complete
+      await reloadData();
+
+      // Verify vital signs after reload
+      console.log(
+        "[useExamForm] Vital signs after reload:",
+        examData.vital_signs
+      );
 
       return {
         success: true,
@@ -463,7 +591,7 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
     } finally {
       setSaving(false);
     }
-  }, [appointmentId, examData, patientData]);
+  }, [appointmentId, examData, patientData, reloadData]);
 
   // Save exam (draft)
   const saveExam = useCallback(async () => {

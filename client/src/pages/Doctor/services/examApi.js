@@ -26,26 +26,58 @@ export const examApi = {
         appointmentId
       );
 
+      console.log("[examApi.getSavedExamData] API URLs:", {
+        clinicalURL: `/api/v1/clinical/clinical-exams/${appointmentId}`,
+        prescriptionURL: `/api/v1/prescriptions/${appointmentId}`,
+      });
+
       // Load both clinical exam and prescription data
       const [clinicalResponse, prescriptionResponse] = await Promise.all([
         apiClient.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
         apiClient.get(`/api/v1/prescriptions/${appointmentId}`),
       ]);
 
-      console.log(
-        "[examApi.getSavedExamData] Clinical data:",
-        clinicalResponse.data
-      );
-      console.log(
-        "[examApi.getSavedExamData] Prescription data:",
-        prescriptionResponse.data
-      );
+      // Extract prescription_details and rename to match expected format
+      const clinicalData = clinicalResponse.data?.data || null;
+      const prescriptionData = prescriptionResponse.data?.data || null;
+
+      // Log detailed structure of the prescription data
+      console.log("[examApi.getSavedExamData] Clinical data structure:", {
+        data: clinicalData,
+        vital_signs: {
+          huyet_ap: clinicalData?.huyet_ap,
+          mach: clinicalData?.mach,
+          nhiet_do: clinicalData?.nhiet_do,
+        },
+      });
+
+      // Map prescriptionDetails to prescription_details for consistency
+      if (prescriptionData && prescriptionData.prescriptionDetails) {
+        console.log(
+          "[examApi.getSavedExamData] Found prescriptionDetails array, remapping to prescription_details"
+        );
+        prescriptionData.prescription_details =
+          prescriptionData.prescriptionDetails;
+
+        // Log detailed drug information for debugging
+        console.log(
+          "[examApi.getSavedExamData] Prescription drugs summary:",
+          prescriptionData.prescription_details.map((d) => ({
+            drug_name: d.drug_name,
+            notes: d.notes,
+            is_arv:
+              d.notes &&
+              (d.notes.includes("Phác đồ chính") ||
+                d.notes.includes("Phác đồ hiện tại")),
+          }))
+        );
+      }
 
       return {
         success: true,
         data: {
-          clinical: clinicalResponse.data?.data || null,
-          prescription: prescriptionResponse.data?.data || null,
+          clinical: clinicalData,
+          prescription: prescriptionData,
         },
       };
     } catch (error) {
