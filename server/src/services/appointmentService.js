@@ -428,8 +428,41 @@ exports.getAppointmentDetail = async (appointment_id) => {
     return null;
   }
 
+  // Lấy queue number từ queueService
+  let queueNumber = 1;
+  try {
+    if (
+      appointment.service_type === "examination" &&
+      appointment.doctor_id &&
+      appointment.slot_id
+    ) {
+      queueNumber = await queueService.getCurrentQueueNumber(
+        "examination",
+        appointment.doctor_id,
+        appointment.slot_id
+      );
+    } else if (
+      appointment.service_type === "consultation" &&
+      appointment.doctor_id &&
+      appointment.slot_id
+    ) {
+      queueNumber = await queueService.getCurrentQueueNumber(
+        "consultation",
+        appointment.doctor_id,
+        appointment.slot_id
+      );
+    } else if (appointment.service_type === "test") {
+      queueNumber = await queueService.getCurrentQueueNumber("test");
+    }
+  } catch (error) {
+    console.error("Error getting queue number for appointment detail:", error);
+    queueNumber = 1;
+  }
+
+  // Trả về appointment với queue number
   return {
     ...appointment,
+    queue_number: queueNumber,
   };
 };
 // Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới)
