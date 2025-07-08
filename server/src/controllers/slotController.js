@@ -1,4 +1,4 @@
-const slotService = require("../services/slotService");
+const slotService = require("../services/slots/slotService");
 
 const getFullTimeSlots = async (req, res) => {
   try {

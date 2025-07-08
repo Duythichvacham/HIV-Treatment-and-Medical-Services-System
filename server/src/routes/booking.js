@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const bookingController = require("../controllers/bookingController");
-const authenticateToken = require("../middleware/authMiddleware");
+const authenticateToken = require("../middlewares/authMiddleware");
 
 // Test route first
 router.get("/test", (req, res) => {

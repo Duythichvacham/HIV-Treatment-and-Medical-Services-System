@@ -120,7 +120,7 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
 
   const roomId = shiftResult.recordset[0].room_id;
 
-  // Lấy max_number từ QueueNumbers thay vì WorkingShifts
+  // Lấy max_number từ QueueNumbers
   const queueResult = await pool
     .request()
     .input("doctor_id", doctorId)
@@ -129,9 +129,9 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
       "SELECT max_number FROM QueueNumbers WHERE queue_type = 'examination' AND doctor_id = @doctor_id AND slot_id = @slot_id"
     );
 
-  // Nếu không tìm thấy queue config, sử dụng default 6
+  // Nếu không tìm thấy queue config, sử dụng default 8
   const maxPatientsPerSlot =
-    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 6;
+    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 8;
 
   // Kiểm tra slot availability
   const slotCountResult = await pool
@@ -185,8 +185,7 @@ exports.getPatientIdByAccountId = async (accountId) => {
 
 // Function tổng hợp để tạo appointment từ accountId
 exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
-  const { doctor_id, slot_id, service_id, room_id, bookingDate } =
-    appointmentData;
+  const { doctor_id, slot_id, service_id, bookingDate } = appointmentData;
 
   // Validate cơ bản
   if (!service_id || !bookingDate) {
@@ -199,7 +198,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
   // 2. Lấy thông tin service
   const service = await this.getServiceInfo(service_id);
 
-  let finalRoomId = room_id;
+  let finalRoomId;
 
   // 3. Xử lý theo loại dịch vụ
   if (service.service_type === "examination") {
@@ -470,8 +469,7 @@ exports.getAppointmentDetail = async (appointment_id) => {
 exports.checkExistingAppointment = async (
   accountId,
   serviceId,
-  bookingDate,
-  doctorId = null
+  bookingDate
 ) => {
   const pool = await poolPromise;
 
