@@ -120,7 +120,7 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
 
   const roomId = shiftResult.recordset[0].room_id;
 
-  // Lấy max_number từ QueueNumbers thay vì WorkingShifts
+  // Lấy max_number từ QueueNumbers
   const queueResult = await pool
     .request()
     .input("doctor_id", doctorId)
@@ -129,9 +129,9 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
       "SELECT max_number FROM QueueNumbers WHERE queue_type = 'examination' AND doctor_id = @doctor_id AND slot_id = @slot_id"
     );
 
-  // Nếu không tìm thấy queue config, sử dụng default 6
+  // Nếu không tìm thấy queue config, sử dụng default 8
   const maxPatientsPerSlot =
-    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 6;
+    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 8;
 
   // Kiểm tra slot availability
   const slotCountResult = await pool
@@ -185,8 +185,7 @@ exports.getPatientIdByAccountId = async (accountId) => {
 
 // Function tổng hợp để tạo appointment từ accountId
 exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
-  const { doctor_id, slot_id, service_id, room_id, bookingDate } =
-    appointmentData;
+  const { doctor_id, slot_id, service_id, bookingDate } = appointmentData;
 
   // Validate cơ bản
   if (!service_id || !bookingDate) {
@@ -199,7 +198,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
   // 2. Lấy thông tin service
   const service = await this.getServiceInfo(service_id);
 
-  let finalRoomId = room_id;
+  let finalRoomId;
 
   // 3. Xử lý theo loại dịch vụ
   if (service.service_type === "examination") {
@@ -248,8 +247,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
   const pool2 = await poolPromise;
   const fullInfoResult = await pool2
     .request()
-    .input("appointmentId", appointment.appointment_id)
-    .query(`
+    .input("appointmentId", appointment.appointment_id).query(`
       SELECT a.*, 
              r.room_name,
              d.full_name as doctor_name,
@@ -430,49 +428,15 @@ exports.getAppointmentDetail = async (appointment_id) => {
     return null;
   }
 
-  // Lấy queue number từ queueService
-  let queueNumber = 1;
-  try {
-    if (
-      appointment.service_type === "examination" &&
-      appointment.doctor_id &&
-      appointment.slot_id
-    ) {
-      queueNumber = await queueService.getCurrentQueueNumber(
-        "examination",
-        appointment.doctor_id,
-        appointment.slot_id
-      );
-    } else if (
-      appointment.service_type === "consultation" &&
-      appointment.doctor_id &&
-      appointment.slot_id
-    ) {
-      queueNumber = await queueService.getCurrentQueueNumber(
-        "consultation",
-        appointment.doctor_id,
-        appointment.slot_id
-      );
-    } else if (appointment.service_type === "test") {
-      queueNumber = await queueService.getCurrentQueueNumber("test");
-    }
-  } catch (error) {
-    console.error("Error getting queue number for appointment detail:", error);
-    queueNumber = 1;
-  }
-
-  // Trả về appointment với queue number
   return {
     ...appointment,
-    queue_number: queueNumber,
   };
 };
 // Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới)
 exports.checkExistingAppointment = async (
   accountId,
   serviceId,
-  bookingDate,
-  doctorId = null
+  bookingDate
 ) => {
   const pool = await poolPromise;
 
@@ -657,16 +621,16 @@ ORDER BY a.patient_id, sl.start_time
 
   // Gom lịch theo bệnh nhân
   const grouped = {};
-for (const row of result.recordset) {
-  if (!grouped[row.patient_id]) {
-    grouped[row.patient_id] = {
-      full_name: row.full_name,
-      email: row.email,
-      appointments: []
-    };
+  for (const row of result.recordset) {
+    if (!grouped[row.patient_id]) {
+      grouped[row.patient_id] = {
+        full_name: row.full_name,
+        email: row.email,
+        appointments: [],
+      };
+    }
+    grouped[row.patient_id].appointments.push(row);
   }
-  grouped[row.patient_id].appointments.push(row);
-}
 
-return Object.values(grouped);
-}
+  return Object.values(grouped);
+};
