@@ -19,9 +19,9 @@ const getARVRegimenById = async (regimenId) => {
       .input("regimenId", regimenId)
       .query(
         `SELECT 
-            LTRIM(RTRIM(value)) AS Drug,
-            LEFT(LTRIM(RTRIM(value)), PATINDEX('%[0-9]%', LTRIM(RTRIM(value))) - 1) AS drug_name,
-            RIGHT(LTRIM(RTRIM(value)), LEN(LTRIM(RTRIM(value))) - PATINDEX('%[0-9]%', LTRIM(RTRIM(value))) + 1) AS dosage
+            LTRIM(RTRIM(value)) AS Drug_name--,
+            --LEFT(LTRIM(RTRIM(value)), PATINDEX('%[0-9]%', LTRIM(RTRIM(value))) - 1) AS drug_name,
+            --RIGHT(LTRIM(RTRIM(value)), LEN(LTRIM(RTRIM(value))) - PATINDEX('%[0-9]%', LTRIM(RTRIM(value))) + 1) AS dosage
         FROM ARVRegimens 
         CROSS APPLY STRING_SPLIT(components, '+') 
         WHERE arv_regimen_id = @regimenId`

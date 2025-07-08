@@ -17,7 +17,7 @@ const VitalSigns = ({
 }) => {
   const vitalFields = [
     {
-      key: "heart_rate",
+      key: "heartRate",
       label: "Nhịp tim",
       icon: Heart,
       unit: "bpm",
@@ -27,7 +27,7 @@ const VitalSigns = ({
       max: 200,
     },
     {
-      key: "blood_pressure",
+      key: "bloodPressure",
       label: "Huyết áp",
       icon: Activity,
       unit: "mmHg",

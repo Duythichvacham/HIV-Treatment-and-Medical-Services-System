@@ -28,8 +28,8 @@ export const QUEUE_TYPES = {
 };
 
 export const VITAL_SIGNS_DEFAULTS = {
-  heart_rate: "",
-  blood_pressure: "",
+  heartRate: "",
+  bloodPressure: "",
   temperature: "",
   weight: "",
   height: "",
@@ -44,35 +44,35 @@ export const PAGINATION_DEFAULTS = {
 export const API_ENDPOINTS = {
   APPOINTMENTS: {
     // New unified endpoint for all appointment queries
-    BASE: "/api/v1/doctors/appointments",
+    BASE: "/api/v1/doctor/appointments",
     // Legacy endpoints (for backward compatibility)
-    QUEUE: (doctorId) => `/api/v1/doctors/appointments/queue/${doctorId}`,
+    QUEUE: (doctorId) => `/api/v1/doctor/appointments/queue/${doctorId}`,
     IN_PROGRESS: (doctorId) =>
-      `/api/v1/doctors/appointments/in_progress/${doctorId}`,
+      `/api/v1/doctor/appointments/in_progress/${doctorId}`,
     COMPLETED: (doctorId) =>
-      `/api/v1/doctors/appointments/completed/${doctorId}`,
+      `/api/v1/doctor/appointments/completed/${doctorId}`,
     UPDATE_STATUS: (appointmentId) =>
       `/api/v1/appointments/${appointmentId}/status`,
   },
   PATIENTS: {
-    DETAILS: (patientId) => `/api/v1/doctors/patients/${patientId}/details`,
-    EXAM_HISTORY: (patientId) => `/api/v1/doctors/exam-history/${patientId}`,
+    DETAILS: (patientId) => `/api/v1/patients/${patientId}/details`,
+    EXAM_HISTORY: (patientId) => `/api/v1/patients/${patientId}/exam-history`,
   },
   EXAMS: {
-    CURRENT: (patientId) => `/api/v1/doctors/current-exam/${patientId}`,
-    SAVE: () => `/api/v1/doctors/save-exam-data`,
+    CURRENT: (patientId) => `/api/v1/exams/current/${patientId}`,
+    SAVE: (appointmentId) => `/api/v1/exams/${appointmentId}`,
   },
   TESTS: {
-    AVAILABLE: "/api/v1/doctors/available-tests",
-    ONGOING: (patientId) => `/api/v1/doctors/ongoing-tests/${patientId}`,
-    CREATE_REQUEST: "/api/v1/doctors/test-requests",
+    AVAILABLE: "/api/v1/services/tests/available",
+    ONGOING: (patientId) => `/api/v1/patients/${patientId}/ongoing-tests`,
+    CREATE_REQUEST: "/api/v1/test-requests",
   },
   PRESCRIPTIONS: {
-    ARV_REGIMENS: "/api/v1/arv-regimens/",
-    CREATE: "/api/v1/doctors/prescriptions",
+    ARV_REGIMENS: "/api/v1/arv-regimens",
+    CREATE: "/api/v1/prescriptions",
   },
   SLOTS: {
     LIST: "/api/v1/slots",
-    STATS: (doctorId) => `/api/v1/doctors/${doctorId}/slots-stats`,
+    STATS: (doctorId) => `/api/v1/doctor/${doctorId}/slots-stats`,
   },
 };
