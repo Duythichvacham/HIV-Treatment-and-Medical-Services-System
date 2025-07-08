@@ -136,6 +136,16 @@ export const prescriptionApi = {
     return response.data;
   },
 
+  // Get drugs for specific ARV regimen
+  getRegimenDrugs: async (regimenId) => {
+    console.log(
+      "[prescriptionApi.getRegimenDrugs] Fetching drugs for regimen:",
+      regimenId
+    );
+    const response = await apiClient.get(`/api/v1/arv-regimens/${regimenId}`);
+    return response.data;
+  },
+
   // Create prescription
   create: async (prescriptionData) => {
     const url = API_ENDPOINTS.PRESCRIPTIONS.CREATE;

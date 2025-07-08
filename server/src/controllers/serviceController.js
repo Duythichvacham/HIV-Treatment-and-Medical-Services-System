@@ -1,4 +1,7 @@
-const { getServicesByType, getAllServices } = require("../services/serviceService");
+const {
+  getServicesByType,
+  getAllServices,
+} = require("../services/serviceService");
 
 exports.getTestServices = async (req, res, next) => {
   try {
@@ -8,7 +11,7 @@ exports.getTestServices = async (req, res, next) => {
     } else {
       services = await getAllServices();
     }
-    
+
     res.json({
       message: "Lấy danh sách dịch vụ thành công",
       data: services,

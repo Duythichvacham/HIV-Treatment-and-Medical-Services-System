@@ -12,12 +12,93 @@ export const examApi = {
 
   // Get exam data by appointment ID (for loading saved temp data)
   getExamData: async (appointmentId) => {
-    const url = `/api/v1/doctors/exams/${appointmentId}`;
+    // Use the clinical exam endpoint to get existing exam data
+    const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
     const response = await apiClient.get(url);
     return response.data;
   },
 
-  // Save exam (draft) - sử dụng endpoint mới
+  // Get saved prescription and clinical data for continuing exam
+  getSavedExamData: async (appointmentId) => {
+    try {
+      console.log(
+        "[examApi.getSavedExamData] Loading saved data for appointment:",
+        appointmentId
+      );
+
+      console.log("[examApi.getSavedExamData] API URLs:", {
+        clinicalURL: `/api/v1/clinical/clinical-exams/${appointmentId}`,
+        prescriptionURL: `/api/v1/prescriptions/${appointmentId}`,
+      });
+
+      // Load both clinical exam and prescription data
+      const [clinicalResponse, prescriptionResponse] = await Promise.all([
+        apiClient.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
+        apiClient.get(`/api/v1/prescriptions/${appointmentId}`),
+      ]);
+
+      // Extract prescription_details and rename to match expected format
+      const clinicalData = clinicalResponse.data?.data || null;
+      const prescriptionData = prescriptionResponse.data?.data || null;
+
+      // Log detailed structure of the prescription data
+      console.log("[examApi.getSavedExamData] Clinical data structure:", {
+        data: clinicalData,
+        vital_signs: {
+          huyet_ap: clinicalData?.huyet_ap,
+          mach: clinicalData?.mach,
+          nhiet_do: clinicalData?.nhiet_do,
+        },
+      });
+
+      // Map prescriptionDetails to prescription_details for consistency
+      if (prescriptionData && prescriptionData.prescriptionDetails) {
+        console.log(
+          "[examApi.getSavedExamData] Found prescriptionDetails array, remapping to prescription_details"
+        );
+        prescriptionData.prescription_details =
+          prescriptionData.prescriptionDetails;
+
+        // Log detailed drug information for debugging
+        console.log(
+          "[examApi.getSavedExamData] Prescription drugs summary:",
+          prescriptionData.prescription_details.map((d) => ({
+            drug_name: d.drug_name,
+            notes: d.notes,
+            is_arv:
+              d.notes &&
+              (d.notes.includes("Phác đồ chính") ||
+                d.notes.includes("Phác đồ hiện tại")),
+          }))
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          clinical: clinicalData,
+          prescription: prescriptionData,
+        },
+      };
+    } catch (error) {
+      console.error("[examApi.getSavedExamData] Error:", error);
+
+      // Handle 404 errors gracefully (no saved data)
+      if (error.response?.status === 404) {
+        return {
+          success: true,
+          data: {
+            clinical: null,
+            prescription: null,
+          },
+        };
+      }
+
+      throw error;
+    }
+  },
+
+  // Save exam (temp) - save clinical exam + prescription
   save: async (appointmentId, examData, patientData = null) => {
     console.log("[examApi.save] Saving exam data:", {
       appointmentId,
@@ -25,67 +106,202 @@ export const examApi = {
       patientData,
     });
 
-    // Transform vitals to string format
-    const formatVitals = (vitalSigns) => {
-      if (!vitalSigns) return "";
-
-      const parts = [];
-      if (vitalSigns.blood_pressure || vitalSigns.bloodPressure)
-        parts.push(
-          `Huyết áp: ${vitalSigns.blood_pressure || vitalSigns.bloodPressure}`
-        );
-      if (vitalSigns.heart_rate || vitalSigns.heartRate)
-        parts.push(
-          `Mạch: ${vitalSigns.heart_rate || vitalSigns.heartRate}/phút`
-        );
-      if (vitalSigns.temperature)
-        parts.push(`Nhiệt độ: ${vitalSigns.temperature}°C`);
-
-      return parts.join(", ");
-    };
-
-    // Get ARV regimen details for regimen_drugs
-    let regimenDrugs = [];
-    if (examData.prescription?.arv_regimen_id) {
-      // This should be populated from ARV regimen data
-      regimenDrugs = examData.prescription?.regimen_drugs || [];
-    }
-
-    // Transform support drugs to proper format
-    const supportDrugNames = examData.prescription?.support_drugs || [];
-    const supportDrugDetails =
-      examData.prescription?.support_drug_details || [];
-
-    // Transform data để match với backend format
-    const transformedData = {
-      vitals: formatVitals(examData.vital_signs),
-      weight: examData.vital_signs?.weight || null,
-      height: examData.vital_signs?.height || null,
-      bmi: examData.vital_signs?.bmi || null,
-      clinical_signs: examData.clinical_signs || "",
-      diagnosis_primary: examData.diagnosis_primary || "",
-      diagnosis_secondary: examData.diagnosis_secondary || "",
-
-      arv_regimen_id: examData.prescription?.arv_regimen_id || null,
-      regimen_drugs: regimenDrugs,
-
-      support_drugs: supportDrugNames,
-      support_drug_details: supportDrugDetails,
-
-      counseling_notes: examData.prescription?.counseling_notes || "",
-      follow_up_plan: examData.prescription?.follow_up_plan || "",
-      doctor_notes: examData.prescription?.doctor_notes || "",
-
-      save_type: "temp", // Lưu tạm
-    };
-
-    console.log("[examApi.save] Transformed data:", transformedData);
-
-    const response = await apiClient.post(
-      `/api/v1/doctors/exams/${appointmentId}`,
-      transformedData
+    console.log("[examApi.save] Prescription data:", examData.prescription);
+    console.log(
+      "[examApi.save] ARV regimen ID:",
+      examData.prescription?.arv_regimen_id
     );
-    return response.data;
+
+    try {
+      // Step 1: Save clinical exam
+      const clinicalExamData = {
+        appointment_id: appointmentId,
+        huyet_ap: examData.vital_signs?.bloodPressure || "",
+        mach: examData.vital_signs?.heartRate || "",
+        nhiet_do: examData.vital_signs?.temperature || "",
+        weight: examData.vital_signs?.weight || null,
+        height: examData.vital_signs?.height || null,
+        bmi: examData.vital_signs?.bmi || null,
+        clinical_signs: examData.clinical_signs || "",
+        diagnosis_primary: examData.diagnosis_primary || "",
+        diagnosis_secondary: examData.diagnosis_secondary || "",
+      };
+
+      console.log("[examApi.save] Saving clinical exam:", clinicalExamData);
+      const clinicalResponse = await apiClient.post(
+        `/api/v1/clinical/clinical-exams`,
+        clinicalExamData
+      );
+
+      // Step 2: Save prescription if there's prescription data
+      let prescriptionResponse = null;
+      if (examData.prescription) {
+        // Build prescription_detail array from ARV medications and support drugs
+        const prescriptionDetail = [];
+
+        console.log("[examApi.save] Prescription data structure:", {
+          arv_medications: examData.prescription.arv_medications,
+          current_arv_medications:
+            examData.prescription.current_arv_medications,
+          support_drugs: examData.prescription.support_drugs,
+          regimen_type: examData.prescription.regimen_type,
+        });
+
+        // Determine which ARV medications to use based on regimen_type
+        // Only add ONE set of ARV medications (either new regimen or current regimen, not both)
+        const isUsingNewRegimen =
+          examData.prescription.regimen_type === "change";
+        const isUsingCurrentRegimen =
+          examData.prescription.regimen_type === "continue";
+
+        console.log("[examApi.save] Regimen selection logic:", {
+          regimen_type: examData.prescription.regimen_type,
+          isUsingNewRegimen,
+          isUsingCurrentRegimen,
+        });
+
+        if (
+          isUsingNewRegimen &&
+          examData.prescription.arv_medications &&
+          examData.prescription.arv_medications.length > 0
+        ) {
+          console.log(
+            "[examApi.save] Adding NEW ARV medications (regimen change):",
+            examData.prescription.arv_medications
+          );
+          examData.prescription.arv_medications.forEach((drug) => {
+            // Always include all ARV drugs, regardless of configured status
+            prescriptionDetail.push({
+              drug_name: drug.drug_name,
+              dosage: drug.dosage || "300mg", // Default dosage if not specified
+              frequency: drug.frequency || "1 lần/ngày", // Default frequency
+              duration_days: parseInt(drug.duration_days) || 30, // Default duration
+              usage_instructions:
+                drug.usage_instructions || "Uống theo chỉ định của bác sĩ",
+              notes: drug.notes || "Phác đồ chính",
+            });
+          });
+        } else if (
+          isUsingCurrentRegimen &&
+          examData.prescription.current_arv_medications &&
+          examData.prescription.current_arv_medications.length > 0
+        ) {
+          console.log(
+            "[examApi.save] Adding CURRENT ARV medications (continue regimen):",
+            examData.prescription.current_arv_medications
+          );
+          examData.prescription.current_arv_medications.forEach((drug) => {
+            // Always include all current ARV drugs, regardless of configured status
+            prescriptionDetail.push({
+              drug_name: drug.drug_name,
+              dosage: drug.dosage || "300mg", // Default dosage if not specified
+              frequency: drug.frequency || "1 lần/ngày", // Default frequency
+              duration_days: parseInt(drug.duration_days) || 30, // Default duration
+              usage_instructions:
+                drug.usage_instructions || "Uống theo chỉ định của bác sĩ",
+              notes: drug.notes || "Phác đồ hiện tại",
+            });
+          });
+        } else {
+          // Fallback: If regimen_type is not set, prioritize new regimen over current
+          if (
+            examData.prescription.arv_medications &&
+            examData.prescription.arv_medications.length > 0
+          ) {
+            console.log(
+              "[examApi.save] Adding ARV medications (fallback - new regimen):",
+              examData.prescription.arv_medications
+            );
+            examData.prescription.arv_medications.forEach((drug) => {
+              prescriptionDetail.push({
+                drug_name: drug.drug_name,
+                dosage: drug.dosage || "300mg",
+                frequency: drug.frequency || "1 lần/ngày",
+                duration_days: parseInt(drug.duration_days) || 30,
+                usage_instructions:
+                  drug.usage_instructions || "Uống theo chỉ định của bác sĩ",
+                notes: drug.notes || "Phác đồ chính",
+              });
+            });
+          } else if (
+            examData.prescription.current_arv_medications &&
+            examData.prescription.current_arv_medications.length > 0
+          ) {
+            console.log(
+              "[examApi.save] Adding current ARV medications (fallback - current regimen):",
+              examData.prescription.current_arv_medications
+            );
+            examData.prescription.current_arv_medications.forEach((drug) => {
+              prescriptionDetail.push({
+                drug_name: drug.drug_name,
+                dosage: drug.dosage || "300mg",
+                frequency: drug.frequency || "1 lần/ngày",
+                duration_days: parseInt(drug.duration_days) || 30,
+                usage_instructions:
+                  drug.usage_instructions || "Uống theo chỉ định của bác sĩ",
+                notes: drug.notes || "Phác đồ hiện tại",
+              });
+            });
+          }
+        }
+
+        // Add support drugs if any
+        const supportDrugNames = []; // Track support drug names for support_drugs string
+        if (
+          examData.prescription.support_drugs &&
+          examData.prescription.support_drugs.length > 0
+        ) {
+          console.log(
+            "[examApi.save] Adding support drugs:",
+            examData.prescription.support_drugs
+          );
+          examData.prescription.support_drugs.forEach((drug) => {
+            prescriptionDetail.push({
+              drug_name: drug.drug_name,
+              dosage: drug.dosage || "300mg", // Default dosage if not specified
+              frequency: drug.frequency || "1 lần/ngày", // Default frequency
+              duration_days: parseInt(drug.duration_days) || 30, // Default duration
+              usage_instructions:
+                drug.usage_instructions || "Uống theo chỉ định của bác sĩ",
+              notes: drug.notes || "Thuốc hỗ trợ",
+            });
+            // Add drug name to support drugs list
+            supportDrugNames.push(drug.drug_name);
+          });
+        }
+
+        console.log(
+          "[examApi.save] Final prescription_detail:",
+          prescriptionDetail
+        );
+        console.log("[examApi.save] Support drug names:", supportDrugNames);
+
+        const prescriptionData = {
+          appointment_id: appointmentId,
+          arv_regimen_id: examData.prescription.arv_regimen_id || null,
+          support_drugs: supportDrugNames.join(" + ") || "", // Join support drug names with " + "
+          counseling_notes: examData.prescription.counseling_notes || "",
+          follow_up_plan: examData.prescription.follow_up_plan || "",
+          doctor_notes: examData.prescription.doctor_notes || "",
+          prescription_detail: prescriptionDetail,
+        };
+
+        console.log("[examApi.save] Saving prescription:", prescriptionData);
+        prescriptionResponse = await apiClient.post(
+          `/api/v1/prescriptions/`,
+          prescriptionData
+        );
+      }
+
+      return {
+        success: true,
+        clinical_exam: clinicalResponse.data,
+        prescription: prescriptionResponse?.data,
+      };
+    } catch (error) {
+      console.error("[examApi.save] Error saving exam:", error);
+      throw error;
+    }
   },
 
   // Update exam
@@ -93,7 +309,7 @@ export const examApi = {
     return await examApi.save(appointmentId, examData);
   },
 
-  // Complete exam - sử dụng endpoint mới
+  // Complete exam - save clinical exam + prescription + update appointment status
   complete: async (appointmentId, examData, patientData = null) => {
     console.log("[examApi.complete] Completing exam data:", {
       appointmentId,
@@ -101,67 +317,33 @@ export const examApi = {
       patientData,
     });
 
-    // Transform vitals to string format
-    const formatVitals = (vitalSigns) => {
-      if (!vitalSigns) return "";
+    try {
+      // Step 1 & 2: Save clinical exam and prescription (same as save method)
+      const saveResult = await examApi.save(
+        appointmentId,
+        examData,
+        patientData
+      );
 
-      const parts = [];
-      if (vitalSigns.blood_pressure || vitalSigns.bloodPressure)
-        parts.push(
-          `Huyết áp: ${vitalSigns.blood_pressure || vitalSigns.bloodPressure}`
-        );
-      if (vitalSigns.heart_rate || vitalSigns.heartRate)
-        parts.push(
-          `Mạch: ${vitalSigns.heart_rate || vitalSigns.heartRate}/phút`
-        );
-      if (vitalSigns.temperature)
-        parts.push(`Nhiệt độ: ${vitalSigns.temperature}°C`);
+      // Step 3: Update appointment status to completed
+      console.log(
+        "[examApi.complete] Updating appointment status to completed"
+      );
+      const statusResponse = await apiClient.post(
+        `/api/v1/appointments/${appointmentId}/status`,
+        { status: "completed" }
+      );
 
-      return parts.join(", ");
-    };
-
-    // Get ARV regimen details for regimen_drugs
-    let regimenDrugs = [];
-    if (examData.prescription?.arv_regimen_id) {
-      // This should be populated from ARV regimen data
-      regimenDrugs = examData.prescription?.regimen_drugs || [];
+      return {
+        success: true,
+        clinical_exam: saveResult.clinical_exam,
+        prescription: saveResult.prescription,
+        appointment_status: statusResponse.data,
+      };
+    } catch (error) {
+      console.error("[examApi.complete] Error completing exam:", error);
+      throw error;
     }
-
-    // Transform support drugs to proper format
-    const supportDrugNames = examData.prescription?.support_drugs || [];
-    const supportDrugDetails =
-      examData.prescription?.support_drug_details || [];
-
-    // Transform data để match với backend format
-    const transformedData = {
-      vitals: formatVitals(examData.vital_signs),
-      weight: examData.vital_signs?.weight || null,
-      height: examData.vital_signs?.height || null,
-      bmi: examData.vital_signs?.bmi || null,
-      clinical_signs: examData.clinical_signs || "",
-      diagnosis_primary: examData.diagnosis_primary || "",
-      diagnosis_secondary: examData.diagnosis_secondary || "",
-
-      arv_regimen_id: examData.prescription?.arv_regimen_id || null,
-      regimen_drugs: regimenDrugs,
-
-      support_drugs: supportDrugNames,
-      support_drug_details: supportDrugDetails,
-
-      counseling_notes: examData.prescription?.counseling_notes || "",
-      follow_up_plan: examData.prescription?.follow_up_plan || "",
-      doctor_notes: examData.prescription?.doctor_notes || "",
-
-      save_type: "complete", // Hoàn thành
-    };
-
-    console.log("[examApi.complete] Transformed data:", transformedData);
-
-    const response = await apiClient.post(
-      `/api/v1/doctors/exams/${appointmentId}`,
-      transformedData
-    );
-    return response.data;
   },
 
   // Save exam temporarily (no validation) - alias for save

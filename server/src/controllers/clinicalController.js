@@ -2,72 +2,76 @@ const clinicalService = require("../services/clinicalService");
 
 const saveClinicalExam = async (req, res) => {
   try {
-    const {
-      appointment_id,
-      vitals,
-      weight,
-      height,
-      bmi,
-      clinical_signs,
-      diagnosis_primary,
-      diagnosis_secondary,
-      action,
-    } = req.body;
+    const { appointment_id, ...examFields } = req.body;
 
-    // Validate required fields
-    if (!appointment_id) {
+    const examData = [
+      examFields.huyet_ap,
+      examFields.mach,
+      examFields.nhiet_do,
+      examFields.weight,
+      examFields.height,
+      examFields.bmi,
+      examFields.clinical_signs,
+      examFields.diagnosis_primary,
+      examFields.diagnosis_secondary,
+    ];
+
+    const result = await clinicalService.saveClinicalExam(
+      appointment_id,
+      examData
+    );
+
+    if (result) {
+      res.status(201).json({
+        success: true,
+        message: "Khám lâm sàng đã được lưu thành công.",
+      });
+    }
+  } catch (error) {
+    console.error("[createClinicalExam] Lỗi:", error);
+    res.status(500).json({
+      success: false,
+      message: "Đã xảy ra lỗi khi lưu khám lâm sàng.",
+    });
+  }
+};
+
+const getClinicalExamByAppointmentId = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+
+    if (!appointmentId) {
       return res.status(400).json({
         success: false,
-        message: "appointment_id is required",
+        message: "appointmentId is required",
       });
     }
 
-    // If action is "complete", validate all required fields
-    if (action === "complete") {
-      if (
-        !vitals ||
-        !weight ||
-        !height ||
-        !clinical_signs ||
-        !diagnosis_primary
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "All fields are required for completing exam",
-        });
-      }
-    }
+    const examData = await clinicalService.getClinicalExamByAppointmentId(
+      appointmentId
+    );
 
-    const result = await clinicalService.saveClinicalExam({
-      appointment_id,
-      vitals,
-      weight,
-      height,
-      bmi,
-      clinical_signs,
-      diagnosis_primary,
-      diagnosis_secondary,
-      action,
-    });
+    if (!examData) {
+      return res.status(404).json({
+        success: false,
+        message: "Clinical exam not found for this appointment",
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message:
-        action === "complete"
-          ? "Clinical exam completed successfully"
-          : "Clinical exam saved successfully",
-      data: result,
+      data: examData,
     });
   } catch (error) {
-    console.error("Error saving clinical exam:", error);
+    console.error("[getClinicalExamByAppointmentId] Error:", error);
     res.status(500).json({
       success: false,
-      message: "Internal server error",
-      error: error.message,
+      message: "An error occurred while fetching clinical exam data",
     });
   }
 };
 
 module.exports = {
   saveClinicalExam,
+  getClinicalExamByAppointmentId,
 };
