@@ -106,7 +106,7 @@ app.use('/api/v1/payment', paymentRoutes);
    * API manager
    * Prefix: api/v1/manager
    */
-  app.use("/api/v1/managers", authMiddleware, managerRouter);
+  app.use("/api/v1/managers", managerRouter);
 
 }
 
