@@ -15,7 +15,7 @@ const slotRouter = require("./slot");
 const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
 const prescriptionRouter = require("./prescriptions");
-const paymentRoutes = require('./payment');
+const paymentRoutes = require("./payment");
 const managerRouter = require("./manager");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
@@ -39,11 +39,8 @@ function route(app) {
   //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register
   app.use("/api/v1/auth", authRouter);
 
-    //API vnpay  Prefix : api/v1/payment
-app.use('/api/v1/payment', paymentRoutes);
-
-
-
+  //API vnpay  Prefix : api/v1/payment
+  app.use("/api/v1/payment", paymentRoutes);
   /**
    * API doctor
    * Prefix: api/v1/doctors
@@ -107,7 +104,6 @@ app.use('/api/v1/payment', paymentRoutes);
    * Prefix: api/v1/manager
    */
   app.use("/api/v1/managers", authMiddleware, managerRouter);
-
 }
 
 module.exports = route;

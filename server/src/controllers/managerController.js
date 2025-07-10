@@ -1,8 +1,8 @@
-const managerService = require("../services/managers/managerService");
+const userService = require("../services/userService");
 
 const getUsers = async (req, res) => {
   try {
-    const users = await managerService.getUsers();
+    const users = await userService.getUsers();
     return res.status(200).json({
       message: "Users fetched successfully",
       data: users || [],
