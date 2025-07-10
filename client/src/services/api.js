@@ -563,7 +563,9 @@ export const getTestResults = async (test_note_id) => {
  */
 export const getLatestTestResultsForPatient = async (patient_id) => {
   try {
-    const response = await api.get(`/api/v1/lab/test-latest-results/${patient_id}`);
+    const response = await api.get(
+      `/api/v1/lab/test-latest-results/${patient_id}`
+    );
     return response.data;
   } catch (error) {
     console.error("❌ getLatestTestResultsForPatient error:", error);
@@ -616,5 +618,15 @@ export const createTestResult = async (resultData) => {
     throw error;
   }
 };
-
+export const getInvoiceInfo = async (appointmentId) => {
+  try {
+    const response = await api.get(
+      `/api/v1/appointments/${appointmentId}/invoice`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("❌ getInvoiceInfo error:", error);
+    throw error;
+  }
+};
 export default api;

@@ -1,24 +1,10 @@
-const bookingService = require("../services/bookingServices");
-exports.confirmPayment = async (req, res) => {
-  try {
-    const invoiceId = req.params.invoiceId; // Lấy từ URL
-
-    const updatedData = await bookingService.confirmPayment(invoiceId);
-
-    res.json({
-      message: updatedData.message,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Lỗi server: " + error.message });
-  }
-};
+const appointmentService = require("../services/appointmentService");
 
 exports.cancelBooking = async (req, res) => {
   try {
     const invoiceId = req.params.invoiceId; // Lấy từ URL
 
-    const updatedData = await bookingService.cancelBooking(invoiceId);
+    const updatedData = await appointmentService.cancelBooking(invoiceId);
 
     res.json({
       message: updatedData.message,
@@ -28,9 +14,6 @@ exports.cancelBooking = async (req, res) => {
     res.status(500).json({ message: "Lỗi server: " + error.message });
   }
 };
-
-// Thay vì query trực tiếp, sử dụng:
-const appointmentService = require("../services/appointmentService");
 
 exports.createBooking = async (req, res) => {
   try {
@@ -42,7 +25,7 @@ exports.createBooking = async (req, res) => {
     );
 
     // Gọi service để tạo booking
-    const bookingResult = await bookingService.createBooking({
+    const bookingResult = await appointmentService.createBooking({
       ...req.body,
       patientId,
     });

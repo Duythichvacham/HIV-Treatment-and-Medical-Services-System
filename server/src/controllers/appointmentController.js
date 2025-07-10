@@ -1,6 +1,6 @@
 const appointmentService = require("../services/appointmentService");
 const queueService = require("../services/queues/queueService");
-const paymentService = require("../services/paymentService");
+const invoiceService = require("../services/invoiceService");
 const { autoCancelPendingAppointments } = require("../utils/scheduler");
 
 exports.updateStatus = async (req, res, next) => {
@@ -177,36 +177,6 @@ exports.cancelPendingAppointments = async (req, res, next) => {
       message: "Successfully cancelled all pending appointments for today",
     });
   } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Confirm payment for appointment and update invoice status to 'paid'
- */
-exports.confirmPayment = async (req, res, next) => {
-  try {
-    const { appointmentId } = req.params;
-    const { paymentMethod } = req.body; // Optional, for logging/tracking
-
-    // Update invoice status to paid
-    const result = await paymentService.markInvoiceAsPaidByAppointment(
-      appointmentId
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({
-        message: "Không tìm thấy hóa đơn hoặc hóa đơn đã được thanh toán",
-      });
-    }
-
-    res.json({
-      message: "Thanh toán thành công",
-      success: true,
-      paymentMethod: paymentMethod || "unknown",
-    });
-  } catch (error) {
-    console.error("Error confirming payment:", error);
     next(error);
   }
 };
