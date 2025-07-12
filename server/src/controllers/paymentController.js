@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const qs = require("qs");
 const config = require("../config/vnpay");
 const invoiceService = require("../services/invoiceService");
+const appointmentService = require("../services/appointmentService");
 
 function sortObject(obj) {
   let sorted = {};
@@ -66,7 +67,7 @@ module.exports = {
 
     res.json({ url: redirectUrl });
   },
-
+  // tại sao có cú pháp này? Là vì lúc này handleReturn được xem là 1 props của module.exports
   handleReturn: async (req, res) => {
     const vnp_Params = req.query;
     const secureHash = vnp_Params["vnp_SecureHash"];
@@ -83,24 +84,33 @@ module.exports = {
 
     if (secureHash === signed) {
       const responseCode = vnp_Params["vnp_ResponseCode"];
-      const invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
+      var invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
 
       if (!isNaN(invoiceId)) {
         if (responseCode === "00") {
           await invoiceService.updateInvoiceStatus(invoiceId, "paid");
+          const invoice = await invoiceService.getInvoice({ invoiceId });
+          const appointment_id = invoice.appointment_id;
+          var appointmentData = await appointmentService.getAppointmentDetail(
+            appointment_id
+          );
         } else {
           await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+          await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
         }
       }
 
       res.json({
         code: responseCode,
+        appointmentData,
         message:
           responseCode === "00"
             ? "Thanh toán thành công"
             : "Thanh toán thất bại hoặc bị huỷ",
       });
     } else {
+      await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+      await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
       res.json({ code: "97", message: "Sai checksum" });
     }
   },
@@ -121,19 +131,42 @@ module.exports = {
 
     if (secureHash === signed) {
       const responseCode = vnp_Params["vnp_ResponseCode"];
-      const invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
+      var invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
 
       if (!isNaN(invoiceId)) {
         if (responseCode === "00") {
           await invoiceService.updateInvoiceStatus(invoiceId, "paid");
         } else {
           await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+          await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
         }
       }
 
-      res.status(200).json({ RspCode: "00", Message: "Success" });
+      res.status(200).json({
+        RspCode: "00",
+        Message:
+          responseCode === "00"
+            ? "Thanh toán thành công"
+            : "Thanh toán thất bại hoặc bị huỷ",
+      });
     } else {
+      await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+      await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
       res.status(200).json({ RspCode: "97", Message: "Checksum failed" });
+    }
+  },
+  cancelTransaction: async (req, res) => {
+    const invoiceId = req.body.invoiceId;
+    if (!invoiceId) {
+      return res.status(400).json({ message: "Invoice ID is required" });
+    }
+
+    try {
+      await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+      await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
+    } catch (error) {
+      console.error("Error cancelling transaction:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   },
 };

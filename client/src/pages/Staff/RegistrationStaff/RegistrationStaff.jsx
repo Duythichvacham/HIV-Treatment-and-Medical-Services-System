@@ -1,6 +1,5 @@
-import React from "react";
 import { FileText } from "lucide-react";
-import { useRegistrationStaff } from "../../../hooks/useAppointment";
+import { useRegistrationStaff } from "../../../hooks/appointments/useAppointment";
 import { getCurrentDate, formatDateVietnamese } from "../../../utils/dateUtil";
 import {
   StatisticsCards,

@@ -1,15 +1,14 @@
 import React from "react";
-import { useConsultAppointment } from "../../../../hooks/useAppointment";
+import { useConsultAppointment } from "../../../../hooks/appointments/useConsultAppointment";
 import {
   DateSelector,
   DoctorSelector,
   TimeSlotSelector,
   ConsultTypeSelector,
-  AdditionalInfoSection,
   BookingSummary,
 } from "../../../../components/appointment/AppointmentComponents";
-import AppointmentConfirmModal from "../../../../components/common/AppointmentConfirmModal";
-import AppointmentSuccessModal from "../../../../components/common/AppointmentSuccessModal";
+import AppointmentConfirmModal from "../../../../components/appointment/AppointmentConfirmModal";
+import AppointmentSuccessModal from "../../../../components/appointment/AppointmentSuccessModal";
 
 const ConsultAppointment = () => {
   const {
@@ -18,7 +17,6 @@ const ConsultAppointment = () => {
     selectedDate,
     selectedTime,
     consultType,
-    reason,
     doctors,
     timeSlots,
     loading,
@@ -33,11 +31,9 @@ const ConsultAppointment = () => {
     setSelectedDate,
     setSelectedTime,
     setConsultType,
-    setReason,
     setIsConfirmOpen,
     setIsReceiptOpen,
     handleBooking,
-    handleConfirmBooking,
     handlePaymentConfirmation,
 
     // Computed
@@ -111,13 +107,6 @@ const ConsultAppointment = () => {
           consultType={consultType}
           onConsultTypeChange={setConsultType}
           getPrice={getConsultPrice}
-        />
-
-        {/* 5. Additional Information */}
-        <AdditionalInfoSection
-          reason={reason}
-          onReasonChange={setReason}
-          placeholder="Mô tả vấn đề hoặc câu hỏi cần tư vấn..."
         />
       </div>
 

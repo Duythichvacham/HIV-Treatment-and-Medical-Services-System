@@ -167,30 +167,6 @@ export const createAppointment = async (data) => {
     throw error;
   }
 };
-
-/**
- * Confirm payment for appointment
- * @param {number} appointmentId - Appointment ID
- * @param {string} paymentMethod - Payment method (cash, qr_code)
- */
-export const confirmAppointmentPayment = async (
-  appointmentId,
-  paymentMethod
-) => {
-  try {
-    const response = await api.post(
-      `/api/v1/appointments/${appointmentId}/confirm-payment`,
-      {
-        paymentMethod: paymentMethod,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("❌ confirmAppointmentPayment error:", error);
-    throw error;
-  }
-};
-
 // ===========================================
 // AUTH ENDPOINTS
 // ===========================================
@@ -626,6 +602,73 @@ export const getInvoiceInfo = async (appointmentId) => {
     return response.data;
   } catch (error) {
     console.error("❌ getInvoiceInfo error:", error);
+    throw error;
+  }
+};
+/**
+ * Create VNPay payment URL
+ * @param {number} invoiceId - Invoice ID
+ * @param {number} amount - Payment amount
+ * @param {string} bankCode - Bank code (optional)
+ */
+export const createVNPayURL = async (invoiceId, amount, bankCode = "NCB") => {
+  console.log("🔄 API Call: createVNPayURL", { invoiceId, amount, bankCode });
+
+  try {
+    const response = await api.post("/api/v1/payment/create_payment_url", {
+      invoiceId: invoiceId,
+      amount: amount,
+      bankCode: bankCode,
+      language: "vn",
+    });
+
+    console.log("✅ createVNPayURL response:", response.data);
+    return response.data; // { url: "https://sandbox.vnpayment.vn/..." }
+  } catch (error) {
+    console.error("❌ createVNPayURL error:", error);
+    throw error;
+  }
+};
+/**
+ * Gửi các tham số từ VNPAY return URL về backend để xác thực
+ * @param {string} queryString - Chuỗi query từ URL VNPAY trả về
+ * @returns {Promise<object>} - Kết quả xác thực từ backend
+ */
+export const verifyVnpayReturn = async (queryString, invoiceId) => {
+  let timeoutId;
+
+  try {
+    // Thiết lập timeout để hủy giao dịch sau 3 phút
+    timeoutId = setTimeout(async () => {
+      console.warn("⏳ Timeout reached, cancelling transaction...");
+      await cancelTransaction(invoiceId);
+    }, 3 * 60 * 1000); // 3 phút
+
+    // Endpoint này cần khớp với backend của bạn
+    const response = await api.get(
+      `/api/v1/payment/vnpay_return?${queryString}`
+    );
+
+    console.log("✅ verifyVnpayReturn response:", response.data);
+
+    // Hủy timeout nếu nhận được phản hồi
+    clearTimeout(timeoutId);
+
+    return response.data;
+  } catch (error) {
+    console.error("❌ verifyVnpayReturn error:", error);
+    throw error;
+  }
+};
+export const cancelTransaction = async (invoiceId) => {
+  try {
+    const response = await api.patch(`/api/v1/payment/cancel_transaction`, {
+      invoiceId,
+    });
+    console.log("✅ cancelTransaction response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ cancelTransaction error:", error);
     throw error;
   }
 };

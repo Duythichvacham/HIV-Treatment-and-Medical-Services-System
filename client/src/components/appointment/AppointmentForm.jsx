@@ -2,20 +2,23 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppointmentSuccessModal from "./AppointmentSuccessModal";
 import AppointmentConfirmModal from "./AppointmentConfirmModal";
-import { createAppointment, getSlots, confirmAppointmentPayment, checkExistingAppointment } from "../../services/api";
+import {
+  createAppointment,
+  getSlots,
+  checkExistingAppointment,
+} from "../../services/api";
 
-const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
-  const [reason, setReason] = useState("");
+const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
   const [date, setDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const isDoctor = serviceType && serviceType.startsWith("doctor_");
+  const isDoctor = serviceType_id && serviceType_id.startsWith("examinaton_");
   const isLoggedIn = !!user;
   const location = useLocation();
   const today = new Date().toISOString().split("T")[0];
-  const storageKey = `appointmentForm_${serviceType}`;
+  const storageKey = `appointmentForm_${serviceType_id}`;
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [appointmentData, setAppointmentData] = useState(null);
@@ -41,10 +44,10 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         let doctorId = null;
 
         if (isDoctor) {
-          doctorId = serviceType.replace("doctor_", "");
+          doctorId = serviceType_id.replace("examinaton_", "");
           serviceId = 1; // Khám bệnh
-        } else if (serviceType && serviceType.startsWith("service_")) {
-          serviceId = serviceType.replace("service_", "");
+        } else if (serviceType_id && serviceType_id.startsWith("test_")) {
+          serviceId = serviceType_id.replace("test_", "");
         }
 
         if (serviceId) {
@@ -55,7 +58,10 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           );
 
           if (existingCheck.hasExisting) {
-            setError(existingCheck.message || "Bạn đã có lịch hẹn tương tự. Vui lòng kiểm tra lại.");
+            setError(
+              existingCheck.message ||
+                "Bạn đã có lịch hẹn tương tự. Vui lòng kiểm tra lại."
+            );
             setLoading(false);
             return;
           }
@@ -80,11 +86,11 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       let doctor_id = null,
         service_id = null,
         room_id = null;
-      if (serviceType && serviceType.startsWith("doctor_")) {
-        doctor_id = serviceType.replace("doctor_", "");
+      if (serviceType_id && serviceType_id.startsWith("examinaton_")) {
+        doctor_id = serviceType_id.replace("examinaton_", "");
         service_id = 1;
-      } else if (serviceType && serviceType.startsWith("service_")) {
-        service_id = serviceType.replace("service_", "");
+      } else if (serviceType_id && serviceType_id.startsWith("test_")) {
+        service_id = serviceType_id.replace("test_", "");
       }
       const res = await createAppointment({
         doctor_id,
@@ -92,12 +98,12 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
         service_id,
         room_id,
         bookingDate: date,
-        reason,
-        serviceType: isDoctor ? "doctor" : "service",
+        serviceType: isDoctor ? "examinaton" : "test",
       });
 
       // Lấy appointment_id từ response
-      const appointment_id = res?.appointment?.appointment_id || res?.appointment_id;
+      const appointment_id =
+        res?.appointment?.appointment_id || res?.appointment_id;
 
       console.log("🔍 DEBUG API Response:", JSON.stringify(res, null, 2));
       console.log("🔍 DEBUG appointment:", res?.appointment);
@@ -106,13 +112,21 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       // Tạo dữ liệu đầy đủ với appointmentId (giống như trang /appointment)
       const mappedData = {
         appointmentId: appointment_id,
+        invoiceId: res?.invoice_id,
         queueNumber: res?.queue_info?.queue_number || res?.queue_number || 1,
         serviceName: serviceName,
         room: res?.appointment?.room_name || "Chưa xác định",
-        doctorOrStaff: isDoctor ? (res?.appointment?.doctor_name || "Chưa xác định") : "Nhân viên xét nghiệm",
+        doctorOrStaff: isDoctor
+          ? res?.appointment?.doctor_name || "Chưa xác định"
+          : "Nhân viên xét nghiệm",
         date: date,
-        time: isDoctor ? (slots.find(s => String(s.value) === String(timeSlot))?.label || "") : "Không cần đặt giờ cụ thể",
-        fee: typeof price === "number" ? `${Number(price).toLocaleString()}đ` : price,
+        time: isDoctor
+          ? slots.find((s) => String(s.value) === String(timeSlot))?.label || ""
+          : "Không cần đặt giờ cụ thể",
+        fee:
+          typeof price === "number"
+            ? `${Number(price).toLocaleString()}đ`
+            : price,
         isDoctor: isDoctor,
       };
 
@@ -122,7 +136,6 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       setIsConfirmOpen(true); // Show payment confirmation modal
 
       // Reset form after successful booking
-      setReason("");
       setDate("");
       setTimeSlot("");
       sessionStorage.removeItem(storageKey);
@@ -140,38 +153,38 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     }
   };
 
-  // Hàm xử lý thanh toán (giống như trang /appointment)
-  const handlePaymentConfirmation = async (paymentMethod = "cash") => {
-    if (!appointmentData?.appointmentId) {
-      setError("Không tìm thấy thông tin đặt lịch");
-      return false;
-    }
+  // // Hàm xử lý thanh toán (giống như trang /appointment)
+  // const handlePaymentConfirmation = async (paymentMethod = "cash") => {
+  //   if (!appointmentData?.appointmentId) {
+  //     setError("Không tìm thấy thông tin đặt lịch");
+  //     return false;
+  //   }
 
-    try {
-      setLoading(true);
-      await confirmAppointmentPayment(
-        appointmentData.appointmentId,
-        paymentMethod
-      );
-      console.log(
-        "✅ Payment confirmed for appointment:",
-        appointmentData.appointmentId
-      );
+  //   try {
+  //     setLoading(true);
+  //     await confirmAppointmentPayment(
+  //       appointmentData.appointmentId,
+  //       paymentMethod
+  //     );
+  //     console.log(
+  //       "✅ Payment confirmed for appointment:",
+  //       appointmentData.appointmentId
+  //     );
 
-      // Chuyển sang modal thành công sau khi thanh toán
-      setIsConfirmOpen(false);
-      setIsReceiptOpen(true);
+  //     // Chuyển sang modal thành công sau khi thanh toán
+  //     setIsConfirmOpen(false);
+  //     setIsReceiptOpen(true);
 
-      return true;
-    } catch (err) {
-      console.error("❌ Payment confirmation error:", err);
-      setError("Có lỗi xảy ra khi xác nhận thanh toán");
-      setAppointmentData(null);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     return true;
+  //   } catch (err) {
+  //     console.error("❌ Payment confirmation error:", err);
+  //     setError("Có lỗi xảy ra khi xác nhận thanh toán");
+  //     setAppointmentData(null);
+  //     return false;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   // Restore saved form state on mount (chỉ khi là guest)
   useEffect(() => {
@@ -179,8 +192,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       const saved = sessionStorage.getItem(storageKey);
       if (saved) {
         try {
-          const { reason: r, date: d, timeSlot: t } = JSON.parse(saved);
-          if (r) setReason(r);
+          const { date: d, timeSlot: t } = JSON.parse(saved);
           if (d) setDate(d);
           if (t) setTimeSlot(t);
         } catch (err) {
@@ -192,9 +204,9 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
 
   // Persist form state on change
   useEffect(() => {
-    const data = { reason, date, timeSlot };
+    const data = { date, timeSlot };
     sessionStorage.setItem(storageKey, JSON.stringify(data));
-  }, [reason, date, timeSlot, storageKey]);
+  }, [date, timeSlot, storageKey]);
 
   // Format time string to HH:mm
   function formatTime(timeStr) {
@@ -241,7 +253,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
     // Gọi API lấy slot thực tế
     const fetchSlots = async () => {
       try {
-        const doctorId = serviceType.replace("doctor_", "");
+        const doctorId = serviceType_id.replace("examinaton_", "");
         console.log("Gọi getSlots với:", date, doctorId); // Log tham số truyền lên
         const slotData = await getSlots(date, doctorId);
         console.log("Kết quả slotData:", slotData); // Log kết quả trả về
@@ -261,7 +273,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
       }
     };
     fetchSlots();
-  }, [date, isDoctor, serviceType]);
+  }, [date, isDoctor, serviceType_id]);
 
   return (
     <section className="bg-white p-6 rounded-lg shadow mb-6">
@@ -272,18 +284,6 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
           <div>
             <div className="text-sm text-gray-500">Giá dịch vụ</div>
             <div className="font-semibold">{price}</div>
-          </div>
-          <div className="sm:col-span-3">
-            <label className="block text-gray-700 mb-1">
-              Lý do khám <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              required
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring"
-              placeholder="Mô tả triệu chứng hoặc lý do khám..."
-            />
           </div>
         </div>
 
@@ -348,7 +348,7 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
               to="/login/patient"
               state={{ from: location.pathname }}
               onClick={() => {
-                const data = { reason, date, timeSlot };
+                const data = { date, timeSlot };
                 sessionStorage.setItem(storageKey, JSON.stringify(data));
               }}
               className="block text-center bg-green-600 text-white w-full px-6 py-2 rounded-full hover:bg-green-700 transition"
@@ -372,8 +372,8 @@ const AppointmentForm = ({ serviceType, serviceName, price, user }) => {
               setIsReceiptOpen(true);
             }}
             data={appointmentData}
-            onPaymentConfirm={handlePaymentConfirmation}
           />
+
           <AppointmentSuccessModal
             isOpen={isReceiptOpen}
             onClose={() => {

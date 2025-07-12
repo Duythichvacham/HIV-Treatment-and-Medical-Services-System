@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
-import AppointmentForm from "../../../components/common/AppointmentForm";
-import { getServices, checkExistingAppointment } from "../../../services/api";
+import AppointmentForm from "../../../components/appointment/AppointmentForm";
+import { getServices } from "../../../services/api";
 import { AuthContext } from "../../../contexts/AuthContext";
 
 const MainServiceDetail = () => {
@@ -197,14 +197,27 @@ const MainServiceDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100 py-10 px-2 animate-fade-in duration-700">
       <div className="max-w-7xl mx-auto">
-        <Link to="/" className="inline-flex items-center gap-2 text-green-700 border border-green-200 bg-white rounded-full px-5 py-2 mb-6 text-lg font-semibold shadow hover:bg-green-50 hover:border-green-400 transition-all duration-200">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-green-700 border border-green-200 bg-white rounded-full px-5 py-2 mb-6 text-lg font-semibold shadow hover:bg-green-50 hover:border-green-400 transition-all duration-200"
+        >
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+            <path
+              stroke="#16a34a"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
           Quay lại trang chủ
         </Link>
         {/* Header Section */}
         <section className="bg-white p-10 rounded-3xl shadow-2xl mb-10 animate-slide-up duration-700">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-4xl font-extrabold text-green-800 mb-4 tracking-tight drop-shadow-lg">{service.name}</h1>
+            <h1 className="text-4xl font-extrabold text-green-800 mb-4 tracking-tight drop-shadow-lg">
+              {service.name}
+            </h1>
             <p className="text-xl text-gray-600 mb-8">{service.description}</p>
             <div className="grid md:grid-cols-3 gap-8 mb-8">
               <div className="bg-green-50 p-6 rounded-2xl text-center shadow border-2 border-green-100">
@@ -228,7 +241,9 @@ const MainServiceDetail = () => {
           {/* Service Details */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 animate-fade-in animate-slide-up duration-700">
-              <h2 className="text-2xl font-bold text-green-800 mb-6">Đặc điểm nổi bật</h2>
+              <h2 className="text-2xl font-bold text-green-800 mb-6">
+                Đặc điểm nổi bật
+              </h2>
               <ul className="space-y-4">
                 {service.details.map((detail, index) => (
                   <li key={index} className="flex items-start text-lg">
@@ -239,7 +254,9 @@ const MainServiceDetail = () => {
               </ul>
             </div>
             <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in animate-slide-up duration-700 delay-100">
-              <h2 className="text-2xl font-bold text-green-800 mb-6">Quy trình thực hiện</h2>
+              <h2 className="text-2xl font-bold text-green-800 mb-6">
+                Quy trình thực hiện
+              </h2>
               <div className="space-y-6">
                 {service.process.map((step, index) => (
                   <div key={index} className="flex items-start text-lg">
@@ -255,8 +272,15 @@ const MainServiceDetail = () => {
           {/* Appointment Form Section */}
           <div className="animate-fade-in animate-slide-up duration-700 delay-200">
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-              <h2 className="text-2xl font-bold text-green-800 mb-6">Đặt lịch dịch vụ</h2>
-              <AppointmentForm serviceType={service.service_type} serviceName={service.name} price={service.price} user={user} />
+              <h2 className="text-2xl font-bold text-green-800 mb-6">
+                Đặt lịch dịch vụ
+              </h2>
+              <AppointmentForm
+                serviceType_id={`test_${serviceId}`}
+                serviceName={service.name}
+                price={service.price}
+                user={user}
+              />
             </div>
           </div>
         </div>

@@ -57,7 +57,7 @@ exports.createAppointment = async (req, res, next) => {
   try {
     const accountId = req.user.userId; // lấy từ token đã verify
 
-    // Sử dụng function tổng hợp đã refactor
+    // Sử dụng function tổng hợp
     const appointment = await appointmentService.createAppointmentFromAccount(
       accountId,
       req.body
@@ -80,6 +80,7 @@ exports.createAppointment = async (req, res, next) => {
     return res.status(201).json({
       message: "Đặt lịch thành công",
       appointment,
+      invoice_id: appointment.invoice_id, // ✅ Thêm invoice_id cho thanh toán
       queue_info: queueInfo, // Trả về thông tin số thứ tự nếu có
     });
   } catch (error) {

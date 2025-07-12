@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { User, FileText, MessageCircle } from "lucide-react";
-import DoctorAppointment from "./AppointmentTypes/DoctorAppointment";
+import ExamAppointment from "./AppointmentTypes/ExamAppointment";
 import TestAppointment from "./AppointmentTypes/TestAppointment";
 import ConsultAppointment from "./AppointmentTypes/ConsultAppointment";
 
 const Appointment = () => {
-  const [activeTab, setActiveTab] = useState("doctor");
+  const [activeTab, setActiveTab] = useState("exam");
 
   const tabs = [
-    { id: "doctor", label: "Đặt lịch khám bác sĩ", icon: User },
+    { id: "exam", label: "Đặt lịch khám bác sĩ", icon: User },
     { id: "test", label: "Đặt lịch xét nghiệm", icon: FileText },
     { id: "consult", label: "Đặt lịch tư vấn", icon: MessageCircle },
   ];
@@ -16,14 +16,14 @@ const Appointment = () => {
   // Render tab content based on activeTab
   const renderTabContent = () => {
     switch (activeTab) {
-      case "doctor":
-        return <DoctorAppointment />;
+      case "exam":
+        return <ExamAppointment />;
       case "test":
         return <TestAppointment />;
       case "consult":
         return <ConsultAppointment />;
       default:
-        return <DoctorAppointment />;
+        return <ExamAppointment />;
     }
   };
 

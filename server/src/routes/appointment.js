@@ -6,7 +6,10 @@ const appointmentController = require("../controllers/appointmentController");
 router.get("/check-existing", appointmentController.checkExistingAppointment);
 
 // Manual cancel tất cả pending appointments trong ngày (cho admin/manager)
-router.post("/cancel-pending", appointmentController.cancelPendingAppointments);
+router.patch(
+  "/cancel-pending",
+  appointmentController.cancelPendingAppointments
+);
 
 // Đặt lịch khám mới
 router.post("/", appointmentController.createAppointment);

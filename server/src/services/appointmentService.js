@@ -406,13 +406,14 @@ exports.getAppointmentDetail = async (appointment_id) => {
   const result = await pool.request().input("appointment_id", appointment_id)
     .query(`
       SELECT a.*, p.full_name as patient_name, sv.name as service_name, sv.service_type, 
-             r.room_name, d.full_name as doctor_name, sl.start_time, sl.end_time
+             r.room_name, d.full_name as doctor_name, sl.start_time, sl.end_time, i.amount as fee
       FROM Appointments a
       LEFT JOIN Patients p ON a.patient_id = p.patient_id
       LEFT JOIN Services sv ON a.service_id = sv.service_id
       LEFT JOIN Rooms r ON a.room_id = r.room_id
       LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
       LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
+      LEFT JOIN Invoices i ON a.appointment_id = i.appointment_id
       WHERE a.appointment_id = @appointment_id
     `);
 
@@ -458,7 +459,7 @@ exports.getAppointmentDetail = async (appointment_id) => {
     queue_number: queueNumber,
   };
 };
-// Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới)
+// Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới),nếu có trước đó chưa hoàn thành thì cancel
 exports.checkExistingAppointment = async (
   accountId,
   serviceId,
@@ -468,7 +469,7 @@ exports.checkExistingAppointment = async (
 
   // Lấy patient_id từ accountId
   const patientId = await this.getPatientIdByAccountId(accountId);
-
+  await this.cancelOldAppointments(patientId);
   // Lấy thông tin service
   const service = await this.getServiceInfo(serviceId);
 
@@ -496,20 +497,21 @@ exports.checkExistingAppointment = async (
       };
     }
   } else if (service.service_type === "test") {
-    // LOGIC CHO XÉT NGHIỆM: Không cho đặt xét nghiệm cùng loại nếu chưa hoàn thành
+    // LOGIC CHO XÉT NGHIỆM: Không cho đặt xét nghiệm cùng loại nếu chưa hoàn thành trong ngày
     const existingTestResult = await pool
       .request()
       .input("patient_id", patientId)
+      .input("bookingDate", bookingDate)
       .input("service_id", serviceId).query(`
         SELECT COUNT(*) AS count, s.name AS service_name
         FROM Appointments a
         JOIN Services s ON a.service_id = s.service_id
         WHERE a.patient_id = @patient_id
+          AND CONVERT(date, a.bookingDate) = CONVERT(date, @bookingDate)
           AND a.service_id = @service_id
           AND a.status IN ('requested', 'in_progress')
         GROUP BY s.name
       `);
-
     if (
       existingTestResult.recordset.length > 0 &&
       existingTestResult.recordset[0].count > 0
@@ -528,7 +530,52 @@ exports.checkExistingAppointment = async (
     message: "Có thể đặt lịch",
   };
 };
+// chỉ được gọi khi patient cố đặt lịch khám mới
+exports.cancelOldAppointments = async (patientId) => {
+  const pool = await poolPromise;
+  try {
+    const oldAppointmentsResult = await pool
+      .request()
+      .input("patient_id", patientId).query(`
+        SELECT appointment_id 
+        FROM Appointments
+        WHERE patient_id = @patient_id
+          AND status IN ('requested', 'in_progress')
+          AND CAST(bookingDate AS DATE) < CAST(GETDATE() AS DATE)
+      `);
 
+    const appointmentIdsToCancel = oldAppointmentsResult.recordset.map(
+      (row) => row.appointment_id
+    );
+    // Tạo chuỗi tham số động cho câu truy vấn IN
+    const idParameters = appointmentIdsToCancel
+      .map((_, index) => `@id${index}`)
+      .join(",");
+    const request = pool.request().input("patient_id", patientId);
+    // có thể gọi nhiều input trước khi query, nó sẽ thực thi cùng lúc
+    appointmentIdsToCancel.forEach((id, index) => {
+      request.input(`id${index}`, id);
+    });
+
+    // Hủy các lịch hẹn
+    await request.query(`
+        UPDATE Appointments
+        SET status = 'cancelled'
+        WHERE appointment_id IN (${idParameters})
+          AND patient_id = @patient_id
+      `);
+
+    // Hủy các hóa đơn liên quan
+    await request.query(`
+        UPDATE Invoices
+        SET status = 'cancelled'
+        WHERE appointment_id IN (${idParameters})
+      `);
+  } catch (error) {
+    console.error("Lỗi khi tự động hủy lịch hẹn cũ:", error);
+  }
+};
+// exports.cancelAppointments()
 // Lấy invoice từ appointment_id - sử dụng invoiceService mới
 exports.getInvoiceByAppointmentId = async (appointment_id) => {
   return await invoiceService.getInvoice({ appointmentId: appointment_id });
@@ -662,9 +709,9 @@ exports.cancelBooking = async (invoiceId) => {
 // Validation rules cho đặt lịch (được gộp từ bookingServices)
 exports.validateAppointmentRules = async (
   patient_id,
-  service_id,
-  bookingDate,
-  doctor_id = null
+  service_id
+  // bookingDate,
+  // doctor_id = null
 ) => {
   const pool = await poolPromise;
 
@@ -847,4 +894,14 @@ exports.createBooking = async ({
     room_name, // Thêm room_name để frontend có thể sử dụng
     queue_info: queueInfo, // Trả về thông tin queue number cho frontend
   };
+};
+// Hủy lịch hẹn theo invoice_id nếu thanh toán thất bại
+exports.cancelAppointmentByInvoiceId = async (invoiceId) => {
+  const pool = await poolPromise;
+  await pool.request().input("invoice_id", invoiceId).query(`
+    UPDATE Appointments
+    SET status = 'cancelled'
+    WHERE appointment_id = (
+    SELECT appointment_id FROM Invoices WHERE invoice_id = @invoice_id))
+    `);
 };
