@@ -1,5 +1,5 @@
 import React from "react";
-import { useAppointmentHistory } from "../../hooks/useAppointment";
+import { useAppointmentHistory } from "../../hooks/appointments/useAppointmentHistory";
 
 const AppointmentHistory = () => {
   const {

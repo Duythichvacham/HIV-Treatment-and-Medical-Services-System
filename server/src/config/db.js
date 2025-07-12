@@ -10,6 +10,7 @@ const config = {
   options: {
     encrypt: false, // Use encryption for data transfer
     trustServerCertificate: true, // Trust the server certificate
+    useUTC: false,
     enableArithAbort: true,
     connectTimeout: 60000, // 60 seconds
     requestTimeout: 60000, // 60 seconds

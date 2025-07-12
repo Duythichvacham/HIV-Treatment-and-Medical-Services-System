@@ -1,4 +1,4 @@
-const { poolPromise } = require("../../config/db");
+const { poolPromise } = require("../config/db");
 
 const getUsers = async () => {
   const pool = await poolPromise;

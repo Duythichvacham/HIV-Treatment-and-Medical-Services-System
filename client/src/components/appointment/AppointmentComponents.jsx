@@ -350,34 +350,6 @@ export const ConsultTypeSelector = ({
 };
 
 /**
- * Additional Information Component
- */
-export const AdditionalInfoSection = ({
-  reason,
-  onReasonChange,
-  placeholder,
-}) => {
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-        Thông tin bổ sung
-      </h2>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Ghi chú <span className="text-gray-400">(Tùy chọn)</span>
-        </label>
-        <textarea
-          value={reason}
-          onChange={(e) => onReasonChange(e.target.value)}
-          placeholder={placeholder || "Nhập ghi chú..."}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
-        />
-      </div>
-    </div>
-  );
-};
-
-/**
  * Booking Summary Component
  */
 export const BookingSummary = ({

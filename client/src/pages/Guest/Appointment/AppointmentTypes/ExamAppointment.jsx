@@ -1,46 +1,42 @@
 import React from "react";
-import { useDoctorAppointment } from "../../../../hooks/useAppointment";
+import { useExamAppointment } from "../../../../hooks/appointments/useExamAppointment";
 import {
   DateSelector,
   DoctorSelector,
   TimeSlotSelector,
-  AdditionalInfoSection,
   BookingSummary,
 } from "../../../../components/appointment/AppointmentComponents";
-import AppointmentConfirmModal from "../../../../components/common/AppointmentConfirmModal";
-import AppointmentSuccessModal from "../../../../components/common/AppointmentSuccessModal";
-
-const DoctorAppointment = () => {
+import AppointmentConfirmModal from "../../../../components/appointment/AppointmentConfirmModal";
+// import AppointmentSuccessModal from "../../../../components/appointment/AppointmentSuccessModal";
+const ExamAppointment = () => {
   const {
     // State
     selectedDoctor,
     selectedDate,
     selectedTime,
-    reason,
     doctors,
     timeSlots,
     loading,
     doctorsLoading,
     error,
     isConfirmOpen,
-    isReceiptOpen,
+    // isReceiptOpen,
     appointmentData,
 
     // Actions
     setSelectedDoctor,
     setSelectedDate,
     setSelectedTime,
-    setReason,
     setIsConfirmOpen,
-    setIsReceiptOpen,
+    // setIsReceiptOpen,
     handleBooking,
-    handleConfirmBooking,
-    handlePaymentConfirmation,
+    // handlePaymentConfirmation,
+    handleVnpayPayment,
 
     // Computed
     isBookingReady,
     getExamPrice,
-  } = useDoctorAppointment();
+  } = useExamAppointment();
 
   // Utility functions for UI
   const getStatusColor = (status) => {
@@ -102,13 +98,6 @@ const DoctorAppointment = () => {
           getStatusColor={getStatusColor}
           getStatusText={getStatusText}
         />
-
-        {/* 4. Additional Information */}
-        <AdditionalInfoSection
-          reason={reason}
-          onReasonChange={setReason}
-          placeholder="Mô tả triệu chứng hoặc lý do khám..."
-        />
       </div>
 
       {/* Right Column - Summary */}
@@ -129,20 +118,21 @@ const DoctorAppointment = () => {
       <AppointmentConfirmModal
         isOpen={isConfirmOpen}
         onCancel={() => setIsConfirmOpen(false)}
-        onConfirm={() => {
-          setIsConfirmOpen(false);
-          setIsReceiptOpen(true);
-        }}
+        // onConfirm={() => {
+        //   setIsConfirmOpen(false);
+        //   setIsReceiptOpen(true);
+        // }}
+        onVnpayPayment={handleVnpayPayment}
         data={appointmentData}
-        onPaymentConfirm={handlePaymentConfirmation}
+        // onPaymentConfirm={handlePaymentConfirmation}
       />
-      <AppointmentSuccessModal
+      {/* <AppointmentSuccessModal
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
         appointmentData={appointmentData}
-      />
+      /> */}
     </div>
   );
 };
 
-export default DoctorAppointment;
+export default ExamAppointment;

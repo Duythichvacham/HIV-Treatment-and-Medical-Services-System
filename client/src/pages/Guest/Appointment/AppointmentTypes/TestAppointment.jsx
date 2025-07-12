@@ -1,14 +1,11 @@
 import React from "react";
-import { useTestAppointment } from "../../../../hooks/useAppointment";
+import { useTestAppointment } from "../../../../hooks/appointments/useTestAppointment";
 import {
   DateSelector,
   TestTypeSelector,
-  AdditionalInfoSection,
   BookingSummary,
 } from "../../../../components/appointment/AppointmentComponents";
-import AppointmentConfirmModal from "../../../../components/common/AppointmentConfirmModal";
-import AppointmentSuccessModal from "../../../../components/common/AppointmentSuccessModal";
-
+import AppointmentConfirmModal from "../../../../components/appointment/AppointmentConfirmModal";
 const TestAppointment = () => {
   const {
     // State
@@ -16,21 +13,16 @@ const TestAppointment = () => {
     selectedDate,
     testTypes,
     servicesLoading,
-    reason,
     error,
     isConfirmOpen,
-    isReceiptOpen,
     appointmentData,
 
     // Actions
     setSelectedTestType,
     setSelectedDate,
-    setReason,
     setIsConfirmOpen,
-    setIsReceiptOpen,
     handleBooking,
-    handleConfirmBooking,
-    handlePaymentConfirmation,
+    handleVnpayPayment,
 
     // Computed
     isBookingReady,
@@ -60,13 +52,6 @@ const TestAppointment = () => {
           servicesLoading={servicesLoading}
           error={error}
         />
-
-        {/* 3. Additional Information */}
-        <AdditionalInfoSection
-          reason={reason}
-          onReasonChange={setReason}
-          placeholder="Ghi chú cho xét nghiệm (nếu có)..."
-        />
       </div>
 
       {/* Right Column - Summary */}
@@ -86,17 +71,13 @@ const TestAppointment = () => {
       <AppointmentConfirmModal
         isOpen={isConfirmOpen}
         onCancel={() => setIsConfirmOpen(false)}
-        onConfirm={() => {
-          setIsConfirmOpen(false);
-          setIsReceiptOpen(true);
-        }}
+        // onConfirm={() => {
+        //   setIsConfirmOpen(false);
+        //   setIsReceiptOpen(true);
+        // }} -> Hiển thị modal thành công ngay lập tức -> dùng khi bypass
         data={appointmentData}
-        onPaymentConfirm={handlePaymentConfirmation}
-      />
-      <AppointmentSuccessModal
-        isOpen={isReceiptOpen}
-        onClose={() => setIsReceiptOpen(false)}
-        appointmentData={appointmentData}
+        onVnpayPayment={handleVnpayPayment}
+        // onPaymentConfirm={handlePaymentConfirmation}
       />
     </div>
   );

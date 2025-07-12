@@ -21,14 +21,14 @@ import LabResult from "./pages/Staff/LabResult";
 import RegistrationStaff from "./pages/Staff/RegistrationStaff/RegistrationStaff";
 import DoctorDashboard from "./pages/Doctor/DoctorDashboardRefactored";
 import MainServiceDetail from "./pages/Guest/ServiceDetail/MainServiceDetail";
-import DoctorPage from "./pages/Guest/DoctorPage";
+import DoctorPage from "./pages/Guest/Doctor/DoctorPage";
 import Appointment from "./pages/Guest/Appointment";
 import AppointmentHistory from "./pages/Patient/AppointmentHistory";
 import AboutPage from "./pages/Guest/Home/AboutPage";
 import NewsPage from "./pages/Guest/Home/NewsPage";
 import PatientProfile from "./pages/Patient/PatientProfile";
 import PatientRegister from "./pages/Auth/PatientRegister";
-
+import PaymentResult from "./pages/Payment/PaymentResult";
 function App() {
   return (
     <AuthProvider>
@@ -135,6 +135,8 @@ function AppContent() {
               )
             }
           />
+          // Thêm route mới
+          <Route path="/payment-result" element={<PaymentResult />} />
         </Routes>
       </main>
       {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
