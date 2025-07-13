@@ -2,7 +2,6 @@ require("dotenv").config(); // load biến môi trường từ file .env
 const authRouter = require("./auth");
 const patientRouter = require("./patient");
 const userRouter = require("./user");
-const bookingRouter = require("./booking");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 const appointmentRouter = require("./appointment");
