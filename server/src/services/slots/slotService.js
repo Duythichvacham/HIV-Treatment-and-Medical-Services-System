@@ -1,5 +1,5 @@
-const { poolPromise } = require("../config/db");
-
+const { poolPromise } = require("../../config/db");
+const { normalizeTime } = require("../../utils/timeUtil");
 const getFullTimeSlots = async () => {
   try {
     const pool = await poolPromise;
@@ -67,9 +67,52 @@ const getAvailableSlots = async (doctorId, date) => {
     throw err;
   }
 };
+const checkTimeSlot = async (start_time, end_time) => {
+  const pool = await poolPromise;
 
+  const startNorm = normalizeTime(start_time);
+  const endNorm = normalizeTime(end_time);
+
+  const result = await pool
+    .request()
+    .input("start_time", sql.VarChar(8), startNorm)
+    .input("end_time", sql.VarChar(8), endNorm).query(`
+      SELECT slot_id, start_time, end_time
+      FROM Slots
+      WHERE 
+        CONVERT(time(0), start_time) = CONVERT(time(0), @start_time, 108)
+        OR 
+        CONVERT(time(0), end_time) = CONVERT(time(0), @end_time, 108)
+    `);
+
+  return result.recordset; // Mảng các slot trùng thời gian
+};
+const createSlotDB = async (start_time, end_time) => {
+  const pool = await poolPromise;
+
+  const startNorm = normalizeTime(start_time);
+  const endNorm = normalizeTime(end_time);
+
+  const result = await pool
+    .request()
+    .input("start_time", sql.VarChar(8), startNorm)
+    .input("end_time", sql.VarChar(8), endNorm).query(`
+      INSERT INTO Slots (start_time, end_time)
+      OUTPUT INSERTED.slot_id
+      VALUES (
+        CONVERT(time(0), @start_time, 108),
+        CONVERT(time(0), @end_time, 108)
+      );
+    `);
+
+  return {
+    slot_id: result.recordset[0].slot_id,
+  };
+};
 module.exports = {
   getAllSlots,
   getAvailableSlots,
   getFullTimeSlots,
+  checkTimeSlot,
+  createSlotDB,
 };

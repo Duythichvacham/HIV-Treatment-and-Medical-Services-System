@@ -438,3 +438,22 @@ exports.createBulkTestResults = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getTestRequestsByStatus = async (req, res, next) => {
+  try {
+    const { status } = req.query; // status: queue, in-progress, finished
+    const statusMap = {
+      queue: "requested",
+      "in-progress": "in_progress",
+      finished: "completed",
+    };
+    const dbStatus = statusMap[status];
+    if (!dbStatus) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    const testRequests = await testService.getTestRequestsByStatus(dbStatus);
+    return res.status(200).json({ testRequests });
+  } catch (error) {
+    next(error);
+  }
+};

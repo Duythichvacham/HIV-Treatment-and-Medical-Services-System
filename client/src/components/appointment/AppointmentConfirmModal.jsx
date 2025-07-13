@@ -1,36 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import { createPortal } from "react-dom";
 
 const AppointmentConfirmModal = ({
   isOpen,
   onCancel,
-  onConfirm,
   data,
-  onPaymentConfirm,
+  // onConfirm,
+  onVnpayPayment,
 }) => {
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
   if (!isOpen || !data) return null;
-  const handlePayment = async () => {
-    setIsProcessingPayment(true);
-    try {
-      let success = true;
-
-      // If onPaymentConfirm is provided, use it (for appointment payments)
-      if (onPaymentConfirm) {
-        success = await onPaymentConfirm("cash"); // Default to cash payment
-      }
-
-      if (success) {
-        onConfirm(); // Close modal and show success
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
 
   // Đảm bảo lấy đúng dữ liệu, fallback nếu thiếu
   const serviceName = data.serviceName || data.service_name || "";
@@ -54,7 +32,6 @@ const AppointmentConfirmModal = ({
     data.doctorOrStaff || data.doctor_name || data.staff_name || "";
   if (isDoctor && doctorOrStaff && doctorOrStaff.startsWith("patient"))
     doctorOrStaff = "";
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=PAY_${Date.now()}`;
   return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-11/12 md:w-1/2 rounded-xl shadow-xl overflow-hidden">
@@ -92,18 +69,6 @@ const AppointmentConfirmModal = ({
               </div>
             )}
           </div>
-          {/* QR Payment */}
-          <div className="mb-4 text-center">
-            <h3 className="font-medium mb-2">Quét mã QR để thanh toán</h3>
-            <img
-              src={qrUrl}
-              alt="QR for payment"
-              className="w-32 h-32 mx-auto"
-            />
-            <p className="text-sm text-gray-500 mt-2">
-              Quét mã để thanh toán nhanh
-            </p>
-          </div>
           <div className="flex justify-end space-x-4">
             <button
               onClick={onCancel}
@@ -112,11 +77,11 @@ const AppointmentConfirmModal = ({
               Hủy
             </button>
             <button
-              onClick={handlePayment}
-              disabled={isProcessingPayment}
-              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              // onclick={onConfirm} // dùng khi bypass
+              onClick={onVnpayPayment}
+              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
             >
-              {isProcessingPayment ? "Đang xử lý..." : "Thanh toán"}
+              Xác nhận
             </button>
           </div>
         </div>

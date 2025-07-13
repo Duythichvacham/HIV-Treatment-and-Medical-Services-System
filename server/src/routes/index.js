@@ -1,11 +1,11 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const authRouter = require("./auth");
-const patientRouter = require("./patients");
-const userRouter = require("./users");
+const patientRouter = require("./patient");
+const userRouter = require("./user");
 const bookingRouter = require("./booking");
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../middlewares/authMiddleware");
 
-const appointmentRouter = require("./appointments");
+const appointmentRouter = require("./appointment");
 const labStaffRouter = require("./lab-staff");
 const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
@@ -16,6 +16,8 @@ const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
 const prescriptionRouter = require("./prescriptions");
 const testRequestRouter = require("./testRequest");
+const paymentRoutes = require("./payment");
+const managerRouter = require("./manager");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
@@ -37,6 +39,9 @@ function route(app) {
    */
   //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register
   app.use("/api/v1/auth", authRouter);
+
+  //API vnpay  Prefix : api/v1/payment
+  app.use("/api/v1/payment", paymentRoutes);
   /**
    * API doctor
    * Prefix: api/v1/doctors
@@ -64,12 +69,7 @@ function route(app) {
    */
   // Registration Staff routes - temporarily bypass auth for testing
   app.use("/api/v1/registrations", registrationRouter);
-  /**
-   * API booking
-   * Prefix: api/v1/booking
-   */
-  //quản lý luồng /booking – tạo appointment + invoice
-  app.use("/api/v1/booking", authMiddleware, bookingRouter);
+
   /**
    * API queue - Quản lý số thứ tự
    * Prefix: api/v1/queue
@@ -97,6 +97,11 @@ function route(app) {
   app.use("/api/v1/prescriptions", authMiddleware, prescriptionRouter);
 
   app.use("/api/v1/test-request", authMiddleware, testRequestRouter);
+  /**
+   * API manager
+   * Prefix: api/v1/manager
+   */
+  app.use("/api/v1/managers", authMiddleware, managerRouter);
 }
 
 module.exports = route;

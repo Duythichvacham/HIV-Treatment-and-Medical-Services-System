@@ -1,5 +1,6 @@
 const { poolPromise } = require("../config/db");
 const queueService = require("./queues/queueService");
+const invoiceService = require("./invoiceService");
 
 //POST, cập nhật status cho appointments
 exports.updateAppointmentStatus = async (appointment_id, status) => {
@@ -120,7 +121,7 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
 
   const roomId = shiftResult.recordset[0].room_id;
 
-  // Lấy max_number từ QueueNumbers thay vì WorkingShifts
+  // Lấy max_number từ QueueNumbers
   const queueResult = await pool
     .request()
     .input("doctor_id", doctorId)
@@ -129,9 +130,9 @@ exports.validateExaminationBooking = async (doctorId, slotId, bookingDate) => {
       "SELECT max_number FROM QueueNumbers WHERE queue_type = 'examination' AND doctor_id = @doctor_id AND slot_id = @slot_id"
     );
 
-  // Nếu không tìm thấy queue config, sử dụng default 6
+  // Nếu không tìm thấy queue config, sử dụng default 8
   const maxPatientsPerSlot =
-    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 6;
+    queueResult.recordset.length > 0 ? queueResult.recordset[0].max_number : 8;
 
   // Kiểm tra slot availability
   const slotCountResult = await pool
@@ -185,8 +186,7 @@ exports.getPatientIdByAccountId = async (accountId) => {
 
 // Function tổng hợp để tạo appointment từ accountId
 exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
-  const { doctor_id, slot_id, service_id, room_id, bookingDate } =
-    appointmentData;
+  const { doctor_id, slot_id, service_id, bookingDate } = appointmentData;
 
   // Validate cơ bản
   if (!service_id || !bookingDate) {
@@ -199,7 +199,7 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
   // 2. Lấy thông tin service
   const service = await this.getServiceInfo(service_id);
 
-  let finalRoomId = room_id;
+  let finalRoomId;
 
   // 3. Xử lý theo loại dịch vụ
   if (service.service_type === "examination") {
@@ -226,23 +226,15 @@ exports.createAppointmentFromAccount = async (accountId, appointmentData) => {
     bookingDate,
   });
 
-  // 5. Tạo Invoice (thêm logic này)
-  const pool = await poolPromise;
-  const invoiceResult = await pool
-    .request()
-    .input("patientId", patient_id)
-    .input("appointmentId", appointment.appointment_id)
-    .input("amount", service.price)
-    .input("serviceType", service.service_type)
-    .input("status", "pending").query(`
-      INSERT INTO Invoices 
-        (patient_id, appointment_id, amount, service_type, status)
-      VALUES 
-        (@patientId, @appointmentId, @amount, @serviceType, @status);
-      SELECT SCOPE_IDENTITY() as invoice_id;
-    `);
+  // 5. Tạo Invoice
+  const invoiceResult = await invoiceService.createInvoice({
+    appointmentId: appointment.appointment_id,
+    patientId: patient_id,
+    amount: service.price,
+    serviceType: service.service_type,
+  });
 
-  const invoice_id = invoiceResult.recordset[0].invoice_id;
+  const invoice_id = invoiceResult.invoice_id;
 
   // 6. Lấy thông tin đầy đủ cho response (bao gồm doctor_name, room_name)
   const pool2 = await poolPromise;
@@ -414,13 +406,14 @@ exports.getAppointmentDetail = async (appointment_id) => {
   const result = await pool.request().input("appointment_id", appointment_id)
     .query(`
       SELECT a.*, p.full_name as patient_name, sv.name as service_name, sv.service_type, 
-             r.room_name, d.full_name as doctor_name, sl.start_time, sl.end_time
+             r.room_name, d.full_name as doctor_name, sl.start_time, sl.end_time, i.amount as fee
       FROM Appointments a
       LEFT JOIN Patients p ON a.patient_id = p.patient_id
       LEFT JOIN Services sv ON a.service_id = sv.service_id
       LEFT JOIN Rooms r ON a.room_id = r.room_id
       LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id
       LEFT JOIN Slots sl ON a.slot_id = sl.slot_id
+      LEFT JOIN Invoices i ON a.appointment_id = i.appointment_id
       WHERE a.appointment_id = @appointment_id
     `);
 
@@ -466,18 +459,17 @@ exports.getAppointmentDetail = async (appointment_id) => {
     queue_number: queueNumber,
   };
 };
-// Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới)
+// Kiểm tra lịch hẹn đã tồn tại (cho đặt lịch mới),nếu có trước đó chưa hoàn thành thì cancel
 exports.checkExistingAppointment = async (
   accountId,
   serviceId,
-  bookingDate,
-  doctorId = null
+  bookingDate
 ) => {
   const pool = await poolPromise;
 
   // Lấy patient_id từ accountId
   const patientId = await this.getPatientIdByAccountId(accountId);
-
+  await this.cancelOldAppointments(patientId);
   // Lấy thông tin service
   const service = await this.getServiceInfo(serviceId);
 
@@ -505,20 +497,21 @@ exports.checkExistingAppointment = async (
       };
     }
   } else if (service.service_type === "test") {
-    // LOGIC CHO XÉT NGHIỆM: Không cho đặt xét nghiệm cùng loại nếu chưa hoàn thành
+    // LOGIC CHO XÉT NGHIỆM: Không cho đặt xét nghiệm cùng loại nếu chưa hoàn thành trong ngày
     const existingTestResult = await pool
       .request()
       .input("patient_id", patientId)
+      .input("bookingDate", bookingDate)
       .input("service_id", serviceId).query(`
         SELECT COUNT(*) AS count, s.name AS service_name
         FROM Appointments a
         JOIN Services s ON a.service_id = s.service_id
         WHERE a.patient_id = @patient_id
+          AND CONVERT(date, a.bookingDate) = CONVERT(date, @bookingDate)
           AND a.service_id = @service_id
           AND a.status IN ('requested', 'in_progress')
         GROUP BY s.name
       `);
-
     if (
       existingTestResult.recordset.length > 0 &&
       existingTestResult.recordset[0].count > 0
@@ -537,18 +530,55 @@ exports.checkExistingAppointment = async (
     message: "Có thể đặt lịch",
   };
 };
-
-// Lấy invoice từ appointment_id
-exports.getInvoiceByAppointmentId = async (appointment_id) => {
+// chỉ được gọi khi patient cố đặt lịch khám mới
+exports.cancelOldAppointments = async (patientId) => {
   const pool = await poolPromise;
-  const result = await pool.request().input("appointment_id", appointment_id)
-    .query(`
-      SELECT i.invoice_id, i.status, i.amount, i.created_at, i.issued_at
-      FROM Invoices i 
-      WHERE i.appointment_id = @appointment_id
-    `);
+  try {
+    const oldAppointmentsResult = await pool
+      .request()
+      .input("patient_id", patientId).query(`
+        SELECT appointment_id 
+        FROM Appointments
+        WHERE patient_id = @patient_id
+          AND status IN ('requested', 'in_progress')
+          AND CAST(bookingDate AS DATE) < CAST(GETDATE() AS DATE)
+      `);
 
-  return result.recordset[0] || null;
+    const appointmentIdsToCancel = oldAppointmentsResult.recordset.map(
+      (row) => row.appointment_id
+    );
+    // Tạo chuỗi tham số động cho câu truy vấn IN
+    const idParameters = appointmentIdsToCancel
+      .map((_, index) => `@id${index}`)
+      .join(",");
+    const request = pool.request().input("patient_id", patientId);
+    // có thể gọi nhiều input trước khi query, nó sẽ thực thi cùng lúc
+    appointmentIdsToCancel.forEach((id, index) => {
+      request.input(`id${index}`, id);
+    });
+
+    // Hủy các lịch hẹn
+    await request.query(`
+        UPDATE Appointments
+        SET status = 'cancelled'
+        WHERE appointment_id IN (${idParameters})
+          AND patient_id = @patient_id
+      `);
+
+    // Hủy các hóa đơn liên quan
+    await request.query(`
+        UPDATE Invoices
+        SET status = 'cancelled'
+        WHERE appointment_id IN (${idParameters})
+      `);
+  } catch (error) {
+    console.error("Lỗi khi tự động hủy lịch hẹn cũ:", error);
+  }
+};
+// exports.cancelAppointments()
+// Lấy invoice từ appointment_id - sử dụng invoiceService mới
+exports.getInvoiceByAppointmentId = async (appointment_id) => {
+  return await invoiceService.getInvoice({ appointmentId: appointment_id });
 };
 
 // Lấy tất cả cuộc hẹn của bác sĩ, có thể lọc theo status và bookingDate
@@ -731,4 +761,208 @@ ORDER BY a.patient_id, sl.start_time
   }
 
   return Object.values(grouped);
+};
+// Hủy booking - sử dụng invoiceService mới
+exports.cancelBooking = async (invoiceId) => {
+  return await invoiceService.cancelBooking(invoiceId);
+};
+
+// Validation rules cho đặt lịch (được gộp từ bookingServices)
+exports.validateAppointmentRules = async (
+  patient_id,
+  service_id
+  // bookingDate,
+  // doctor_id = null
+) => {
+  const pool = await poolPromise;
+
+  // Chỉ kiểm tra duplicate xét nghiệm
+  const serviceResult = await pool
+    .request()
+    .input("serviceId", service_id)
+    .query("SELECT service_type FROM Services WHERE service_id = @serviceId");
+
+  if (serviceResult.recordset.length === 0) {
+    throw new Error("Không tìm thấy dịch vụ");
+  }
+
+  // Chỉ check duplicate cho xét nghiệm
+  if (serviceResult.recordset[0].service_type === "test") {
+    const pendingCount = await pool
+      .request()
+      .input("patient_id", patient_id)
+      .input("service_id", service_id).query(`
+        SELECT COUNT(*) AS count
+        FROM Appointments a
+        WHERE a.patient_id = @patient_id
+          AND a.service_id = @service_id
+          AND a.status IN ('requested', 'in_progress')
+      `);
+
+    if (pendingCount.recordset[0].count > 0) {
+      throw new Error(
+        "Không thể đặt xét nghiệm mới khi còn xét nghiệm cùng loại chưa hoàn thành"
+      );
+    }
+  }
+  return true;
+};
+
+// Function tạo booking với logic từ bookingServices (refactored)
+exports.createBooking = async ({
+  patientId,
+  doctorId,
+  bookingDate,
+  slotId,
+  serviceId,
+}) => {
+  const pool = await poolPromise;
+
+  // Bước 0: Áp dụng validation rules mới
+  await this.validateAppointmentRules(
+    patientId,
+    serviceId,
+    bookingDate,
+    doctorId
+  );
+
+  // Bước 0.5: Kiểm tra duplicate booking (thêm validation cuối cùng)
+  const duplicateCheck = await pool
+    .request()
+    .input("patientId", patientId)
+    .input("serviceId", serviceId)
+    .input("bookingDate", bookingDate)
+    .input("doctorId", doctorId || null)
+    .input("slotId", slotId || null).query(`
+      SELECT COUNT(*) AS count
+      FROM Appointments
+      WHERE patient_id = @patientId
+        AND service_id = @serviceId
+        AND bookingDate = @bookingDate
+        AND doctor_id = @doctorId
+        AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
+        AND status IN ('requested', 'in_progress')
+    `);
+
+  if (duplicateCheck.recordset[0].count > 0) {
+    throw new Error(
+      "Bạn đã có lịch hẹn tương tự trong ngày này. Vui lòng kiểm tra lại."
+    );
+  }
+
+  // Bước 1: Xác định room_id
+  let roomId;
+  if (doctorId) {
+    const shiftResult = await pool
+      .request()
+      .input("doctorId", doctorId)
+      .input("bookingDate", bookingDate).query(`
+        SELECT TOP 1 room_id 
+        FROM WorkingShifts 
+        WHERE doctor_id = @doctorId 
+          AND shift_date = @bookingDate 
+          AND status = 'approved'
+      `);
+
+    if (shiftResult.recordset.length === 0) {
+      throw new Error("Không tìm thấy ca làm việc phù hợp cho bác sĩ");
+    }
+
+    roomId = shiftResult.recordset[0].room_id;
+  } else {
+    // Random phòng xét nghiệm
+    const roomResult = await pool.request().query(`
+      SELECT TOP 1 room_id 
+      FROM Rooms 
+      WHERE room_type = N'Xét nghiệm'
+      ORDER BY NEWID()
+    `);
+
+    if (roomResult.recordset.length === 0) {
+      throw new Error("Không tìm thấy phòng xét nghiệm phù hợp");
+    }
+
+    roomId = roomResult.recordset[0].room_id;
+  }
+
+  // Bước 2: Lấy thông tin giá từ service
+  const serviceResult = await pool
+    .request()
+    .input("serviceId", serviceId)
+    .query(`SELECT price FROM Services WHERE service_id = @serviceId`);
+
+  if (serviceResult.recordset.length === 0) {
+    throw new Error("Không tìm thấy dịch vụ tương ứng");
+  }
+
+  const price = serviceResult.recordset[0].price;
+
+  // Bước 3: Tạo appointment trước
+  const appointmentInsert = await pool
+    .request()
+    .input("patientId", patientId)
+    .input("doctorId", doctorId || null)
+    .input("slotId", slotId)
+    .input("serviceId", serviceId)
+    .input("status", "requested")
+    .input("roomId", roomId)
+    .input("bookingDate", bookingDate).query(`
+      INSERT INTO Appointments 
+        (patient_id, doctor_id, slot_id, service_id, status, room_id, bookingDate)
+      OUTPUT INSERTED.appointment_id
+      VALUES 
+        (@patientId, @doctorId, @slotId, @serviceId, @status, @roomId, @bookingDate)
+    `);
+
+  const appointmentId = appointmentInsert.recordset[0].appointment_id;
+
+  // Bước 4: Tạo queue number cho appointment
+  let queueInfo = null;
+  try {
+    const queueType = doctorId ? "examination" : "test";
+    queueInfo = await queueService.createQueueNumber({
+      queue_type: queueType,
+      appointment_id: appointmentId,
+      request_id: null,
+      doctor_id: doctorId || null,
+      slot_id: slotId || null,
+      queue_date: new Date(bookingDate),
+    });
+  } catch (queueError) {
+    console.error("Error creating queue number:", queueError);
+    // Không throw error vì appointment đã được tạo thành công
+  }
+
+  // Bước 5: Tạo hóa đơn bằng invoiceService
+  await invoiceService.createInvoice({
+    patientId,
+    appointmentId,
+    amount: price,
+    serviceType: doctorId ? "examination" : "test",
+  });
+
+  // Bước 6: Lấy room_name để trả về cho frontend
+  const roomResult = await pool
+    .request()
+    .input("roomId", roomId)
+    .query("SELECT room_name FROM Rooms WHERE room_id = @roomId");
+
+  const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
+
+  return {
+    message: "Tạo lịch hẹn và hóa đơn thành công",
+    appointmentId,
+    room_name, // Thêm room_name để frontend có thể sử dụng
+    queue_info: queueInfo, // Trả về thông tin queue number cho frontend
+  };
+};
+// Hủy lịch hẹn theo invoice_id nếu thanh toán thất bại
+exports.cancelAppointmentByInvoiceId = async (invoiceId) => {
+  const pool = await poolPromise;
+  await pool.request().input("invoice_id", invoiceId).query(`
+    UPDATE Appointments
+    SET status = 'cancelled'
+    WHERE appointment_id = (
+    SELECT appointment_id FROM Invoices WHERE invoice_id = @invoice_id))
+    `);
 };

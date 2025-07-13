@@ -732,3 +732,24 @@ exports.createBulkTestResults = async ({ test_note_id, results, notes }) => {
     });
   }
 };
+
+exports.getTestRequestsByStatus = async (status) => {
+  const pool = await poolPromise;
+  const result = await pool
+    .request()
+    .input("status", status)
+    .query(`
+      SELECT
+        tr.*,
+        a.patient_id,
+        p.full_name,
+        p.dob,
+        p.gender,
+        p.phone
+      FROM TestRequests tr
+      JOIN Appointments a ON tr.appointment_id = a.appointment_id
+      JOIN Patients p ON a.patient_id = p.patient_id
+      WHERE tr.status = @status
+    `);
+  return result.recordset;
+};

@@ -76,4 +76,7 @@ router.post("/send-reminder", emailController.sendAllReminders);
 
 router.post("/test-results/bulk", testController.createBulkTestResults);
 
+// Lấy danh sách test requests theo status
+router.get("/test-requests", testController.getTestRequestsByStatus);
+
 module.exports = router;

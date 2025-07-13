@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import DoctorCard from "../../components/common/DoctorCard";
-import { getDoctors } from "../../services/api";
+import DoctorCard from "../../../components/common/DoctorCard";
+import { getDoctors } from "../../../services/api";
 import { motion } from "framer-motion";
 
 const DoctorPage = () => {
@@ -62,7 +62,9 @@ const DoctorPage = () => {
         </div>
         <div className="max-w-6xl mx-auto grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 px-4">
           {filteredDoctors.length === 0 ? (
-            <div className="col-span-full text-center text-gray-500 py-8">Không tìm thấy bác sĩ phù hợp.</div>
+            <div className="col-span-full text-center text-gray-500 py-8">
+              Không tìm thấy bác sĩ phù hợp.
+            </div>
           ) : (
             filteredDoctors.map((doc, idx) => (
               <motion.div
