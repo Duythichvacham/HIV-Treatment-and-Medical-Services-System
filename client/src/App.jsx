@@ -28,6 +28,8 @@ import AboutPage from "./pages/Guest/Home/AboutPage";
 import NewsPage from "./pages/Guest/Home/NewsPage";
 import PatientProfile from "./pages/Patient/PatientProfile";
 import PatientRegister from "./pages/Auth/PatientRegister";
+// import LabStaffDashboard from "./pages/LabStaffv2/LabStaffDashboard";
+import LabStaffDashboardV2 from "./pages/LabStaffv2/LabStaffDashboardV2";
 
 function App() {
   return (
@@ -57,7 +59,9 @@ function AppContent() {
             path="/lab-staff"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
-                <LabStaff />
+                {/* <LabStaff /> */}
+                {/* <LabStaffDashboard /> */}
+                <LabStaffDashboardV2 />
               </ProtectedRoute>
             }
           />
@@ -66,6 +70,7 @@ function AppContent() {
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabProcess />
+                {/* <LabStaffDashboard /> */}
               </ProtectedRoute>
             }
           />
@@ -74,6 +79,7 @@ function AppContent() {
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabResult />
+                {/* <LabStaffDashboard /> */}
               </ProtectedRoute>
             }
           />{" "}

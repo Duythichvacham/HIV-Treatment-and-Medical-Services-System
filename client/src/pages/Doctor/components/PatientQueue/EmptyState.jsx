@@ -1,6 +1,6 @@
 import React from "react";
 import { Clock, FileText, CheckCircle, Calendar, Search } from "lucide-react";
-import { QUEUE_TYPES } from "../../utils/constants";
+import { QUEUE_TYPES } from "../../utils/doctorConstants";
 
 const EmptyState = ({
   type,

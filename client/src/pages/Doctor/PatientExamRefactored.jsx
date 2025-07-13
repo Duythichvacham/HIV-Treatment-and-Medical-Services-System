@@ -12,14 +12,14 @@ import Diagnosis from "./components/PatientExam/CurrentExam/Diagnosis";
 import PrescriptionNew from "./components/PatientExam/CurrentExam/PrescriptionNew";
 import ExamActions from "./components/PatientExam/CurrentExam/ExamActions";
 import ExamHistoryList from "./components/PatientExam/ExamHistoryList";
-import LoadingSpinner from "./components/Dashboard/LoadingSpinner";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 // Hooks
-import { usePatientDetail } from "./hooks/usePatientDetail";
-import { useExamForm } from "./hooks/useExamForm";
+import { usePatientDetail } from "../../hooks/doctor/usePatientDetail";
+import { useExamForm } from "../../hooks/doctor/useExamForm";
 
 // Utils
-import { EXAM_TABS, EXAM_MODES } from "./utils/constants";
+import { EXAM_TABS, EXAM_MODES } from "./utils/doctorConstants";
 
 const PatientExamRefactored = ({
   patientId,

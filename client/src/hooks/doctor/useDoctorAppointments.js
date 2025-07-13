@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { appointmentApi } from "../services/appointmentApi";
-import { APPOINTMENT_STATUS } from "../utils/constants";
+import { appointmentApi } from "../../pages/Doctor/services/appointmentApi";
+import { APPOINTMENT_STATUS } from "../../pages/Doctor/utils/doctorConstants";
 
 export const useAppointments = (doctorId, selectedDate) => {
   const [appointments, setAppointments] = useState({

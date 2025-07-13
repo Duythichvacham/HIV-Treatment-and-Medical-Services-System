@@ -15,6 +15,7 @@ const slotRouter = require("./slot");
 const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
 const prescriptionRouter = require("./prescriptions");
+const testRequestRouter = require("./testRequest");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
@@ -94,6 +95,8 @@ function route(app) {
    * Prefix: api/prescriptions
    */
   app.use("/api/v1/prescriptions", authMiddleware, prescriptionRouter);
+
+  app.use("/api/v1/test-request", authMiddleware, testRequestRouter);
 }
 
 module.exports = route;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { patientApi } from "../services/patientApi";
+import { patientApi } from "../../pages/Doctor/services/patientApi";
 
 export const usePatientData = (patientId) => {
   const [patient, setPatient] = useState(null);

@@ -1,6 +1,6 @@
 import React from "react";
 import { Clock, FileText, CheckCircle } from "lucide-react";
-import { QUEUE_TYPES } from "../../utils/constants";
+import { QUEUE_TYPES } from "../../utils/doctorConstants";
 import PatientCard from "./PatientCard";
 import EmptyState from "./EmptyState";
 

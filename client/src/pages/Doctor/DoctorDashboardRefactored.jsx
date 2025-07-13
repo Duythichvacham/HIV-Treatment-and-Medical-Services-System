@@ -5,16 +5,16 @@ import { useAuth } from "../../contexts/AuthContext";
 import StatsCards from "./components/Dashboard/StatsCards";
 import TabNavigation from "./components/Dashboard/TabNavigation";
 import FilterBar from "./components/Dashboard/FilterBar";
-import LoadingSpinner from "./components/Dashboard/LoadingSpinner";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import QueueColumn from "./components/PatientQueue/QueueColumn";
 import PatientExamRefactored from "./PatientExamRefactored";
 
 // Hooks
-import { useAppointments } from "./hooks/useAppointments";
-import { useFilters } from "./hooks/useFilters";
+import { useAppointments } from "../../hooks/doctor/useDoctorAppointments";
+import { useFilters } from "../../hooks/doctor/useDoctorFilters";
 
 // Utils
-import { TABS, QUEUE_TYPES, APPOINTMENT_STATUS } from "./utils/constants";
+import { TABS, QUEUE_TYPES, APPOINTMENT_STATUS } from "./utils/doctorConstants";
 
 const DoctorDashboard = () => {
   const { user } = useAuth();

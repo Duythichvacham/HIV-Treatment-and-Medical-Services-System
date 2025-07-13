@@ -11,7 +11,7 @@ const getAppointments = async (req, res) => {
     let doctorId = req.user.doctor_id;
     const { status, bookingDate, slot_id, patient_id } = req.query;
     // Thực hiện query dựa trên các tham số
-    const appointments = await appointmentService.getDoctorAppointments(
+    const appointments = await appointmentService.getAppointments(
       doctorId,
       status,
       bookingDate,

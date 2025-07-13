@@ -1,12 +1,13 @@
-import apiClient from "./appointmentApi";
-import { API_ENDPOINTS } from "../utils/constants";
+// import apiClient from "./appointmentApi";
+import { API_ENDPOINTS } from "../utils/doctorConstants";
+import api from "../../../services/api";
 
 export const examApi = {
   // Get current exam data
   getCurrent: async (patientId, appointmentId = null) => {
     const url = API_ENDPOINTS.EXAMS.CURRENT(patientId);
     const params = appointmentId ? { appointment_id: appointmentId } : {};
-    const response = await apiClient.get(url, { params });
+    const response = await api.get(url, { params });
     return response.data;
   },
 
@@ -14,7 +15,7 @@ export const examApi = {
   getExamData: async (appointmentId) => {
     // Use the clinical exam endpoint to get existing exam data
     const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
-    const response = await apiClient.get(url);
+    const response = await api.get(url);
     return response.data;
   },
 
@@ -33,8 +34,8 @@ export const examApi = {
 
       // Load both clinical exam and prescription data
       const [clinicalResponse, prescriptionResponse] = await Promise.all([
-        apiClient.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
-        apiClient.get(`/api/v1/prescriptions/${appointmentId}`),
+        api.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
+        api.get(`/api/v1/prescriptions/${appointmentId}`),
       ]);
 
       // Extract prescription_details and rename to match expected format
@@ -128,7 +129,7 @@ export const examApi = {
       };
 
       console.log("[examApi.save] Saving clinical exam:", clinicalExamData);
-      const clinicalResponse = await apiClient.post(
+      const clinicalResponse = await api.post(
         `/api/v1/clinical/clinical-exams`,
         clinicalExamData
       );
@@ -287,7 +288,7 @@ export const examApi = {
         };
 
         console.log("[examApi.save] Saving prescription:", prescriptionData);
-        prescriptionResponse = await apiClient.post(
+        prescriptionResponse = await api.post(
           `/api/v1/prescriptions/`,
           prescriptionData
         );
@@ -329,7 +330,7 @@ export const examApi = {
       console.log(
         "[examApi.complete] Updating appointment status to completed"
       );
-      const statusResponse = await apiClient.post(
+      const statusResponse = await api.post(
         `/api/v1/appointments/${appointmentId}/status`,
         { status: "completed" }
       );
@@ -354,14 +355,7 @@ export const examApi = {
   // Get exam by ID
   getById: async (examId) => {
     const url = `/api/v1/doctors/exam-detail/${examId}`;
-    const response = await apiClient.get(url);
-    return response.data;
-  },
-
-  // Delete exam (if needed)
-  remove: async (examId) => {
-    const url = `/api/v1/doctors/exam-detail/${examId}`;
-    const response = await apiClient.delete(url);
+    const response = await api.get(url);
     return response.data;
   },
 
