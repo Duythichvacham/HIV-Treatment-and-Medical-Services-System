@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 
 async function authenticateUser(username, password) {
   const pool = await poolPromise;
-  
+
   // Query cơ bản để lấy thông tin account
   const result = await pool.request()
     .input('username', sql.NVarChar, username)
@@ -23,7 +23,7 @@ async function authenticateUser(username, password) {
     const doctorResult = await pool.request()
       .input('account_id', sql.Int, user.account_id)
       .query('SELECT doctor_id FROM Doctors WHERE account_id = @account_id');
-    
+
     if (doctorResult.recordset && doctorResult.recordset.length > 0) {
       user.doctor_id = doctorResult.recordset[0].doctor_id;
     }
@@ -34,13 +34,13 @@ async function authenticateUser(username, password) {
     const patientResult = await pool.request()
       .input('account_id', sql.Int, user.account_id)
       .query('SELECT patient_id FROM Patients WHERE account_id = @account_id');
-    
+
     if (patientResult.recordset && patientResult.recordset.length > 0) {
       user.patient_id = patientResult.recordset[0].patient_id;
     }
   }
 
-  // Các role khác (Lab-Staff, Registration-staff, Manager) chỉ lấy từ Accounts, không join thêm bảng nào!
+
 
   return user; // Trả về user nếu hợp lệ
 }
@@ -59,7 +59,7 @@ async function registerPatient(patientData) {
     const existingUsername = await transaction.request()
       .input('username', sql.NVarChar, patientData.username)
       .query('SELECT account_id FROM Accounts WHERE username = @username');
-    
+
     if (existingUsername.recordset.length > 0) {
       throw new Error('Username already exists');
     }
@@ -68,7 +68,7 @@ async function registerPatient(patientData) {
     const existingEmail = await transaction.request()
       .input('email', sql.VarChar, patientData.email)
       .query('SELECT patient_id FROM Patients WHERE email = @email');
-    
+
     if (existingEmail.recordset.length > 0) {
       throw new Error('Email already exists');
     }
@@ -77,7 +77,7 @@ async function registerPatient(patientData) {
     const existingPhone = await transaction.request()
       .input('phone', sql.VarChar, patientData.phone)
       .query('SELECT patient_id FROM Patients WHERE phone = @phone');
-    
+
     if (existingPhone.recordset.length > 0) {
       throw new Error('Phone already exists');
     }
