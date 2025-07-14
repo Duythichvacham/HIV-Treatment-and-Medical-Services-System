@@ -1,5 +1,5 @@
 // File: client/src/hooks/usePagination.js
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 /**
  * Custom hook để quản lý logic pagination
@@ -7,7 +7,7 @@ import { useState, useMemo } from "react";
  * @param {number} itemsPerPage - Số items trên mỗi trang
  * @returns {object} - Object chứa state và functions cho pagination
  */
-const usePagination = (data, itemsPerPage = 10) => {
+const usePagination = (data, itemsPerPage = 5) => {
   // State để track trang hiện tại
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -64,7 +64,16 @@ const usePagination = (data, itemsPerPage = 10) => {
       setCurrentPage(currentPage + 1);
     }
   };
-
+  useEffect(() => {
+    if (
+      currentPage > paginationData.totalPages &&
+      paginationData.totalPages > 0
+    ) {
+      setCurrentPage(paginationData.totalPages);
+    } else if (paginationData.totalPages === 0) {
+      setCurrentPage(1);
+    }
+  }, [paginationData.totalPages, currentPage]);
   return {
     currentPage,
     ...paginationData,
