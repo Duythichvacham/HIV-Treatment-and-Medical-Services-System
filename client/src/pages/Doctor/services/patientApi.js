@@ -11,7 +11,8 @@ export const patientApi = {
   },
 
   // Get patient exam history - only completed appointments
-  getExamHistory: async (patientId, page = 1, limit = 20) => {
+  //, page = 1, limit = 20
+  getExamHistory: async (patientId) => {
     try {
       console.log(
         "[patientApi.getExamHistory] Fetching completed exam history for patient:",
@@ -21,8 +22,8 @@ export const patientApi = {
         params: {
           patient_id: patientId,
           status: "completed",
-          page,
-          limit,
+          // page,
+          // limit,
         },
       });
       return response.data;

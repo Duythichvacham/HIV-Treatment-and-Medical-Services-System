@@ -11,7 +11,7 @@ import TestRequestsSection from "./components/PatientExam/CurrentExam/TestReques
 import Diagnosis from "./components/PatientExam/CurrentExam/Diagnosis";
 import PrescriptionNew from "./components/PatientExam/CurrentExam/PrescriptionNew";
 import ExamActions from "./components/PatientExam/CurrentExam/ExamActions";
-import ExamHistoryList from "./components/PatientExam/ExamHistoryList";
+import ExamHistoryList from "./components/PatientExam/History/ExamHistoryList";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 // Hooks
