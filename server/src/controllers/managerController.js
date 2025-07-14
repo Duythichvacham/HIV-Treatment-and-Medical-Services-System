@@ -3,7 +3,12 @@ const serviceService = require("../services/serviceService");
 const slotService = require("../services/slots/slotService");
 const getUsers = async (req, res) => {
   try {
+    console.log("[MANAGER] getUsers called");
+    console.log("[MANAGER] User from middleware:", req.user);
+    
     const users = await userService.getUsers();
+    console.log("[MANAGER] Users fetched:", users?.length || 0);
+    
     return res.status(200).json({
       message: "Users fetched successfully",
       data: users || [],

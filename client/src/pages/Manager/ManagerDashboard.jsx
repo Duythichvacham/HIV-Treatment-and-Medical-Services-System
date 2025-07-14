@@ -6,10 +6,6 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import TabNavigation from "./components/TabNavigation";
 import { getUsers } from "../../services/api";
 
-// Debug components (chỉ cho development)
-import AuthDebugInfo from "../../components/debug/AuthDebugInfo";
-import ManagerAPITest from "../../components/debug/ManagerAPITest";
-
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
   const [stats, setStats] = useState(null);

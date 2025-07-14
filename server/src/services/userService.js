@@ -11,7 +11,7 @@ const getUsers = async () => {
     ORDER BY a.role DESC, a.created_at DESC
     `);
   const formattedData = result.recordset.map((user) => {
-    let email = NULL;
+    let email = null;
     email =
       user.role === "Patient" || user.role === "Doctor"
         ? user.role === "Patient"
