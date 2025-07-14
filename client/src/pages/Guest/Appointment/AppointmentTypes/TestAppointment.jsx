@@ -12,6 +12,7 @@ const TestAppointment = () => {
     selectedTestType,
     selectedDate,
     testTypes,
+    loading,
     servicesLoading,
     error,
     isConfirmOpen,
@@ -20,10 +21,9 @@ const TestAppointment = () => {
     // Actions
     setSelectedTestType,
     setSelectedDate,
-    setIsConfirmOpen,
     handleBooking,
     handleVnpayPayment,
-
+    handleCancelBooking,
     // Computed
     isBookingReady,
   } = useTestAppointment();
@@ -62,7 +62,7 @@ const TestAppointment = () => {
           getPrice={getTestPrice}
           isBookingReady={isBookingReady}
           onBooking={handleBooking}
-          loading={false}
+          loading={loading}
           isTest={true}
         />
       </div>
@@ -70,7 +70,7 @@ const TestAppointment = () => {
       {/* Modals */}
       <AppointmentConfirmModal
         isOpen={isConfirmOpen}
-        onCancel={() => setIsConfirmOpen(false)}
+        onCancel={handleCancelBooking}
         // onConfirm={() => {
         //   setIsConfirmOpen(false);
         //   setIsReceiptOpen(true);
