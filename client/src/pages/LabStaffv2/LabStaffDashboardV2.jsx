@@ -4,7 +4,6 @@ import GenericStatsCards from "../../components/common/GenericStatsCards";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TestQueueColumn from "./components/TestQueue/TestQueueColumn";
 import TestDetailPopup from "./components/TestQueue/TestDetailPopup";
-import { debounce } from "lodash";
 import { formatDateVietnamese } from "../../utils/dateUtil";
 import FilterBar from "./components/FilterBar";
 import { TEST_STATUS } from "../../utils/labStaffConstants";
@@ -179,10 +178,9 @@ const LabStaffDashboard = () => {
     ]
   );
 
-  const handleSearchChange = useCallback(
-    debounce((e) => setSearch(e.target.value), 300),
-    []
-  );
+  const handleSearchChange = (value) => {
+    setSearch(value);
+  };
 
   return (
     <div className="min-h-screen bg-blue-50 p-6">

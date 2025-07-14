@@ -93,15 +93,27 @@ export const useAppointmentHistory = () => {
     }
   };
 
+  // const formatTime = (timeStr) => {
+  //   if (!timeStr) return "N/A";
+  //   try {
+  //     if (timeStr.includes("T")) {
+  //       return timeStr.split("T")[1].substring(0, 5);
+  //     }
+  //     return timeStr;
+  //   } catch {
+  //     return timeStr;
+  //   }
+  // };
   const formatTime = (timeStr) => {
-    if (!timeStr) return "N/A";
+    if (!timeStr) return "N/A"; // Nếu không có giá trị, trả về "N/A"
     try {
-      if (timeStr.includes("T")) {
-        return timeStr.split("T")[1].substring(0, 5);
-      }
-      return timeStr;
+      const date = new Date(timeStr); // Chuyển chuỗi thành đối tượng Date
+      return date.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }); // Lấy giờ và phút
     } catch {
-      return timeStr;
+      return "N/A"; // Nếu xảy ra lỗi, trả về "N/A"
     }
   };
 
