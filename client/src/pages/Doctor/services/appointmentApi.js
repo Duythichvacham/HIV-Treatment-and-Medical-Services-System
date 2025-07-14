@@ -1,4 +1,36 @@
+// import axios from "axios";
 import api from "../../../services/api";
+
+// const baseURL = "http://localhost:5000";
+
+// // Create axios instance with default config
+// const apiClient = axios.create({
+//   baseURL,
+//   headers: {
+//     "Content-Type": "application/json",
+//   },
+// });
+
+// // Add auth token to requests
+// apiClient.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem("token");
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
+
+// Handle response errors
+// apiClient.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     console.error("API Error:", error.response?.data || error.message);
+//     return Promise.reject(error);
+//   }
+// );
 
 export const appointmentApi = {
   // Get appointments by status using the new API endpoint
@@ -138,3 +170,5 @@ export const appointmentApi = {
     return response.data || [];
   },
 };
+
+export default api;
