@@ -164,6 +164,9 @@ module.exports = {
     try {
       await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
       await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
+      res.status(200).json({
+        message: "Transaction cancelled successfully",
+      });
     } catch (error) {
       console.error("Error cancelling transaction:", error);
       res.status(500).json({ message: "Internal server error" });

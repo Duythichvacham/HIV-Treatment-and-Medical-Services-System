@@ -6,6 +6,7 @@ import {
   checkExistingAppointment,
   getServices,
   createVNPayURL,
+  cancelTransaction,
 } from "../../services/api";
 import { getCurrentDate } from "../../utils/dateUtil";
 import { useAuth } from "../../contexts/AuthContext";
@@ -240,6 +241,30 @@ export const useExamAppointment = () => {
       console.error("VNPAY payment creation error:", err);
     }
   };
+
+  const handleCancelBooking = async () => {
+    if (!appointmentData?.invoiceId) {
+      setError("Không tìm thấy thông tin hóa đơn để hủy");
+      return;
+    }
+
+    try {
+      setIsConfirmOpen(false);
+      setLoading(true);
+      await cancelTransaction(appointmentData.invoiceId);
+      console.log("✅ Transaction cancelled successfully");
+
+      // Reset form after cancellation
+      setSelectedDoctor(null);
+      setSelectedTime(null);
+      setAppointmentData(null);
+    } catch (err) {
+      console.error("❌ Cancel transaction error:", err);
+      setError("Lỗi khi hủy giao dịch. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
   // const handlePaymentConfirmation = async (paymentMethod = "cash") => {
   //   if (!appointmentData?.appointmentId) {
   //     setError("Không tìm thấy thông tin đặt lịch");
@@ -311,6 +336,7 @@ export const useExamAppointment = () => {
     handleBooking,
     handleConfirmBooking,
     handleVnpayPayment,
+    handleCancelBooking,
     // Computed
     isBookingReady,
     getExamPrice,
