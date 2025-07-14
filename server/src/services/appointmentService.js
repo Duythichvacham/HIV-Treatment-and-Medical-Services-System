@@ -530,6 +530,7 @@ exports.checkExistingAppointment = async (
     message: "Có thể đặt lịch",
   };
 };
+
 // chỉ được gọi khi patient cố đặt lịch khám mới
 exports.cancelOldAppointments = async (patientId) => {
   const pool = await poolPromise;
@@ -547,6 +548,9 @@ exports.cancelOldAppointments = async (patientId) => {
     const appointmentIdsToCancel = oldAppointmentsResult.recordset.map(
       (row) => row.appointment_id
     );
+    if (appointmentIdsToCancel.length === 0) {
+      return; // Không có lịch cần hủy thì thoát sớm
+    }
     // Tạo chuỗi tham số động cho câu truy vấn IN
     const idParameters = appointmentIdsToCancel
       .map((_, index) => `@id${index}`)
@@ -963,6 +967,7 @@ exports.cancelAppointmentByInvoiceId = async (invoiceId) => {
     UPDATE Appointments
     SET status = 'cancelled'
     WHERE appointment_id = (
-    SELECT appointment_id FROM Invoices WHERE invoice_id = @invoice_id))
-    `);
+      SELECT appointment_id FROM Invoices WHERE invoice_id = @invoice_id
+    )
+  `);
 };
