@@ -5,10 +5,10 @@ const getUsers = async (req, res) => {
   try {
     console.log("[MANAGER] getUsers called");
     console.log("[MANAGER] User from middleware:", req.user);
-    
+
     const users = await userService.getUsers();
     console.log("[MANAGER] Users fetched:", users?.length || 0);
-    
+
     return res.status(200).json({
       message: "Users fetched successfully",
       data: users || [],
@@ -16,6 +16,29 @@ const getUsers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching users:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+const getAllServices = async (req, res) => {
+  try {
+    const services = await serviceService.getAllServicesForManager();
+    if (!services || services.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy dịch vụ nào",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: services,
+      message: "Lấy danh sách dịch vụ thành công",
+    });
+  } catch (error) {
+    console.error("[API] getAllServices error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi lấy danh sách dịch vụ",
+    });
   }
 };
 const createService = async (req, res) => {
@@ -120,4 +143,5 @@ module.exports = {
   createService,
   setActive,
   createSlot,
+  getAllServices,
 };

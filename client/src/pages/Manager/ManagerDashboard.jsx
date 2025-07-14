@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Users, Calendar, DollarSign, Activity, Plus } from "lucide-react";
 import StatsCard from "./components/StatsCard";
 import UserManagement from "./components/UserManagement";
+import ServiceManagement from "./components/ServiceManagement";
 import LoadingSpinner from "./components/LoadingSpinner";
 import TabNavigation from "./components/TabNavigation";
-import { getUsers } from "../../services/api";
+import { getUsers, getManagerServices } from "../../services/api";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -32,6 +33,14 @@ const ManagerDashboard = () => {
         const usersResponse = await getUsers();
         const usersData = usersResponse.data || [];
 
+        // Lấy dữ liệu services từ API
+        const servicesData = await getManagerServices();
+        const services = servicesData.data || [];
+        const totalServices = services.length;
+        const activeServices = services.filter(
+          (service) => service.is_active
+        ).length;
+
         // Tính toán statistics từ dữ liệu users
         const totalUsers = usersData.length;
         const activeUsers = usersData.filter(
@@ -46,8 +55,8 @@ const ManagerDashboard = () => {
           completedAppointments: 1, // Mock data
           totalRevenue: 128000000, // Mock data
           revenueYear: 2024,
-          totalServices: 3, // Mock data
-          activeServices: 3, // Mock data
+          totalServices,
+          activeServices,
         };
 
         setStats(mockStats);
@@ -77,14 +86,7 @@ const ManagerDashboard = () => {
           </div>
         );
       case "services":
-        return (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Quản lý Dịch vụ
-            </h3>
-            <p className="text-gray-600">Chức năng đang được phát triển...</p>
-          </div>
-        );
+        return <ServiceManagement />;
       case "schedule":
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6">
