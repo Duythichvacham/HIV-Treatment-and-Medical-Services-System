@@ -6,7 +6,7 @@ const slotController = require("../controllers/slotController");
 //GET lấy danh sách bác sĩ
 router.get("/doctors", doctorController.getDoctors);
 // GET, lấy danh sách dịch vụ theo type
-router.get("/services", serviceController.getTestServices);
+router.get("/services", serviceController.getServices);
 // GET, lấy danh sách slot theo doctor_id
 router.get("/slots", slotController.getSlots);
 module.exports = router;

@@ -67,7 +67,7 @@ function route(app) {
    * Prefix: api/v1/registrations
    */
   // Registration Staff routes - temporarily bypass auth for testing
-  app.use("/api/v1/registrations", registrationRouter);
+  app.use("/api/v1/registrations", authMiddleware, registrationRouter);
 
   /**
    * API queue - Quản lý số thứ tự

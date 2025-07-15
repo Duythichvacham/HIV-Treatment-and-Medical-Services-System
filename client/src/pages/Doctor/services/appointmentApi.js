@@ -118,7 +118,7 @@ export const appointmentApi = {
   // Update appointment status
   updateStatus: async (appointmentId, status) => {
     const url = `/api/v1/appointments/${appointmentId}/status`;
-    const response = await api.post(url, { status });
+    const response = await api.patch(url, { status });
     return response.data;
   },
 

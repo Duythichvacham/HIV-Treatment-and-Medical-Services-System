@@ -457,6 +457,70 @@ export const getPaymentHistory = async (date = null, search = null) => {
 // ===========================================
 
 /**
+ * Get all users for manager dashboard
+ */
+export const getUsers = async () => {
+  try {
+    const response = await api.get("/api/v1/managers/users");
+    console.log("✅ getUsers response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getUsers error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get all services for manager dashboard
+ */
+export const getManagerServices = async () => {
+  try {
+    const response = await api.get("/api/v1/managers/service");
+    console.log("✅ getManagerServices response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getManagerServices error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create new service (Manager only)
+ * @param {Object} serviceData - Service data
+ */
+export const createManagerService = async (serviceData) => {
+  try {
+    const response = await api.post("/api/v1/managers/service", serviceData);
+    console.log("✅ createManagerService response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createManagerService error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Toggle service active status (Manager only)
+ * @param {number} serviceId - Service ID
+ * @param {boolean} isActive - New active status
+ */
+export const toggleManagerService = async (serviceId, isActive) => {
+  try {
+    const response = await api.patch(
+      `/api/v1/managers/service/${serviceId}/status`,
+      {
+        is_active: isActive,
+      }
+    );
+    console.log("✅ toggleManagerService response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ toggleManagerService error:", error);
+    throw error;
+  }
+};
+
+/**
  * Manual cancel all pending appointments for today (Admin/Manager only)
  */
 export const cancelPendingAppointments = async () => {

@@ -143,21 +143,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Thêm lab_staff_id nếu user là Lab-Staff
-      if (tokenPayload.role === "Lab-Staff" && tokenPayload.lab_staff_id) {
-        userData.lab_staff_id = tokenPayload.lab_staff_id;
+      if (tokenPayload.role === "Lab-Staff") {
+        userData.lab_staff_id = tokenPayload.userId;
       }
 
       // Thêm registration_staff_id nếu user là Registration-staff
-      if (
-        tokenPayload.role === "Registration-staff" &&
-        tokenPayload.registration_staff_id
-      ) {
-        userData.registration_staff_id = tokenPayload.registration_staff_id;
+      if (tokenPayload.role === "Registration-staff") {
+        userData.registration_staff_id = tokenPayload.userId;
       }
 
       // Thêm manager_id nếu user là Manager
-      if (tokenPayload.role === "Manager" && tokenPayload.manager_id) {
-        userData.manager_id = tokenPayload.manager_id;
+      if (tokenPayload.role === "Manager") {
+        userData.manager_id = tokenPayload.userId;
       }
 
       // Thêm patient_id nếu user là Patient

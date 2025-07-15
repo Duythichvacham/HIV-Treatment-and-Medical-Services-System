@@ -1,6 +1,10 @@
 import React from "react";
 import { useAppointmentHistory } from "../../hooks/appointments/useAppointmentHistory";
-
+// Thêm vào đầu file:
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import ErrorAlert from "../../components/common/ErrorAlert";
+import EmptyState from "../../components/common/EmptyState";
+import TableHeader from "../../components/common/TableHeader";
 const AppointmentHistory = () => {
   const {
     // State
@@ -24,10 +28,7 @@ const AppointmentHistory = () => {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Đang tải lịch sử khám bệnh...</p>
-        </div>
+        <LoadingSpinner message="Đang tải lịch sử khám bệnh..." />
       </div>
     );
   }
@@ -35,29 +36,7 @@ const AppointmentHistory = () => {
   if (error) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-red-400 text-xl">⚠️</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Lỗi tải dữ liệu
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>{error}</p>
-              </div>
-              <div className="mt-4">
-                <button
-                  onClick={fetchAppointments}
-                  className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
-                >
-                  Thử lại
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ErrorAlert message={error} onRetry={fetchAppointments} />
       </div>
     );
   }
@@ -65,10 +44,10 @@ const AppointmentHistory = () => {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Lịch sử khám bệnh</h1>
-        <p className="mt-2 text-gray-600">
-          Xem tất cả các lịch hẹn và kết quả khám bệnh của bạn
-        </p>
+        <TableHeader
+          title="Lịch sử khám bệnh"
+          subtitle="Xem tất cả các lịch hẹn và kết quả khám bệnh của bạn"
+        />
       </div>
 
       {/* Filter Buttons */}
@@ -99,17 +78,14 @@ const AppointmentHistory = () => {
 
       {/* Appointments List */}
       {filteredAppointments.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <div className="text-gray-400 text-6xl mb-4">📋</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Không có lịch hẹn nào
-          </h3>
-          <p className="text-gray-600">
-            {filter === "all"
+        <EmptyState
+          title="Không có lịch hẹn nào"
+          description={
+            filter === "all"
               ? "Bạn chưa có lịch hẹn nào."
-              : `Không có lịch hẹn nào với trạng thái này.`}
-          </p>
-        </div>
+              : "Không có lịch hẹn nào với trạng thái này."
+          }
+        />
       ) : (
         <div className="space-y-4">
           {filteredAppointments.map((appointment) => {

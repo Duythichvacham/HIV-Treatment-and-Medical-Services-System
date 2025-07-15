@@ -33,6 +33,7 @@ import LabStaffDashboardV2 from "./pages/LabStaffv2/LabStaffDashboardV2";
 import DoctorProfile from "./pages/Doctor/DoctorProfile";
 
 import PaymentResult from "./pages/Payment/PaymentResult";
+import Manager from "./pages/Manager/ManagerDashboard";
 function App() {
   return (
     <AuthProvider>
@@ -101,6 +102,14 @@ function AppContent() {
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Doctor">
                 <DoctorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager"
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Manager">
+                <Manager />
               </ProtectedRoute>
             }
           />
