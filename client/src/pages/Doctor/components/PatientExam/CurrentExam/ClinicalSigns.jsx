@@ -1,5 +1,5 @@
 import React from "react";
-import { COMMON_CLINICAL_SIGNS } from "../../../constants/clinicalSigns";
+import { COMMON_CLINICAL_SIGNS } from "../../../../../constants/clinicalSigns";
 
 const ClinicalSigns = ({
   clinicalSigns,

@@ -12,7 +12,7 @@ const Diagnosis = ({ diagnosis, onUpdate, errors = {}, readOnly = false }) => {
       <div className="space-y-4">
         {/* Primary Diagnosis */}
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <span className="text-red-500">*</span>
             Chẩn đoán chính
           </label>

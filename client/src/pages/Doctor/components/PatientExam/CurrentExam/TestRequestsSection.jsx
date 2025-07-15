@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TestTube, Plus, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import axios from "axios";
+// import axios from "axios";
+import api from "../../../../../services/api";
 
 const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
   const [testTypes, setTestTypes] = useState([]);
@@ -11,15 +12,6 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // API client with auth
-  const apiClient = axios.create({
-    baseURL: "http://localhost:5000",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  });
-
   // Load test types and current request status
   useEffect(() => {
     const loadData = async () => {
@@ -27,7 +19,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
         setLoading(true);
 
         // Load available test types
-        const testTypesRes = await apiClient.get("/api/v1/doctors/test-types");
+        const testTypesRes = await api.get("/api/v1/doctors/test-types");
         if (testTypesRes.data.success) {
           setTestTypes(testTypesRes.data.data);
         }
@@ -35,7 +27,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
         // Check current test request status for this appointment
         if (appointmentId) {
           try {
-            const currentRequestRes = await apiClient.get(
+            const currentRequestRes = await api.get(
               `/api/v1/doctors/current-test-request/${appointmentId}`
             );
             if (currentRequestRes.data.success) {
@@ -88,7 +80,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
         notes: notes,
       };
 
-      const response = await apiClient.post(
+      const response = await api.post(
         "/api/v1/doctors/test-requests",
         requestData
       );

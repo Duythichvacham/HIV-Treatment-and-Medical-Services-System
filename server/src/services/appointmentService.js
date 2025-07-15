@@ -586,74 +586,135 @@ exports.getInvoiceByAppointmentId = async (appointment_id) => {
 };
 
 // Lấy tất cả cuộc hẹn của bác sĩ, có thể lọc theo status và bookingDate
-exports.getDoctorAppointments = async (
+exports.getAppointments = async (
   doctorId,
   status,
   bookingDate,
   slot_id,
-  patient_id
+  patient_id,
+  service_type = "examination"
 ) => {
   const pool = await poolPromise;
   try {
-    const request = pool.request().input("doctorId", parseInt(doctorId, 10));
+    const request = pool.request().input("service_type", service_type);
 
-    // Xây dựng câu query với các điều kiện lọc
+    let selectDoctorFields = "";
+    let joinDoctor = "";
+    let timeSlot = "";
+    let joinSlot = "";
+    let testTypes = "";
+    let joinTestTypes = "";
+
+    if (service_type !== "test") {
+      selectDoctorFields = `
+        a.doctor_id,
+        d.full_name AS doctor_name,`;
+      joinDoctor = `LEFT JOIN Doctors d ON a.doctor_id = d.doctor_id`;
+      timeSlot = `sl.slot_id,
+        CONVERT(VARCHAR(5), sl.start_time, 108) + ' - ' + CONVERT(VARCHAR(5), sl.end_time, 108) AS slot_time,`;
+      joinSlot = `JOIN Slots sl ON sl.slot_id = a.slot_id`;
+    } else {
+      joinTestTypes = `join ServicesTestTypes st on st.service_id = s.service_id
+	      join TestTypes tt on tt.test_type_id = st.test_type_id`;
+      testTypes = `,
+              tt.test_type_id as tt_id,
+              tt.name as tt_name,
+              tt.unit as tt_unit,
+              tt.normal_range as reference_range`;
+    }
+
     let query = `
       SELECT 
-          a.appointment_id,
-          a.patient_id,
-          p.full_name,
+        a.appointment_id,
+        a.patient_id,
+        p.full_name,
         DATEDIFF(YEAR, p.dob, GETDATE()) AS age,
         p.gender,
         p.phone,
+        p.email,
         p.address,
-        sl.slot_id,
-        CONVERT(VARCHAR(5), sl.start_time, 108) + ' - ' + CONVERT(VARCHAR(5), sl.end_time, 108) AS slot_time,
+        ${timeSlot}
         s.service_type,
         a.status,
-        FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') as created_at,
-        a.doctor_id,
-        d.full_name as doctor_name,
-        FORMAT(a.bookingDate, 'yyyy-MM-dd') as bookingDate
+        FORMAT(a.created_at, 'dd-MM-yyyy HH:mm') AS created_at,
+        ${selectDoctorFields}
+        FORMAT(a.bookingDate, 'yyyy-MM-dd') AS bookingDate,
+        s.name as service_name,
+		    s.service_id
+        ${testTypes}
       FROM Appointments a
       JOIN Services s ON a.service_id = s.service_id
-      JOIN Patients p on a.patient_id = p.patient_id
-      JOIN Slots sl on sl.slot_id = a.slot_id
-      join Doctors d on a.doctor_id = d.doctor_id
-      WHERE 
-          s.service_type = 'examination' 
-        and a.doctor_id = @doctorId 
+      JOIN Patients p ON a.patient_id = p.patient_id
+      ${joinSlot}
+      ${joinDoctor}
+      ${joinTestTypes}
+      WHERE s.service_type = @service_type
     `;
 
-    // Thêm điều kiện lọc theo status nếu có
+    if (doctorId && service_type !== "test") {
+      request.input("doctorId", parseInt(doctorId, 10));
+      query += " AND a.doctor_id = @doctorId";
+    }
+
     if (status) {
       request.input("status", status);
       query += " AND a.status = @status";
     }
 
-    // Thêm điều kiện lọc theo ngày nếu có
     if (bookingDate) {
       request.input("bookingDate", bookingDate);
       query += " AND CAST(a.bookingDate AS DATE) = @bookingDate";
     }
 
-    // Thêm điều kiện lọc theo slot_id nếu có
     if (slot_id) {
       request.input("slot_id", parseInt(slot_id, 10));
       query += " AND a.slot_id = @slot_id";
     }
+
     if (patient_id) {
       request.input("patient_id", parseInt(patient_id, 10));
       query += " AND a.patient_id = @patient_id";
     }
-    // Sắp xếp
-    //query += " ORDER BY a.queue_number ASC";
+
+    // query += " ORDER BY a.queue_number ASC"; // optional
 
     const result = await request.query(query);
 
-    return result.recordset || [];
+    const records = result.recordset || [];
+
+    if (service_type === "test") {
+      const grouped = [];
+
+      const map = new Map();
+
+      for (const row of records) {
+        const key = row.appointment_id;
+
+        if (!map.has(key)) {
+          const { tt_name, tt_unit, ...rest } = row;
+          const newEntry = {
+            ...rest,
+            testTypes: [],
+          };
+          map.set(key, newEntry);
+          grouped.push(newEntry);
+        }
+
+        // Push test type to the array
+        map.get(key).testTypes.push({
+          tt_id: row.tt_id,
+          tt_name: row.tt_name,
+          tt_unit: row.tt_unit,
+          reference_range: row.reference_range,
+        });
+      }
+
+      return grouped;
+    }
+
+    return records;
   } catch (error) {
-    console.error("Error in getDoctorAppointments:", error);
+    console.error("Error in getAppointments:", error);
     throw error;
   }
 };

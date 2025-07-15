@@ -1,14 +1,14 @@
 import { useState, useCallback } from "react";
-import { examApi } from "../services/examApi";
-import { prescriptionApi } from "../services/testRequestApi";
+import { examApi } from "../../pages/Doctor/services/examApi";
+import { prescriptionApi } from "../../pages/Doctor/services/testRequestApi";
 // import { patientApi } from "../services/patientApi";
-import { VITAL_SIGNS_DEFAULTS } from "../utils/constants";
+import { VITAL_SIGNS_DEFAULTS } from "../../pages/Doctor/utils/doctorConstants";
 import {
   validateVitalSigns,
   validateDiagnosis,
   validatePrescription,
   validateExamCompletion,
-} from "../utils/validators";
+} from "../../pages/Doctor/utils/validators";
 
 export const useExamForm = (patientId, appointmentId, patientData = null) => {
   const [examData, setExamData] = useState({
@@ -47,7 +47,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
       let arvRes;
 
       try {
-        console.log("[useExamForm] Trying getSavedExamData API...");
         const [examDataRes, arvResponse] = await Promise.all([
           examApi.getSavedExamData(appointmentId),
           prescriptionApi.getARVRegimens(),
@@ -57,14 +56,10 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
         if (examDataRes.success && examDataRes.data) {
           const data = examDataRes.data;
-          console.log("[useExamForm] Exam data loaded:", data);
 
           // Lấy dữ liệu khám lâm sàng và đơn thuốc
           const clinicalData = data.clinical;
           const prescriptionData = data.prescription;
-
-          console.log("[useExamForm] Clinical data:", clinicalData);
-          console.log("[useExamForm] Prescription data:", prescriptionData);
 
           // Parse vital signs from database fields (huyet_ap, mach, nhiet_do)
           const vitals = {
@@ -76,23 +71,11 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
             bmi: clinicalData?.bmi || "",
           };
 
-          console.log("[useExamForm] Parsed vital signs from API:", vitals);
-          console.log("[useExamForm] Original clinical data:", {
-            huyet_ap: clinicalData?.huyet_ap,
-            mach: clinicalData?.mach,
-            nhiet_do: clinicalData?.nhiet_do,
-            weight: clinicalData?.weight,
-            height: clinicalData?.height,
-            bmi: clinicalData?.bmi,
-          });
-
           // Classify prescription details into main ARV drugs and support drugs
           let mainDrugs = [];
           let supportDrugs = [];
 
           if (prescriptionData) {
-            console.log("[useExamForm] Processing prescription data");
-
             // Handle different API response structures
             const prescriptionDetails =
               prescriptionData.prescription_details ||
@@ -103,18 +86,9 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
               Array.isArray(prescriptionDetails) &&
               prescriptionDetails.length > 0
             ) {
-              console.log(
-                "[useExamForm] Processing prescription details:",
-                prescriptionDetails
-              );
-
               // Extract regimen components if available
               let regimenComponents = [];
               if (prescriptionData.components) {
-                console.log(
-                  "[useExamForm] Regimen components:",
-                  prescriptionData.components
-                );
                 regimenComponents = prescriptionData.components
                   .split("+")
                   .map((comp) => comp.trim());
@@ -146,12 +120,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
                       .includes(detail.drug_name.toLowerCase()) ||
                     detail.drug_name.toLowerCase().includes(comp.toLowerCase())
                 );
-
-                console.log(`[useExamForm] Classifying ${detail.drug_name}: `, {
-                  isMainByNotes,
-                  isMainByRegimen,
-                  notes: detail.notes,
-                });
 
                 if (isMainByNotes || isMainByRegimen) {
                   mainDrugs.push(drugItem);
@@ -192,14 +160,7 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
             },
           });
 
-          console.log("[useExamForm] Final exam data after loading:", {
-            vital_signs: vitals,
-            current_arv_medications: mainDrugs,
-            support_drugs: supportDrugs,
-          });
-
           examDataLoaded = true;
-          console.log("[useExamForm] Data loaded from getSavedExamData API");
         }
       } catch (error) {
         console.log(
@@ -216,14 +177,9 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
         ]);
 
         arvRes = arvResponse;
-        console.log("[useExamForm] Exam API response:", examRes);
 
         if (examRes.data?.exam_data) {
           const serverExamData = examRes.data.exam_data;
-          console.log(
-            "[useExamForm] Initial exam data loaded:",
-            serverExamData
-          );
 
           // Parse vitals từ server về dạng object
           const parseVitals = (vitalsString, weight, height, bmi) => {
@@ -308,19 +264,10 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
   }, [patientId, appointmentId]);
   // Force reload data (useful when patient status changes)
   const reloadData = useCallback(async () => {
-    console.log(
-      "[useExamForm] Reloading data for appointment ID:",
-      appointmentId
-    );
     await loadInitialData();
 
     // Log the state after reload to ensure vital signs are loaded properly
     setExamData((current) => {
-      console.log(
-        "[useExamForm] After reload - Vital signs data:",
-        current.vital_signs
-      );
-
       // Double-check that vital signs are in the expected format (camelCase keys)
       if (current.vital_signs) {
         // Ensure all vital signs fields are properly set using camelCase keys
@@ -343,8 +290,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
       return current;
     });
-
-    console.log("[useExamForm] Data reloaded successfully");
   }, [loadInitialData, appointmentId]);
   // Update vital signs
   const updateVitalSigns = useCallback(
@@ -428,12 +373,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
   // Update prescription
   const updatePrescription = useCallback((fieldOrObject, value) => {
-    console.log(
-      "[useExamForm] updatePrescription called with:",
-      fieldOrObject,
-      value
-    );
-
     setExamData((prev) => {
       // If first param is an object, merge it
       if (typeof fieldOrObject === "object" && fieldOrObject !== null) {
@@ -441,10 +380,7 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
           ...prev.prescription,
           ...fieldOrObject,
         };
-        console.log(
-          "[useExamForm] New prescription (object):",
-          newPrescription
-        );
+
         return {
           ...prev,
           prescription: newPrescription,
@@ -456,7 +392,6 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
         ...prev.prescription,
         [fieldOrObject]: value,
       };
-      console.log("[useExamForm] New prescription (field):", newPrescription);
       return {
         ...prev,
         prescription: newPrescription,
@@ -560,23 +495,10 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
     setSaving(true);
     try {
-      // Log the current exam data before saving, especially vital signs
-      console.log("[useExamForm] Saving temp exam data:", examData);
-      console.log("[useExamForm] Saving vital signs:", examData.vital_signs);
-
       await examApi.saveTemp(appointmentId, examData, patientData);
-
-      // Reload data after saving temp
-      console.log("[useExamForm] Save temp successful, reloading data...");
 
       // Wait for reload to complete
       await reloadData();
-
-      // Verify vital signs after reload
-      console.log(
-        "[useExamForm] Vital signs after reload:",
-        examData.vital_signs
-      );
 
       return {
         success: true,
@@ -600,11 +522,9 @@ export const useExamForm = (patientId, appointmentId, patientData = null) => {
 
     setSaving(true);
     try {
-      console.log("[useExamForm] Saving exam data:", examData);
       await examApi.save(appointmentId, examData, patientData);
 
       // Sau khi lưu thành công, reload lại dữ liệu từ server bằng exam-data API
-      console.log("[useExamForm] Save successful, reloading data...");
       await reloadData();
 
       return { success: true };

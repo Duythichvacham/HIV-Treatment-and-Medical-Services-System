@@ -1,6 +1,6 @@
 import React from "react";
 import { User, MessageCircle } from "lucide-react";
-import { TABS } from "../../utils/constants";
+import { TABS } from "../../utils/doctorConstants";
 
 const TabNavigation = ({ activeTab, onTabChange }) => {
   const tabs = [

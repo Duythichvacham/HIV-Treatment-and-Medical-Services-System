@@ -1,27 +1,29 @@
-import apiClient from "./appointmentApi";
-import { API_ENDPOINTS } from "../utils/constants";
+// import apiClient from "./appointmentApi";
+import api from "../../../services/api";
+import { API_ENDPOINTS } from "../utils/doctorConstants";
 
 export const patientApi = {
-  // Get patient details
-  getDetails: async (patientId) => {
-    const url = API_ENDPOINTS.PATIENTS.DETAILS(patientId);
-    const response = await apiClient.get(url);
-    return response.data;
-  },
+  // // Get patient details
+  // getDetails: async (patientId) => {
+  //   const url = API_ENDPOINTS.PATIENTS.DETAILS(patientId);
+  //   const response = await api.get(url);
+  //   return response.data;
+  // },
 
   // Get patient exam history - only completed appointments
-  getExamHistory: async (patientId, page = 1, limit = 20) => {
+  //, page = 1, limit = 20
+  getExamHistory: async (patientId) => {
     try {
       console.log(
         "[patientApi.getExamHistory] Fetching completed exam history for patient:",
         patientId
       );
-      const response = await apiClient.get(`/api/v1/doctors/appointments`, {
+      const response = await api.get(`/api/v1/doctors/appointments`, {
         params: {
           patient_id: patientId,
           status: "completed",
-          page,
-          limit,
+          // page,
+          // limit,
         },
       });
       return response.data;
@@ -38,7 +40,7 @@ export const patientApi = {
         "[patientApi.getClinicalExamDetail] Fetching clinical exam detail for appointment:",
         appointmentId
       );
-      const response = await apiClient.get(
+      const response = await api.get(
         `/api/v1/clinical/clinical-exams/${appointmentId}`
       );
       return response.data;
@@ -55,9 +57,7 @@ export const patientApi = {
         "[patientApi.getPrescriptionDetail] Fetching prescription detail for appointment:",
         appointmentId
       );
-      const response = await apiClient.get(
-        `/api/v1/prescriptions/${appointmentId}`
-      );
+      const response = await api.get(`/api/v1/prescriptions/${appointmentId}`);
       return response.data;
     } catch (error) {
       console.error("[patientApi.getPrescriptionDetail] Error:", error);
@@ -73,7 +73,7 @@ export const patientApi = {
         patientId
       );
       const url = `/api/v1/patients/current-arv-regimen/${patientId}`;
-      const response = await apiClient.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("[patientApi.getCurrentTreatment] Error:", error);
@@ -89,7 +89,7 @@ export const patientApi = {
         patientId
       );
       const url = `/api/v1/patients/latest-tests/${patientId}`;
-      const response = await apiClient.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("[patientApi.getLatestTests] Error:", error);
@@ -97,11 +97,11 @@ export const patientApi = {
     }
   },
 
-  // Search patients
-  search: async (query) => {
-    const url = "/api/v1/patients/search";
-    const params = { q: query };
-    const response = await apiClient.get(url, { params });
-    return response.data;
-  },
+  // // Search patients
+  // search: async (query) => {
+  //   const url = "/api/v1/patients/search";
+  //   const params = { q: query };
+  //   const response = await api.get(url, { params });
+  //   return response.data;
+  // },
 };

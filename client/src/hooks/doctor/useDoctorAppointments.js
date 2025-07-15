@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { appointmentApi } from "../services/appointmentApi";
-import { APPOINTMENT_STATUS } from "../utils/constants";
+import { appointmentApi } from "../../pages/Doctor/services/appointmentApi";
+import { APPOINTMENT_STATUS } from "../../pages/Doctor/utils/doctorConstants";
 
 export const useAppointments = (doctorId, selectedDate) => {
   const [appointments, setAppointments] = useState({
@@ -18,16 +18,11 @@ export const useAppointments = (doctorId, selectedDate) => {
       return;
     }
 
-    console.log("🔍 useAppointments - Starting fetch with:", {
-      doctorId,
-      selectedDate,
-    });
     setLoading(true);
     setError(null);
 
     try {
       const data = await appointmentApi.getAllByDate(doctorId, selectedDate);
-      console.log("🔍 useAppointments - Received data:", data);
 
       // Validate data structure
       if (data && typeof data === "object") {

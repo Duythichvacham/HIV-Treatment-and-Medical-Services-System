@@ -15,7 +15,7 @@ import {
   Ruler,
   Stethoscope,
 } from "lucide-react";
-import { patientApi } from "../../services/patientApi";
+import { patientApi } from "../../../services/patientApi";
 
 const ExamHistoryList = ({ patientId }) => {
   const [examHistory, setExamHistory] = useState([]);
@@ -96,26 +96,6 @@ const ExamHistoryList = ({ patientId }) => {
     setPrescriptionDetail(null);
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (loading) {
     return (
       <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
@@ -184,9 +164,7 @@ const ExamHistoryList = ({ patientId }) => {
 
                     <div className="flex items-center text-sm text-gray-500">
                       <span>Mã cuộc hẹn: #{exam.appointment_id}</span>
-                      <span className="ml-4">
-                        Tạo lúc: {formatDateTime(exam.created_at)}
-                      </span>
+                      <span className="ml-4">Tạo lúc: {exam.created_at}</span>
                     </div>
                   </div>
                 </div>
@@ -202,7 +180,7 @@ const ExamHistoryList = ({ patientId }) => {
                     {detailLoading && selectedExam === exam.appointment_id
                       ? "Đang tải..."
                       : "Chi tiết"}
-                    <ChevronRight className="h-3 w-3 ml-1" />
+                    {/* <ChevronRight className="h-3 w-3 ml-1" /> */}
                   </button>
                 </div>
               </div>
@@ -413,54 +391,46 @@ const ExamHistoryList = ({ patientId }) => {
                             <h4 className="font-medium text-gray-700 mb-3">
                               Chi tiết thuốc
                             </h4>
-                            <div className="space-y-3">
+                            <div className="divide-y divide-gray-200">
                               {prescriptionDetail.prescriptionDetails.map(
-                                (drug, index) => (
-                                  <div
-                                    key={drug.detail_id}
-                                    className="border-l-4 border-blue-500 pl-4"
-                                  >
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1">
-                                        <h5 className="font-medium text-gray-900">
-                                          {drug.drug_name}
-                                        </h5>
-                                        <div className="text-sm text-gray-600 mt-1">
-                                          <p>
-                                            <span className="font-medium">
-                                              Liều dùng:
-                                            </span>{" "}
-                                            {drug.dosage}
-                                          </p>
-                                          <p>
-                                            <span className="font-medium">
-                                              Tần suất:
-                                            </span>{" "}
-                                            {drug.frequency}
-                                          </p>
-                                          <p>
-                                            <span className="font-medium">
-                                              Thời gian:
-                                            </span>{" "}
-                                            {drug.duration_days} ngày
-                                          </p>
-                                          <p>
-                                            <span className="font-medium">
-                                              Hướng dẫn:
-                                            </span>{" "}
-                                            {drug.usage_instructions}
-                                          </p>
-                                          {drug.notes && (
-                                            <p>
-                                              <span className="font-medium">
-                                                Ghi chú:
-                                              </span>{" "}
-                                              {drug.notes}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                                (drug) => (
+                                  <div key={drug.detail_id} className="py-4">
+                                    <h5 className="text-base font-semibold text-gray-900 mb-1">
+                                      {drug.drug_name}
+                                    </h5>
+                                    <ul className="text-sm text-gray-700 space-y-1">
+                                      <li>
+                                        <span className="font-medium">
+                                          Liều dùng:
+                                        </span>{" "}
+                                        {drug.dosage}
+                                      </li>
+                                      <li>
+                                        <span className="font-medium">
+                                          Tần suất:
+                                        </span>{" "}
+                                        {drug.frequency}
+                                      </li>
+                                      <li>
+                                        <span className="font-medium">
+                                          Thời gian:
+                                        </span>{" "}
+                                        {drug.duration_days} ngày
+                                      </li>
+                                      <li>
+                                        <span className="font-medium">
+                                          Hướng dẫn:
+                                        </span>{" "}
+                                        {drug.usage_instructions}
+                                      </li>
+
+                                      <li>
+                                        <span className="font-medium">
+                                          Ghi chú:
+                                        </span>{" "}
+                                        {drug.notes}
+                                      </li>
+                                    </ul>
                                   </div>
                                 )
                               )}

@@ -14,6 +14,7 @@ const slotRouter = require("./slot");
 const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
 const prescriptionRouter = require("./prescriptions");
+const testRequestRouter = require("./testRequest");
 const paymentRoutes = require("./payment");
 const managerRouter = require("./manager");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
@@ -93,6 +94,8 @@ function route(app) {
    * Prefix: api/prescriptions
    */
   app.use("/api/v1/prescriptions", authMiddleware, prescriptionRouter);
+
+  app.use("/api/v1/test-request", authMiddleware, testRequestRouter);
   /**
    * API manager
    * Prefix: api/v1/manager
