@@ -32,6 +32,7 @@ const ExamAppointment = () => {
     handleBooking,
     // handlePaymentConfirmation,
     handleVnpayPayment,
+    handleCancelBooking,
 
     // Computed
     isBookingReady,
@@ -117,7 +118,7 @@ const ExamAppointment = () => {
       {/* Modals */}
       <AppointmentConfirmModal
         isOpen={isConfirmOpen}
-        onCancel={() => setIsConfirmOpen(false)}
+        onCancel={handleCancelBooking}
         // onConfirm={() => {
         //   setIsConfirmOpen(false);
         //   setIsReceiptOpen(true);

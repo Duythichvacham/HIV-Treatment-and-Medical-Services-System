@@ -4,6 +4,7 @@ import {
   checkExistingAppointment,
   getServices,
   createVNPayURL,
+  cancelTransaction,
 } from "../../services/api";
 import { getCurrentDate } from "../../utils/dateUtil";
 import { useAuth } from "../../contexts/AuthContext";
@@ -15,6 +16,7 @@ export const useTestAppointment = () => {
   const [selectedTestType, setSelectedTestType] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [testTypes, setTestTypes] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -90,6 +92,7 @@ export const useTestAppointment = () => {
   };
   // tạo hóa đơn và đặt lịch
   const handleConfirmBooking = async () => {
+    setLoading(true);
     setError(null);
 
     try {
@@ -131,9 +134,34 @@ export const useTestAppointment = () => {
       setError(msg);
       setIsConfirmOpen(false);
       console.error("Error booking appointment:", err);
+    } finally {
+      setLoading(false);
     }
   };
+  const handleCancelBooking = async () => {
+    if (!appointmentData?.invoiceId) {
+      setError("Không tìm thấy thông tin hóa đơn để hủy");
+      return;
+    }
 
+    try {
+      setIsConfirmOpen(false);
+      setLoading(true);
+      await cancelTransaction(appointmentData.invoiceId);
+      console.log("✅ Transaction cancelled successfully");
+
+      // Reset form after cancellation
+      setSelectedTestType(null);
+      setAppointmentData(null);
+    } catch (err) {
+      console.error("❌ Cancel transaction error:", err);
+      setError("Lỗi khi hủy giao dịch. Vui lòng thử lại.");
+      // Vẫn đóng modal ngay cả khi có lỗi
+      setIsConfirmOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleVnpayPayment = async () => {
     if (!appointmentData?.invoiceId || !appointmentData.fee) {
       setError("Thông tin hoá đơn không đầy đủ để thanh toán.");
@@ -201,6 +229,7 @@ export const useTestAppointment = () => {
     selectedTestType,
     selectedDate,
     testTypes,
+    loading,
     servicesLoading,
     error,
     isConfirmOpen,
@@ -216,6 +245,7 @@ export const useTestAppointment = () => {
     handleBooking,
     handleConfirmBooking,
     handleVnpayPayment,
+    handleCancelBooking,
     // Computed
     isBookingReady,
   };
