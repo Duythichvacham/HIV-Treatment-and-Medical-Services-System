@@ -18,16 +18,11 @@ export const useAppointments = (doctorId, selectedDate) => {
       return;
     }
 
-    console.log("🔍 useAppointments - Starting fetch with:", {
-      doctorId,
-      selectedDate,
-    });
     setLoading(true);
     setError(null);
 
     try {
       const data = await appointmentApi.getAllByDate(doctorId, selectedDate);
-      console.log("🔍 useAppointments - Received data:", data);
 
       // Validate data structure
       if (data && typeof data === "object") {

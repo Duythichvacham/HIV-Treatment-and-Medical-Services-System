@@ -92,18 +92,11 @@ export const appointmentApi = {
   // Get all appointments for a doctor on a specific date
   getAllByDate: async (doctorId, date) => {
     try {
-      console.log("🔍 getAllByDate - Starting fetch for:", { doctorId, date });
-
       const [queueRes, inProgressRes, completedRes] = await Promise.all([
         appointmentApi.getQueue(doctorId, date),
         appointmentApi.getInProgress(doctorId, date),
         appointmentApi.getCompleted(doctorId, date),
       ]);
-
-      console.log("🔍 getAllByDate - Individual results:");
-      console.log("  Queue:", queueRes);
-      console.log("  InProgress:", inProgressRes);
-      console.log("  Completed:", completedRes);
 
       const result = {
         queue: Array.isArray(queueRes) ? queueRes : [],
@@ -111,7 +104,6 @@ export const appointmentApi = {
         completed: Array.isArray(completedRes) ? completedRes : [],
       };
 
-      console.log("🔍 getAllByDate - Final result:", result);
       return result;
     } catch (error) {
       console.error("❌ Error fetching appointments:", error);

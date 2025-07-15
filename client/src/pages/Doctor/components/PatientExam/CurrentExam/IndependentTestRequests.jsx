@@ -44,27 +44,9 @@ const IndependentTestRequests = ({
             : Promise.resolve({ data: [] }),
         ]);
 
-        console.log(
-          "[IndependentTestRequests] Test types data:",
-          testTypesData
-        );
-        console.log(
-          "[IndependentTestRequests] Existing requests data:",
-          existingRequestsData
-        );
-
         const processedTestTypes = testTypesData.data || testTypesData || [];
         const processedRequests =
           existingRequestsData.data || existingRequestsData || [];
-
-        console.log(
-          "[IndependentTestRequests] Processed test types:",
-          processedTestTypes
-        );
-        console.log(
-          "[IndependentTestRequests] Processed requests:",
-          processedRequests
-        );
 
         setTestTypes(processedTestTypes);
         setExistingTestRequests(processedRequests);

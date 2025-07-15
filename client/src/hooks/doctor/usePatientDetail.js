@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 // import axios from "axios";
 import api from "../../services/api";
+import { patientApi } from "../../pages/Doctor/services/patientApi";
 
 // // Axios instance
 // const apiClient = axios.create({
@@ -39,11 +40,6 @@ export const usePatientDetail = (patientId) => {
       setError(null);
 
       try {
-        console.log(
-          "[usePatientDetail] Fetching patient detail for:",
-          patientId
-        );
-
         // Fetch ARV regimen and test results separately to handle 404 cases
         let arvData = null;
         let testData = null;
@@ -72,7 +68,6 @@ export const usePatientDetail = (patientId) => {
             `/api/v1/patients/latest-tests/${patientId}`
           );
           testData = testRes.data?.data || null;
-          console.log("[usePatientDetail] Test response:", testRes.data);
         } catch (testErr) {
           if (testErr.response?.status === 404) {
             console.log(
@@ -119,17 +114,16 @@ export const usePatientDetail = (patientId) => {
     setError(null);
 
     try {
-      console.log("[usePatientDetail] Manual refresh for:", patientId);
-
       // Fetch ARV regimen and test results separately to handle 404 cases
       let arvData = null;
       let testData = null;
 
       // Try to get ARV regimen - might return 404 for new patients
       try {
-        const arvRes = await api.get(
-          `/api/v1/patients/current-arv-regimen/${patientId}`
-        );
+        const arvRes = await patientApi.getCurrentTreatment(patientId);
+        // const arvRes = await api.get(
+        //   `/api/v1/patients/current-arv-regimen/${patientId}`
+        // );
         arvData = arvRes.data?.data || null;
         console.log("[usePatientDetail] ARV response:", arvRes.data);
       } catch (arvErr) {
@@ -145,9 +139,10 @@ export const usePatientDetail = (patientId) => {
 
       // Try to get test results - might return 404 for new patients
       try {
-        const testRes = await api.get(
-          `/api/v1/patients/latest-tests/${patientId}`
-        );
+        const testRes = patientApi.getLatestTests(patientId);
+        // const testRes = await api.get(
+        //   `/api/v1/patients/latest-tests/${patientId}`
+        // );
         testData = testRes.data?.data || null;
         console.log("[usePatientDetail] Test response:", testRes.data);
       } catch (testErr) {

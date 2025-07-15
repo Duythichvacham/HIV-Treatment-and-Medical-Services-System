@@ -33,6 +33,66 @@ const getAppointments = async (req, res) => {
   }
 };
 
+const updateDoctorProfile = async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    const updateData = req.body;
+    if (!doctorId || !updateData) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorId and updateData are required",
+      });
+    }
+    const updatedDoctor = await doctorService.updateDoctorProfile(
+      doctorId,
+      updateData
+    );
+    if (!updatedDoctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor profile not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: updatedDoctor,
+      message: "Doctor profile updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating doctor profile:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
+const getDoctorProfile = async (req, res) => {
+  try {
+    const doctorId = req.params.doctorId;
+    if (!doctorId) {
+      return res.status(400).json({
+        success: false,
+        message: "doctorId is required",
+      });
+    }
+    const doctorProfile = await doctorService.getDoctorProfile(doctorId);
+    if (!doctorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor profile not found",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      data: doctorProfile,
+    });
+  } catch (error) {
+    console.error("Error fetching doctors:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 // (GET, lấy danh sách bác sĩ - có thể filter theo ngày)
 const getDoctors = async (req, res) => {
   try {
@@ -460,4 +520,6 @@ module.exports = {
   getClinicalExamData,
   getPrescriptionExamData,
   getPrescriptionDetail,
+  getDoctorProfile,
+  updateDoctorProfile,
 };

@@ -329,38 +329,38 @@ export const examApi = {
   },
 
   // Helper function to parse ARV regimen components into drugs array
-  parseRegimenComponents: (components) => {
-    if (!components) return [];
+  // parseRegimenComponents: (components) => {
+  //   if (!components) return [];
 
-    // Split components by "+" and clean up
-    const drugComponents = components.split("+").map((drug) => drug.trim());
+  //   // Split components by "+" and clean up
+  //   const drugComponents = components.split("+").map((drug) => drug.trim());
 
-    // Parse each drug component to extract name and dosage
-    return drugComponents.map((drugComponent) => {
-      // Pattern to match drug name and dosage like "Tenofovir 300mg"
-      const match = drugComponent.match(/^(.+?)\s+(\d+mg)$/);
+  //   // Parse each drug component to extract name and dosage
+  //   return drugComponents.map((drugComponent) => {
+  //     // Pattern to match drug name and dosage like "Tenofovir 300mg"
+  //     const match = drugComponent.match(/^(.+?)\s+(\d+mg)$/);
 
-      if (match) {
-        const [, drugName, dosage] = match;
-        return {
-          drug_name: drugName.trim(),
-          dosage: dosage,
-          frequency: "1 lần/ngày", // Default frequency
-          duration_days: 30, // Default duration
-          usage_instructions: "",
-          notes: "",
-        };
-      } else {
-        // If no dosage pattern, just use the drug name
-        return {
-          drug_name: drugComponent,
-          dosage: "",
-          frequency: "1 lần/ngày",
-          duration_days: 30,
-          usage_instructions: "",
-          notes: "",
-        };
-      }
-    });
-  },
+  //     if (match) {
+  //       const [, drugName, dosage] = match;
+  //       return {
+  //         drug_name: drugName.trim(),
+  //         dosage: dosage,
+  //         frequency: "1 lần/ngày", // Default frequency
+  //         duration_days: 30, // Default duration
+  //         usage_instructions: "",
+  //         notes: "",
+  //       };
+  //     } else {
+  //       // If no dosage pattern, just use the drug name
+  //       return {
+  //         drug_name: drugComponent,
+  //         dosage: "",
+  //         frequency: "1 lần/ngày",
+  //         duration_days: 30,
+  //         usage_instructions: "",
+  //         notes: "",
+  //       };
+  //     }
+  //   });
+  // },
 };

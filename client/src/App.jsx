@@ -30,6 +30,7 @@ import PatientProfile from "./pages/Patient/PatientProfile";
 import PatientRegister from "./pages/Auth/PatientRegister";
 // import LabStaffDashboard from "./pages/LabStaffv2/LabStaffDashboard";
 import LabStaffDashboardV2 from "./pages/LabStaffv2/LabStaffDashboardV2";
+import DoctorProfile from "./pages/Doctor/DoctorProfile";
 
 import PaymentResult from "./pages/Payment/PaymentResult";
 function App() {
@@ -148,14 +149,6 @@ function AppContent() {
       </main>
       {/* Chỉ hiển thị Footer cho guest và bệnh nhân */}
       {(!user || user.role === "Patient") && <Footer />}
-    </div>
-  );
-}
-
-function DoctorProfile() {
-  return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-xl text-green-700">
-      Trang hồ sơ bác sĩ (đang phát triển)
     </div>
   );
 }

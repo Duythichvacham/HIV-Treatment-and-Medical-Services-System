@@ -1,5 +1,52 @@
 const { poolPromise } = require("../config/db");
 
+const getDoctorProfile = async (doctorId) => {
+  const pool = await poolPromise;
+  try {
+    const result = await pool
+      .request()
+      .query(`select * from Doctors where doctor_id = ${doctorId}`);
+    return result.recordset;
+  } catch (error) {
+    console.error("[doctorService.getTestTypes] Error:", error);
+    throw error;
+  }
+};
+
+const updateDoctorProfile = async (doctorId, updateData) => {
+  const pool = await poolPromise;
+  try {
+    const result = await pool
+      .request()
+      .input("doctor_id", doctorId)
+      .input("full_name", updateData.full_name)
+      .input("email", updateData.email)
+      .input("phone", updateData.phone)
+      .input("image_url", updateData.image_url)
+      .input("degrees", updateData.degrees)
+      .input("experience_years", updateData.experience_years).query(`
+        UPDATE Doctors
+        SET
+          full_name = @full_name,
+          email = @email,
+          phone = @phone,
+          image_url = @image_url,
+          degrees = @degrees,
+          experience_years = @experience_years
+        WHERE doctor_id = @doctor_id
+      `);
+    if (result.rowsAffected[0] === 0) {
+      return null; // Không tìm thấy bác sĩ để cập nhật
+    }
+    // Trả về thông tin bác sĩ đã cập nhật
+    return {
+      doctor_id: doctorId,
+      ...updateData,
+    };
+  } catch (error) {
+    console.error("[doctorService.updateDoctorProfile] Error:", error);
+  }
+};
 // (GET, lấy danh sách bác sĩ)
 const getDoctors = async () => {
   const pool = await poolPromise;
@@ -296,4 +343,6 @@ module.exports = {
   getCurrentTestRequest,
   getPrescriptionExamData,
   getPrescriptionDetail,
+  getDoctorProfile,
+  updateDoctorProfile,
 };

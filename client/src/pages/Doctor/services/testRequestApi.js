@@ -5,17 +5,12 @@ import { API_ENDPOINTS } from "../utils/doctorConstants";
 export const testRequestApi = {
   // Get available test services
   getAvailableTests: async () => {
-    console.log("[testRequestApi.getAvailableTests] Fetching available tests");
     const response = await api.get(API_ENDPOINTS.TESTS.AVAILABLE);
     return response.data;
   },
 
   // Get patient's ongoing tests
   getOngoingTests: async (patientId) => {
-    console.log(
-      "[testRequestApi.getOngoingTests] Fetching ongoing tests for patient:",
-      patientId
-    );
     const response = await api.get(API_ENDPOINTS.TESTS.ONGOING(patientId));
     return response.data;
   },
@@ -41,13 +36,6 @@ export const testRequestApi = {
     return response.data;
   },
 
-  // Cancel test request
-  cancel: async (requestId) => {
-    const url = `/api/v1/doctors/test-request-details/${requestId}/cancel`;
-    const response = await api.post(url);
-    return response.data;
-  },
-
   // Get test request history for patient
   getHistory: async (patientId, page = 1, limit = 10) => {
     const url = `/api/v1/doctors/test-requests/${patientId}`;
@@ -59,7 +47,6 @@ export const testRequestApi = {
   // Get all available test types - API mới
   getTestTypes: async () => {
     try {
-      console.log("[testRequestApi.getTestTypes] Fetching test types");
       const response = await api.get("/api/v1/doctors/test-types");
       return response.data;
     } catch (error) {
@@ -77,10 +64,6 @@ export const testRequestApi = {
         notes: testRequestData.notes || "",
       };
 
-      console.log(
-        "[testRequestApi.createTestRequest] Creating test request:",
-        payload
-      );
       const response = await api.post(
         "/api/v1/doctors/independent-test-requests",
         payload
@@ -95,10 +78,6 @@ export const testRequestApi = {
   // Get test requests by patient - API mới
   getTestRequestsByPatient: async (patientId) => {
     try {
-      console.log(
-        "[testRequestApi.getTestRequestsByPatient] Fetching test requests for patient:",
-        patientId
-      );
       const response = await api.get(
         `/api/v1/doctors/test-requests/${patientId}`
       );
@@ -130,17 +109,12 @@ export const testRequestApi = {
 export const prescriptionApi = {
   // Get ARV regimens
   getARVRegimens: async () => {
-    console.log("[prescriptionApi.getARVRegimens] Fetching ARV regimens");
     const response = await api.get("/api/v1/arv-regimens/");
     return response.data;
   },
 
   // Get drugs for specific ARV regimen
   getRegimenDrugs: async (regimenId) => {
-    console.log(
-      "[prescriptionApi.getRegimenDrugs] Fetching drugs for regimen:",
-      regimenId
-    );
     const response = await api.get(`/api/v1/arv-regimens/${regimenId}`);
     return response.data;
   },
@@ -152,12 +126,12 @@ export const prescriptionApi = {
     return response.data;
   },
 
-  // Update prescription
-  update: async (prescriptionId, prescriptionData) => {
-    const url = `/api/v1/doctors/prescriptions/${prescriptionId}`;
-    const response = await api.put(url, prescriptionData);
-    return response.data;
-  },
+  // // Update prescription
+  // update: async (prescriptionId, prescriptionData) => {
+  //   const url = `/api/v1/doctors/prescriptions/${prescriptionId}`;
+  //   const response = await api.put(url, prescriptionData);
+  //   return response.data;
+  // },
 
   // Get prescription by appointment
   getByAppointment: async (appointmentId) => {

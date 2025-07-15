@@ -160,9 +160,9 @@ const PatientExamRefactored = ({
       examData.diagnosis_primary.trim().length > 0;
 
     const hasEssentialVitalSigns =
-      examData.vital_signs?.heart_rate ||
+      // examData.vital_signs?.heart_rate ||
       examData.vital_signs?.heartRate ||
-      examData.vital_signs?.blood_pressure ||
+      // examData.vital_signs?.blood_pressure ||
       examData.vital_signs?.bloodPressure ||
       examData.vital_signs?.temperature;
 

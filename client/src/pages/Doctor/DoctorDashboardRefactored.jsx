@@ -34,6 +34,8 @@ const DoctorDashboard = () => {
   useEffect(() => {
     if (user?.doctor_id) {
       console.log("[DEBUG] Using doctor_id from user object:", user.doctor_id);
+      console.log("user id: ", user.id);
+      console.log("user: ", user);
       setDoctorId(user.doctor_id);
     } else if (user?.id) {
       // Fallback logic if needed

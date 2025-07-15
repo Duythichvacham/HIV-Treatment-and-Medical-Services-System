@@ -3,12 +3,12 @@ import api from "../../../services/api";
 import { API_ENDPOINTS } from "../utils/doctorConstants";
 
 export const patientApi = {
-  // Get patient details
-  getDetails: async (patientId) => {
-    const url = API_ENDPOINTS.PATIENTS.DETAILS(patientId);
-    const response = await api.get(url);
-    return response.data;
-  },
+  // // Get patient details
+  // getDetails: async (patientId) => {
+  //   const url = API_ENDPOINTS.PATIENTS.DETAILS(patientId);
+  //   const response = await api.get(url);
+  //   return response.data;
+  // },
 
   // Get patient exam history - only completed appointments
   //, page = 1, limit = 20
@@ -97,11 +97,11 @@ export const patientApi = {
     }
   },
 
-  // Search patients
-  search: async (query) => {
-    const url = "/api/v1/patients/search";
-    const params = { q: query };
-    const response = await api.get(url, { params });
-    return response.data;
-  },
+  // // Search patients
+  // search: async (query) => {
+  //   const url = "/api/v1/patients/search";
+  //   const params = { q: query };
+  //   const response = await api.get(url, { params });
+  //   return response.data;
+  // },
 };
