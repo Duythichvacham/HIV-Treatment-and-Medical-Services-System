@@ -15,7 +15,6 @@ router.patch(
 router.post("/", appointmentController.createAppointment);
 // GET lấy danh sách lịch hẹn của người dùng
 // router.get("/", appointmentController.getAppointments);
-///api/v1/appointments/{appointment_id}/status (POST, cập nhật status cho appointments)
 router.patch("/:appointment_id/status", appointmentController.updateStatus);
 
 // Lấy chi tiết lịch hẹn theo appointment_id
