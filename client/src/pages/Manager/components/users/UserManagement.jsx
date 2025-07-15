@@ -1,10 +1,14 @@
 // File: client/src/pages/Manager/components/UserManagement.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Search } from "lucide-react";
 import UserTable from "./UserTable";
-import Pagination from "../../../components/common/Pagination";
-import usePagination from "../../../hooks/usePagination";
-import { getUsers } from "../../../services/api";
+import Pagination from "../../../../components/common/Pagination";
+import ErrorAlert from "../../../../components/common/ErrorAlert";
+import TableHeader from "../../../../components/common/TableHeader";
+import SearchAndFilter from "../../../../components/common/SearchAndFilter";
+import EmptyState from "../../../../components/common/EmptyState";
+import LoadingSpinner from "../../../../components/common/LoadingSpinner";
+import usePagination from "../../../../hooks/usePagination";
+import { getUsers } from "../../../../services/api";
 
 const roleMap = {
   Patient: "Bệnh nhân",
@@ -13,6 +17,11 @@ const roleMap = {
   "Registration-staff": "Nhân viên tiếp nhận",
   Manager: "Quản lý",
 };
+
+const roleOptions = Object.entries(roleMap).map(([key, label]) => ({
+  value: key,
+  label,
+}));
 
 const getRoleLabel = (role) => roleMap[role] || role || "Chưa xác định";
 
@@ -57,12 +66,12 @@ const UserManagement = () => {
     totalItems,
     currentData: currentUsers,
     goToPage,
-    resetToFirstPage,
+    // resetToFirstPage,
   } = usePagination(filteredUsers, 5);
 
-  useEffect(() => {
-    resetToFirstPage();
-  }, []);
+  // useEffect(() => {
+  //   resetToFirstPage();
+  // }, []);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -116,108 +125,70 @@ const UserManagement = () => {
     alert("Chức năng thêm người dùng đang được phát triển");
   };
 
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedRole("all");
+  };
+
+  const getSubtitle = () => {
+    if (totalItems === 0) return "Không có dữ liệu người dùng";
+    const filterText = searchTerm || selectedRole !== "all" ? " (đã lọc)" : "";
+    return `Hiển thị ${totalItems} người dùng${filterText}`;
+  };
+
+  const getEmptyMessage = () => {
+    if (searchTerm || selectedRole !== "all") {
+      return "Không tìm thấy người dùng phù hợp với bộ lọc";
+    }
+    return "Không có dữ liệu người dùng";
+  };
+
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
-          ))}
-        </div>
+      <div className="bg-white rounded-lg shadow-sm border">
+        <LoadingSpinner
+          message="Đang tải danh sách người dùng..."
+          variant="inline"
+          size="md"
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border p-6 text-center">
-        <p className="text-red-600 mb-4">{error}</p>
-        <button
-          onClick={fetchUsers}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          Thử lại
-        </button>
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <ErrorAlert error={error} onRetry={fetchUsers} />
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Quản lý người dùng
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {totalItems > 0
-                ? `Hiển thị ${totalItems} người dùng ${
-                    searchTerm || selectedRole !== "all" ? "(đã lọc)" : ""
-                  }`
-                : "Không có dữ liệu người dùng"}
-            </p>
-          </div>
-          <button
-            onClick={handleAddUser}
-            className="bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" /> Thêm người dùng
-          </button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo username hoặc email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-
-          <div className="sm:w-48">
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="all">Tất cả vai trò</option>
-              {Object.entries(roleMap).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <TableHeader
+        title="Quản lý người dùng"
+        subtitle={getSubtitle()}
+        onAdd={handleAddUser}
+        addButtonText="Thêm người dùng"
+      >
+        <SearchAndFilter
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Tìm kiếm theo username hoặc email..."
+          filterValue={selectedRole}
+          onFilterChange={setSelectedRole}
+          filterOptions={roleOptions}
+          filterLabel="Tất cả vai trò"
+        />
+      </TableHeader>
 
       <div className="overflow-hidden">
         {currentUsers.length === 0 ? (
-          <div className="text-center py-12 px-6">
-            <p className="text-gray-500">
-              {searchTerm || selectedRole !== "all"
-                ? "Không tìm thấy người dùng phù hợp với bộ lọc"
-                : "Không có dữ liệu người dùng"}
-            </p>
-            {(searchTerm || selectedRole !== "all") && (
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setSelectedRole("all");
-                }}
-                className="mt-2 text-blue-600 hover:text-blue-500 text-sm"
-              >
-                Xóa bộ lọc
-              </button>
-            )}
-          </div>
+          <EmptyState
+            message={getEmptyMessage()}
+            showClearFilter={searchTerm || selectedRole !== "all"}
+            onClearFilter={handleClearFilters}
+          />
         ) : (
           <>
             <UserTable

@@ -1,17 +1,17 @@
-import { FileText } from "lucide-react";
+import { FileText, Clock, DollarSign, Receipt } from "lucide-react";
 import { useRegistrationStaff } from "../../../hooks/appointments/useAppointment";
 import { getCurrentDate, formatDateVietnamese } from "../../../utils/dateUtil";
 import {
-  StatisticsCards,
   TabNavigation,
-  SearchBar,
   RequestCard,
   HistoryCard,
-  EmptyState,
-  ErrorMessage,
-  LoadingSpinner,
 } from "../../../components/registration/RegistrationComponents";
-
+import ErrorAlert from "../../../components/common/ErrorAlert";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import EmptyState from "../../../components/common/EmptyState";
+import TableHeader from "../../../components/common/TableHeader";
+import SearchAndFilter from "../../../components/common/SearchAndFilter";
+import StatsCard from "../../../components/common/StatsCard";
 const RegistrationStaff = () => {
   const {
     // State
@@ -55,7 +55,7 @@ const RegistrationStaff = () => {
         </div>
 
         {/* Error Message */}
-        {error && <ErrorMessage error={error} onRetry={fetchData} />}
+        {error && <ErrorAlert error={error} onRetry={fetchData} />}
 
         {/* Loading Spinner */}
         {loading && <LoadingSpinner />}
@@ -68,27 +68,43 @@ const RegistrationStaff = () => {
           {activeTab === "process" && (
             <div className="space-y-6">
               {/* Statistics Cards */}
-              <StatisticsCards stats={stats} formatCurrency={formatCurrency} />
-
-              {/* Search Bar */}
-              <div className="bg-white rounded-lg shadow-sm border p-4">
-                <SearchBar
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  placeholder="Tìm kiếm theo tên bệnh nhân, số điện thoại, dịch vụ..."
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatsCard
+                  title="Đơn chờ xử lý"
+                  value={stats.pending_requests}
+                  icon={<Clock className="h-6 w-6" />}
+                  iconColor="text-orange-600"
+                  iconBg="bg-orange-50"
+                />
+                <StatsCard
+                  title="Doanh thu hôm nay"
+                  value={formatCurrency(stats.today_revenue)}
+                  subtitle="Tổng tiền thu được hôm nay"
+                  icon={<DollarSign className="h-6 w-6" />}
+                  iconColor="text-green-600"
+                  iconBg="bg-green-50"
+                />
+                <StatsCard
+                  title="Đã xử lý hôm nay"
+                  value={stats.processed_today}
+                  subtitle="Số đơn đã hoàn thành hôm nay"
+                  icon={<Receipt className="h-6 w-6" />}
+                  iconColor="text-blue-600"
+                  iconBg="bg-blue-50"
                 />
               </div>
+              <SearchAndFilter
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                placeholder="Tìm kiếm theo tên bệnh nhân, số điện thoại, dịch vụ..."
+              />
 
               {/* Test Requests List */}
               <div className="bg-white rounded-lg shadow-sm border">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Danh sách đơn xét nghiệm chờ xử lý
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Tổng cộng {filteredRequests.length} đơn
-                  </p>
-                </div>
+                <TableHeader
+                  title="Danh sách đơn xét nghiệm chờ xử lý"
+                  subtitle={`Tổng cộng ${filteredRequests.length} đơn`}
+                />
 
                 <div className="p-6">
                   {filteredRequests.length === 0 ? (

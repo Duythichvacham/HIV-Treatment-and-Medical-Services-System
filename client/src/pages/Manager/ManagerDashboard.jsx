@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Users, Calendar, DollarSign, Activity, Plus } from "lucide-react";
-import StatsCard from "./components/StatsCard";
-import UserManagement from "./components/UserManagement";
-import ServiceManagement from "./components/ServiceManagement";
-import LoadingSpinner from "./components/LoadingSpinner";
-import TabNavigation from "./components/TabNavigation";
+import StatsCard from "../../components/common/StatsCard";
+import UserManagement from "./components/users/UserManagement";
+import ServiceManagement from "./components/services/ServiceManagement";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import TabNavigation from "../../components/common/TabNavigation";
+import ErrorAlert from "../../components/common/ErrorAlert";
 import { getUsers, getManagerServices } from "../../services/api";
 
 const ManagerDashboard = () => {
@@ -22,52 +23,51 @@ const ManagerDashboard = () => {
     { id: "revenue", label: "Doanh thu", icon: DollarSign },
     { id: "system", label: "Hệ thống", icon: Activity },
   ];
+  const fetchStatistics = async () => {
+    try {
+      setLoading(true);
+
+      // Lấy dữ liệu users từ API có sẵn
+      const usersResponse = await getUsers();
+      const usersData = usersResponse.data || [];
+
+      // Lấy dữ liệu services từ API
+      const servicesData = await getManagerServices();
+      const services = servicesData.data || [];
+      const totalServices = services.length;
+      const activeServices = services.filter(
+        (service) => service.is_active
+      ).length;
+
+      // Tính toán statistics từ dữ liệu users
+      const totalUsers = usersData.length;
+      const activeUsers = usersData.filter(
+        (user) => user.status === "active"
+      ).length;
+
+      // Mock data cho các thống kê khác (chưa có API)
+      const mockStats = {
+        totalUsers,
+        activeUsers,
+        totalAppointments: 2, // Mock data
+        completedAppointments: 1, // Mock data
+        totalRevenue: 128000000, // Mock data
+        revenueYear: 2024,
+        totalServices,
+        activeServices,
+      };
+
+      setStats(mockStats);
+    } catch (err) {
+      console.error("Error fetching statistics:", err);
+      setError("Không thể tải dữ liệu thống kê");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch statistics data
   useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoading(true);
-
-        // Lấy dữ liệu users từ API có sẵn
-        const usersResponse = await getUsers();
-        const usersData = usersResponse.data || [];
-
-        // Lấy dữ liệu services từ API
-        const servicesData = await getManagerServices();
-        const services = servicesData.data || [];
-        const totalServices = services.length;
-        const activeServices = services.filter(
-          (service) => service.is_active
-        ).length;
-
-        // Tính toán statistics từ dữ liệu users
-        const totalUsers = usersData.length;
-        const activeUsers = usersData.filter(
-          (user) => user.status === "active"
-        ).length;
-
-        // Mock data cho các thống kê khác (chưa có API)
-        const mockStats = {
-          totalUsers,
-          activeUsers,
-          totalAppointments: 2, // Mock data
-          completedAppointments: 1, // Mock data
-          totalRevenue: 128000000, // Mock data
-          revenueYear: 2024,
-          totalServices,
-          activeServices,
-        };
-
-        setStats(mockStats);
-      } catch (err) {
-        console.error("Error fetching statistics:", err);
-        setError("Không thể tải dữ liệu thống kê");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchStatistics();
   }, []);
 
@@ -186,9 +186,7 @@ const ManagerDashboard = () => {
         {/* Tab Content */}
         <div className="mt-6">
           {error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-600">{error}</p>
-            </div>
+            <ErrorAlert error={error} onRetry={fetchStatistics} />
           ) : (
             renderTabContent()
           )}
