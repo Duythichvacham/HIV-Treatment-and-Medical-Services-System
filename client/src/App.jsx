@@ -29,6 +29,7 @@ import NewsPage from "./pages/Guest/Home/NewsPage";
 import PatientProfile from "./pages/Patient/PatientProfile";
 import PatientRegister from "./pages/Auth/PatientRegister";
 import PaymentResult from "./pages/Payment/PaymentResult";
+import Manager from "./pages/Manager/ManagerDashboard";
 function App() {
   return (
     <AuthProvider>
@@ -93,6 +94,14 @@ function AppContent() {
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Doctor">
                 <DoctorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager"
+            element={
+              <ProtectedRoute staffOnly={true} requiredRole="Manager">
+                <Manager />
               </ProtectedRoute>
             }
           />

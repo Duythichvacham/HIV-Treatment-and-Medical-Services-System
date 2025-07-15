@@ -25,6 +25,17 @@ exports.getAllServices = async () => {
   return result.recordset;
 };
 
+//GET, lấy tất cả dịch vụ cho manager (bao gồm cả inactive)
+exports.getAllServicesForManager = async () => {
+  const pool = await poolPromise;
+  const result = await pool.request().query(`
+      SELECT service_id, name, service_type, price, description, is_active
+      FROM Services 
+      ORDER BY service_type, name
+    `);
+  return result.recordset;
+};
+
 //----------------------------
 exports.createServiceDB = async (name, service_type, description, price) => {
   const pool = await poolPromise;

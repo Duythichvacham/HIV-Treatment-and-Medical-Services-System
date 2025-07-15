@@ -3,7 +3,7 @@ import { User, FileText, MessageCircle } from "lucide-react";
 import ExamAppointment from "./AppointmentTypes/ExamAppointment";
 import TestAppointment from "./AppointmentTypes/TestAppointment";
 import ConsultAppointment from "./AppointmentTypes/ConsultAppointment";
-
+import TabNavigation from "../../../components/common/TabNavigation";
 const Appointment = () => {
   const [activeTab, setActiveTab] = useState("exam");
 
@@ -43,27 +43,13 @@ const Appointment = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="flex border-b border-gray-200">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-6 py-4 font-medium text-sm border-b-2 ${
-                    activeTab === tab.id
-                      ? "border-purple-500 text-purple-600 bg-purple-50"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {
+          <TabNavigation
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        }
 
         {/* Render the active tab content */}
         {renderTabContent()}
