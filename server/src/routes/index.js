@@ -9,7 +9,6 @@ const labStaffRouter = require("./lab-staff");
 const doctorRouter = require("./doctor");
 const publicRouter = require("./public");
 const registrationRouter = require("./registration");
-const queueRouter = require("./queue");
 const slotRouter = require("./slot");
 const arvRegimenRouter = require("./arvRegimen");
 const clinicalRouter = require("./clinical");
@@ -27,11 +26,6 @@ function route(app) {
    * Prefix: api/public/
    */
   app.use("/api/public", publicRouter);
-  /**
-   * API auth
-   * Prefix: api/auth
-   */
-  app.use("/api/auth", authRouter);
   /**
    * API users
    * Prefix: api/v1/users
@@ -69,11 +63,6 @@ function route(app) {
   // Registration Staff routes - temporarily bypass auth for testing
   app.use("/api/v1/registrations", authMiddleware, registrationRouter);
 
-  /**
-   * API queue - Quản lý số thứ tự
-   * Prefix: api/v1/queue
-   */
-  app.use("/api/v1/queue", authMiddleware, queueRouter);
   /**
    * API public
    * Prefix: api/public/

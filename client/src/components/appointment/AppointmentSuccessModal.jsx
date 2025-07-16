@@ -2,6 +2,10 @@ import { createPortal } from "react-dom";
 
 const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
   if (!isOpen || !appointmentData) return null;
+
+  // Debug: Log để kiểm tra dữ liệu
+  console.log("🔍 AppointmentSuccessModal - appointmentData:", appointmentData);
+
   // Destructure appointment data with unique local names to avoid redeclaration
   const {
     queueNumber: _queueNumber,
@@ -14,6 +18,24 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
     isDoctor: _isDoctor,
   } = appointmentData;
 
+  // Debug: Log queue number cụ thể
+  console.log(
+    "🔍 AppointmentSuccessModal - queueNumber:",
+    _queueNumber,
+    typeof _queueNumber
+  );
+
+  // Xác định loại đặt lịch dựa trên dữ liệu
+  const isTestAppointment =
+    !_isDoctor &&
+    (_serviceName?.toLowerCase().includes("xét nghiệm") ||
+      _serviceName?.toLowerCase().includes("test"));
+  const isExamAppointment =
+    _isDoctor &&
+    (_serviceName?.toLowerCase().includes("khám") ||
+      _serviceName?.toLowerCase().includes("exam"));
+  const hasValidQueueNumber = _queueNumber && _queueNumber > 0;
+
   const cleanTime = _time
     ? _time.replace(/\s*\([^)]*chỗ trống[^)]*\)/, "").trim()
     : "";
@@ -24,7 +46,13 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
       <div className="bg-white w-11/12 md:w-2/3 lg:w-1/2 rounded-xl shadow-xl overflow-hidden">
         {/* Header with gradient */}
         <div className="flex justify-between items-center bg-gradient-to-r from-green-600 to-blue-600 px-6 py-4">
-          <h2 className="text-white text-2xl font-semibold">Phiếu Khám Bệnh</h2>
+          <h2 className="text-white text-2xl font-semibold">
+            {isTestAppointment
+              ? "Phiếu Xét Nghiệm"
+              : isExamAppointment
+              ? "Phiếu Khám Bệnh"
+              : "Phiếu Đặt Lịch"}
+          </h2>
           <button
             onClick={onClose}
             className="text-white hover:text-gray-200 text-2xl leading-none"
@@ -36,9 +64,25 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
         <div className="p-8 space-y-8">
           {" "}
           <div className="text-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-6 text-lg">
-            <div>
-              <strong className="font-medium">Số thứ tự:</strong> {_queueNumber}
-            </div>
+            {/* Hiển thị số thứ tự chỉ khi có queue number hợp lệ */}
+            {hasValidQueueNumber && (
+              <div>
+                <strong className="font-medium">Số thứ tự:</strong>{" "}
+                {_queueNumber}
+              </div>
+            )}
+            {/* Thông báo khi không có số thứ tự cho đặt lịch khám/xét nghiệm */}
+            {!hasValidQueueNumber &&
+              (isTestAppointment || isExamAppointment) && (
+                <div className="col-span-full">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-yellow-800 text-sm">
+                      <strong>Lưu ý:</strong> Số thứ tự sẽ được cấp khi bạn đến
+                      làm thủ tục tại quầy lễ tân.
+                    </p>
+                  </div>
+                </div>
+              )}
             <div>
               <strong className="font-medium">Dịch vụ:</strong> {_serviceName}
             </div>
@@ -56,7 +100,11 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
             </div>
             <div>
               <strong className="font-medium">Giờ:</strong>{" "}
-              {_isDoctor ? cleanTime : "Trong giờ làm việc"}
+              {_isDoctor
+                ? cleanTime
+                : isTestAppointment
+                ? "7:00 - 11:30 hoặc 13:30 - 17:00"
+                : _time || "Sẽ được thông báo sau"}
             </div>
             <div className="col-span-full sm:col-span-2">
               <strong className="font-medium">Phí khám:</strong>{" "}
@@ -68,6 +116,12 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
               <li>Đến trước giờ hẹn ít nhất 15 phút.</li>
               <li>Mang theo CCCD/CMND và thẻ bảo hiểm.</li>
               <li>Giữ lại phiếu để check-in.</li>
+              {isTestAppointment && (
+                <li>Chuẩn bị nhịn đói 8-12 giờ nếu xét nghiệm máu.</li>
+              )}
+              {isExamAppointment && (
+                <li>Chuẩn bị đầy đủ hồ sơ bệnh án (nếu có).</li>
+              )}
               <li>Liên hệ Hotline nếu cần hỗ trợ.</li>
             </ul>
           </div>

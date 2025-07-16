@@ -51,8 +51,8 @@ const ManagerDashboard = () => {
         activeUsers,
         totalAppointments: 2, // Mock data
         completedAppointments: 1, // Mock data
-        totalRevenue: 128000000, // Mock data
-        revenueYear: 2024,
+        totalRevenue: 120000, // Mock data
+        revenueYear: 2025,
         totalServices,
         activeServices,
       };
