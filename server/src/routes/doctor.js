@@ -13,7 +13,7 @@ router.get("/", doctorController.getDoctors);
 router.get("/by-account/:accountId", doctorController.getDoctorByAccountId);
 
 // GET, lấy kết quả xét nghiệm gần nhất của bệnh nhân
-router.get("/latest-tests/:patientId", doctorController.getLatestTestResults);
+// router.get("/latest-tests/:patientId", doctorController.getLatestTestResults);
 
 // POST, tạo test request cho bệnh nhân
 router.post("/test-requests", doctorController.createTestRequest);
@@ -24,7 +24,7 @@ router.get(
   doctorController.getCurrentTestRequest
 );
 
-router.get("/prescriptionDetails", doctorController.getPrescriptionDetails);
+// router.get("/prescriptionDetails", doctorController.getPrescriptionDetails);
 
 // GET, lấy danh sách test types (4 loại chính)
 router.get("/test-types", doctorController.getTestTypes);
@@ -54,9 +54,9 @@ router.get(
   doctorController.getPrescriptionExamData
 );
 
-router.get(
-  "/prescription/detail/:prescriptionId",
-  doctorController.getPrescriptionDetail
-);
+// router.get(
+//   "/prescription/detail/:prescriptionId",
+//   doctorController.getPrescriptionDetail
+// );
 
 module.exports = router;
