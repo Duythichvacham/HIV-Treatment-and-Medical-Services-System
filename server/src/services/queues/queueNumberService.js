@@ -87,7 +87,10 @@ const getMaxNumber = (queue_type) => {
  * @returns {string} Formatted date
  */
 const formatQueueDate = (date) => {
-  return date.toISOString().split("T")[0];
+  // Tạo date object cho múi giờ Việt Nam (UTC+7)
+  const vietnamOffset = 7 * 60 * 60 * 1000; // 7 giờ tính bằng milliseconds
+  const vietnamDate = new Date(date.getTime() + vietnamOffset);
+  return vietnamDate.toISOString().split("T")[0];
 };
 
 /**

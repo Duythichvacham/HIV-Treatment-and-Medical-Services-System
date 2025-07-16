@@ -299,7 +299,7 @@ export const examApi = {
       console.log(
         "[examApi.complete] Updating appointment status to completed"
       );
-      const statusResponse = await api.post(
+      const statusResponse = await api.patch(
         `/api/v1/appointments/${appointmentId}/status`,
         { status: "completed" }
       );

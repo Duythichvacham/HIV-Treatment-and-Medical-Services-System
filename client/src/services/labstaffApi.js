@@ -28,7 +28,7 @@ export const fetchDoctorOrders = async ({ date }) => {
 
 export const updateLabAppointmentStatus = async (appointmentId, status) => {
   try {
-    const response = await api.post(
+    const response = await api.patch(
       `/api/v1/appointments/${appointmentId}/status`,
       { status }
     );
