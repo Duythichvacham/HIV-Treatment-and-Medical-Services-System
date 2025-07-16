@@ -172,7 +172,6 @@ exports.createTestResultAndComplete = async ({
         );
       result = insert.recordset[0];
     }
-    // Không return ở đây, tiếp tục kiểm tra completion phía dưới
   }
 
   // 1. Lấy appointment_id và request_id từ test_note_id
@@ -671,11 +670,11 @@ exports.getLatestTestResultsForPatient = async (patientId) => {
     FROM Patients p
     WHERE p.patient_id = @patient_id
   `;
-  
+
   const result = await pool.request()
     .input("patient_id", sql.Int, patientId)
     .query(query);
-  
+
   return result.recordset[0];
 };
 
@@ -703,11 +702,11 @@ exports.getAllTestResultsForPatient = async (patientId) => {
     AND tr.test_type_id IN (1, 2) -- CD4 and Viral Load only
     ORDER BY tr.created_at DESC
   `;
-  
+
   const result = await pool.request()
     .input("patient_id", patientId)
     .query(query);
-  
+
   return result.recordset;
 };
 
