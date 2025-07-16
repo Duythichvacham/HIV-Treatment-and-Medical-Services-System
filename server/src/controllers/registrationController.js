@@ -1,4 +1,4 @@
-const registrationService = require("../services/registrations/registrationService");
+const registrationService = require("../services/registrationService");
 
 // GET /api/v1/test-requests/pending - Lấy danh sách TestRequests chờ xử lý
 exports.getPendingTestRequests = async (req, res, next) => {

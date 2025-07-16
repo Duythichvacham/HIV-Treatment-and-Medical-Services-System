@@ -1,5 +1,5 @@
-const { poolPromise, sql } = require("../../config/db");
-const queueService = require("../queues/queueService");
+const { poolPromise, sql } = require("../config/db");
+const queueService = require("./queues/queueService");
 // ==================== VALIDATION FUNCTIONS ====================
 
 /**
