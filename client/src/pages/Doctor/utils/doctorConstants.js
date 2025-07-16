@@ -54,10 +54,7 @@ export const API_ENDPOINTS = {
     UPDATE_STATUS: (appointmentId) =>
       `/api/v1/appointments/${appointmentId}/status`,
   },
-  PATIENTS: {
-    DETAILS: (patientId) => `/api/v1/patients/${patientId}/details`,
-    EXAM_HISTORY: (patientId) => `/api/v1/patients/${patientId}/exam-history`,
-  },
+
   EXAMS: {
     CURRENT: (patientId) => `/api/v1/exams/current/${patientId}`,
     SAVE: (appointmentId) => `/api/v1/exams/${appointmentId}`,

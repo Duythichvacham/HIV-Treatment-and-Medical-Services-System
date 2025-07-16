@@ -77,8 +77,8 @@ const getPrescriptionExamData = async (req, res) => {
     );
 
     if (!prescriptionData) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: "No prescription data found for this appointment",
       });
     }

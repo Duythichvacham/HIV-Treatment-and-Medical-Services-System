@@ -1,31 +1,27 @@
-import apiClient from "./appointmentApi";
-import { API_ENDPOINTS } from "../utils/constants";
+// import apiClient from "./appointmentApi";
+import { API_ENDPOINTS } from "../utils/doctorConstants";
+import api from "../../../services/api";
 
 export const examApi = {
   // Get current exam data
   getCurrent: async (patientId, appointmentId = null) => {
     const url = API_ENDPOINTS.EXAMS.CURRENT(patientId);
     const params = appointmentId ? { appointment_id: appointmentId } : {};
-    const response = await apiClient.get(url, { params });
+    const response = await api.get(url, { params });
     return response.data;
   },
 
   // Get exam data by appointment ID (for loading saved temp data)
-  getExamData: async (appointmentId) => {
-    // Use the clinical exam endpoint to get existing exam data
-    const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
-    const response = await apiClient.get(url);
-    return response.data;
-  },
+  // getExamData: async (appointmentId) => {
+  //   // Use the clinical exam endpoint to get existing exam data
+  //   const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
+  //   const response = await api.get(url);
+  //   return response.data;
+  // },
 
   // Get saved prescription and clinical data for continuing exam
   getSavedExamData: async (appointmentId) => {
     try {
-      console.log(
-        "[examApi.getSavedExamData] Loading saved data for appointment:",
-        appointmentId
-      );
-
       console.log("[examApi.getSavedExamData] API URLs:", {
         clinicalURL: `/api/v1/clinical/clinical-exams/${appointmentId}`,
         prescriptionURL: `/api/v1/prescriptions/${appointmentId}`,
@@ -33,44 +29,18 @@ export const examApi = {
 
       // Load both clinical exam and prescription data
       const [clinicalResponse, prescriptionResponse] = await Promise.all([
-        apiClient.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
-        apiClient.get(`/api/v1/prescriptions/${appointmentId}`),
+        api.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
+        api.get(`/api/v1/prescriptions/${appointmentId}`),
       ]);
 
       // Extract prescription_details and rename to match expected format
       const clinicalData = clinicalResponse.data?.data || null;
       const prescriptionData = prescriptionResponse.data?.data || null;
 
-      // Log detailed structure of the prescription data
-      console.log("[examApi.getSavedExamData] Clinical data structure:", {
-        data: clinicalData,
-        vital_signs: {
-          huyet_ap: clinicalData?.huyet_ap,
-          mach: clinicalData?.mach,
-          nhiet_do: clinicalData?.nhiet_do,
-        },
-      });
-
       // Map prescriptionDetails to prescription_details for consistency
       if (prescriptionData && prescriptionData.prescriptionDetails) {
-        console.log(
-          "[examApi.getSavedExamData] Found prescriptionDetails array, remapping to prescription_details"
-        );
         prescriptionData.prescription_details =
           prescriptionData.prescriptionDetails;
-
-        // Log detailed drug information for debugging
-        console.log(
-          "[examApi.getSavedExamData] Prescription drugs summary:",
-          prescriptionData.prescription_details.map((d) => ({
-            drug_name: d.drug_name,
-            notes: d.notes,
-            is_arv:
-              d.notes &&
-              (d.notes.includes("Phác đồ chính") ||
-                d.notes.includes("Phác đồ hiện tại")),
-          }))
-        );
       }
 
       return {
@@ -128,7 +98,7 @@ export const examApi = {
       };
 
       console.log("[examApi.save] Saving clinical exam:", clinicalExamData);
-      const clinicalResponse = await apiClient.post(
+      const clinicalResponse = await api.post(
         `/api/v1/clinical/clinical-exams`,
         clinicalExamData
       );
@@ -287,7 +257,7 @@ export const examApi = {
         };
 
         console.log("[examApi.save] Saving prescription:", prescriptionData);
-        prescriptionResponse = await apiClient.post(
+        prescriptionResponse = await api.post(
           `/api/v1/prescriptions/`,
           prescriptionData
         );
@@ -329,7 +299,7 @@ export const examApi = {
       console.log(
         "[examApi.complete] Updating appointment status to completed"
       );
-      const statusResponse = await apiClient.post(
+      const statusResponse = await api.post(
         `/api/v1/appointments/${appointmentId}/status`,
         { status: "completed" }
       );
@@ -354,50 +324,43 @@ export const examApi = {
   // Get exam by ID
   getById: async (examId) => {
     const url = `/api/v1/doctors/exam-detail/${examId}`;
-    const response = await apiClient.get(url);
-    return response.data;
-  },
-
-  // Delete exam (if needed)
-  remove: async (examId) => {
-    const url = `/api/v1/doctors/exam-detail/${examId}`;
-    const response = await apiClient.delete(url);
+    const response = await api.get(url);
     return response.data;
   },
 
   // Helper function to parse ARV regimen components into drugs array
-  parseRegimenComponents: (components) => {
-    if (!components) return [];
+  // parseRegimenComponents: (components) => {
+  //   if (!components) return [];
 
-    // Split components by "+" and clean up
-    const drugComponents = components.split("+").map((drug) => drug.trim());
+  //   // Split components by "+" and clean up
+  //   const drugComponents = components.split("+").map((drug) => drug.trim());
 
-    // Parse each drug component to extract name and dosage
-    return drugComponents.map((drugComponent) => {
-      // Pattern to match drug name and dosage like "Tenofovir 300mg"
-      const match = drugComponent.match(/^(.+?)\s+(\d+mg)$/);
+  //   // Parse each drug component to extract name and dosage
+  //   return drugComponents.map((drugComponent) => {
+  //     // Pattern to match drug name and dosage like "Tenofovir 300mg"
+  //     const match = drugComponent.match(/^(.+?)\s+(\d+mg)$/);
 
-      if (match) {
-        const [, drugName, dosage] = match;
-        return {
-          drug_name: drugName.trim(),
-          dosage: dosage,
-          frequency: "1 lần/ngày", // Default frequency
-          duration_days: 30, // Default duration
-          usage_instructions: "",
-          notes: "",
-        };
-      } else {
-        // If no dosage pattern, just use the drug name
-        return {
-          drug_name: drugComponent,
-          dosage: "",
-          frequency: "1 lần/ngày",
-          duration_days: 30,
-          usage_instructions: "",
-          notes: "",
-        };
-      }
-    });
-  },
+  //     if (match) {
+  //       const [, drugName, dosage] = match;
+  //       return {
+  //         drug_name: drugName.trim(),
+  //         dosage: dosage,
+  //         frequency: "1 lần/ngày", // Default frequency
+  //         duration_days: 30, // Default duration
+  //         usage_instructions: "",
+  //         notes: "",
+  //       };
+  //     } else {
+  //       // If no dosage pattern, just use the drug name
+  //       return {
+  //         drug_name: drugComponent,
+  //         dosage: "",
+  //         frequency: "1 lần/ngày",
+  //         duration_days: 30,
+  //         usage_instructions: "",
+  //         notes: "",
+  //       };
+  //     }
+  //   });
+  // },
 };

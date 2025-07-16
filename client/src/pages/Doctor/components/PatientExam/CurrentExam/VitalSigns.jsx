@@ -7,7 +7,7 @@ import {
   Ruler,
   TrendingUp,
 } from "lucide-react";
-import { formatBMI, getBMIStatus } from "../../../utils/formatters";
+import { formatBMI, getBMIStatus } from "../../../utils/doctorFormatters";
 
 const VitalSigns = ({
   vitalSigns,

@@ -1,5 +1,5 @@
 import React from "react";
-import { EXAM_TABS } from "../../utils/constants";
+import { EXAM_TABS } from "../../utils/doctorConstants";
 
 const ExamTabs = ({ activeTab, onTabChange, hasCurrentExam = true }) => {
   const tabs = [

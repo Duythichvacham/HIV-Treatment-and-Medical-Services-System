@@ -3,7 +3,11 @@ const router = express.Router();
 const testController = require("../controllers/testController");
 const testService = require("../services/testService");
 const emailController = require("../controllers/emailController");
+const testControllerV2 = require("../controllers/testControllerV2");
 
+router.get("/appointments/test", testControllerV2.getAppointments);
+router.get("/appointments/test-request", testControllerV2.getTestRequests);
+router.post("/test/results", testControllerV2.saveTestResults);
 
 router.get("/", testController.getLabQueue);
 
@@ -28,31 +32,49 @@ router.get("/shifts", testController.getLabStaffShifts);
 router.get("/current-shift", testController.getCurrentLabStaffShift);
 
 // PATCH /api/v1/test-requests/:id/status
-router.patch("/test-requests/:id/status", testController.updateTestRequestExamStatus);
+router.patch(
+  "/test-requests/:id/status",
+  testController.updateTestRequestExamStatus
+);
 
 // POST /api/v1/lab/test-notes
 router.post("/test-notes", testController.createTestNote);
 
 // GET /api/v1/lab/test-results/:test_note_id
-router.get("/test-results/:test_note_id", testController.getTestResultsByTestNoteId);
+router.get(
+  "/test-results/:test_note_id",
+  testController.getTestResultsByTestNoteId
+);
 
 // GET /api/v1/lab/test-notes/appointment/:appointment_id
-router.get("/test-notes/appointment/:appointment_id", testController.getTestNotesByAppointment);
+router.get(
+  "/test-notes/appointment/:appointment_id",
+  testController.getTestNotesByAppointment
+);
 
 // PATCH /api/v1/lab/test-notes/:test_note_id/notes
-router.patch("/test-notes/:test_note_id/notes", testController.updateTestNoteNotes);
+router.patch(
+  "/test-notes/:test_note_id/notes",
+  testController.updateTestNoteNotes
+);
 
 // PATCH /api/v1/lab/test-notes/:test_note_id/datetime
-router.patch("/test-notes/:test_note_id/datetime", testController.updateTestNoteDatetime);
+router.patch(
+  "/test-notes/:test_note_id/datetime",
+  testController.updateTestNoteDatetime
+);
 
 // API lấy kết quả CD4/VL mới nhất theo patient_id
-router.get('/test-latest-results/:patientId', testController.getLatestTestResultsForPatient);
+router.get(
+  "/test-latest-results/:patientId",
+  testController.getLatestTestResultsForPatient
+);
 
-router.post('/send-test-result', emailController.sendTestResult);
+router.post("/send-test-result", emailController.sendTestResult);
 
-router.post('/send-reminder', emailController.sendAllReminders);
+router.post("/send-reminder", emailController.sendAllReminders);
 
-router.post('/test-results/bulk', testController.createBulkTestResults);
+router.post("/test-results/bulk", testController.createBulkTestResults);
 
 // Lấy danh sách test requests theo status
 router.get("/test-requests", testController.getTestRequestsByStatus);

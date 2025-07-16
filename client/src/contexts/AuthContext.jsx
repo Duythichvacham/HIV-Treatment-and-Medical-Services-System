@@ -120,6 +120,7 @@ export const AuthProvider = ({ children }) => {
 
       // Decode token to get user info
       const tokenPayload = JSON.parse(atob(response.token.split(".")[1]));
+      console.log("AuthContext: Decoded tokenPayload:", tokenPayload);
 
       // Validate user type if specified
       if (loginUserType === "staff" && tokenPayload.role === "Patient") {
@@ -161,6 +162,7 @@ export const AuthProvider = ({ children }) => {
         userData.patient_id = tokenPayload.patient_id;
       }
 
+      console.log("AuthContext: Saving userData:", userData);
       // Store in state and localStorage
       setToken(response.token);
       setUser(userData);

@@ -52,8 +52,8 @@ const getClinicalExamByAppointmentId = async (req, res) => {
     );
 
     if (!examData) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: "Clinical exam not found for this appointment",
       });
     }

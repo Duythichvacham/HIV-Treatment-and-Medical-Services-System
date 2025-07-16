@@ -6,8 +6,8 @@ import {
   formatPhone,
   getStatusColor,
   getStatusText,
-} from "../../utils/formatters";
-import { QUEUE_TYPES } from "../../utils/constants";
+} from "../../utils/doctorFormatters";
+import { QUEUE_TYPES } from "../../utils/doctorConstants";
 
 const PatientCard = ({ patient, index, type, onClick }) => {
   const getActionButton = () => {
