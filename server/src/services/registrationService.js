@@ -555,7 +555,4 @@ module.exports = {
   approveTestRequest,
   getRegistrationStatistics,
   getPaymentHistory,
-  // Export các service modules cho testing hoặc sử dụng riêng lẻ
-  testRequestService: registrationTestRequestService,
-  queueService: registrationQueueService,
 };
