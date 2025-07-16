@@ -180,7 +180,7 @@ export const login = async (username, password) => {
   console.log("🔄 API Call: login with username:", username);
 
   try {
-    const response = await api.post("/api/auth/login", {
+    const response = await api.post("/api/v1/auth/login", {
       username: username.trim(),
       password: password.trim(),
     });
@@ -203,25 +203,6 @@ export const login = async (username, password) => {
     throw error;
   }
 };
-
-/**
- * Get current user info from token (UNUSED - user info is decoded from JWT)
- * TODO: Remove this function if not needed or implement /api/auth/me endpoint
- */
-// export const getCurrentUser = async () => {
-//   const token = localStorage.getItem("token");
-//   if (!token) {
-//     throw new Error("No token found");
-//   }
-
-//   try {
-//     const response = await api.get("/api/auth/me");
-//     return response.data;
-//   } catch (error) {
-//     console.error("❌ getCurrentUser error:", error);
-//     throw error;
-//   }
-// };
 
 /**
  * Get doctor by ID
