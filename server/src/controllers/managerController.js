@@ -1,6 +1,9 @@
 const userService = require("../services/userService");
 const serviceService = require("../services/serviceService");
 const slotService = require("../services/slots/slotService");
+const workingShiftService = require("../services/workingShiftService");
+
+
 const getUsers = async (req, res) => {
   try {
     console.log("[MANAGER] getUsers called");
@@ -138,7 +141,151 @@ const createSlot = async (req, res) => {
   }
 };
 
+const getAllWorkingShift = async (req, res) => {
+  try {
+
+    const listWork = await workingShiftService.getAllWorkingShiftDB();
+   
+
+    return res.status(200).json({
+      message: "list working !",
+      data: listWork|| [],
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+const createShift = async (req, res) => {
+  try {
+    let {
+      doctor_id,
+      lab_staff_id,
+      registration_staff_id,
+      shift_date,
+      room_id,
+      is_active,
+    } = req.body;
+  const account_id = req.user.userId; 
+    // Ép kiểu is_active
+    if (typeof is_active === "string") {
+      if (is_active.toLowerCase() === "true") is_active = true;
+      else if (is_active.toLowerCase() === "false") is_active = false;
+    }
+
+    if (typeof is_active !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "`is_active` phải là true hoặc false",
+      });
+    }
+
+    const result = await workingShiftService.createShift({
+      account_id,
+      doctor_id,
+      lab_staff_id,
+      registration_staff_id,
+      shift_date,
+      room_id,
+      is_active,
+    }); 
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: "Tạo ca làm việc thành công!",
+    });
+  } catch (error) {
+    console.error("[API] createShift error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi thêm ca làm việc",
+    });
+  }
+};
+
+
+const updateShift = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const {
+      doctor_id,
+      lab_staff_id,
+      registration_staff_id,
+      shift_date,
+      room_id,
+      status,
+    } = req.body;
+
+
+    const updated = await workingShiftService.updateShift(id, {
+      doctor_id,
+      lab_staff_id,
+      registration_staff_id,
+      shift_date,
+      room_id,
+      status,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updated,
+      message: "Cập nhật ca làm việc thành công!",
+    });
+  } catch (error) {
+    console.error("[API] updateShift error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi cập nhật ca làm việc",
+    });
+  }
+};
+
+const setActiveShift = async (req, res) => {
+  try {
+    const id = req.params.id;
+    let { is_active } = req.body;
+
+    if (typeof is_active === "string") {
+      if (is_active.toLowerCase() === "true") is_active = true;
+      else if (is_active.toLowerCase() === "false") is_active = false;
+    }
+
+    if (typeof is_active !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "`is_active` phải là true hoặc false",
+      });
+    }
+
+    const updated = await workingShiftService.setActiveShift(id, is_active);
+
+    res.status(200).json({
+      success: true,
+      data: updated,
+      message: "Cập nhật trạng thái ca làm việc thành công!",
+    });
+  } catch (error) {
+    console.error("[API] setActiveShift error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi cập nhật trạng thái ca làm việc",
+    });
+  }
+};
+
+
+
+
+
 module.exports = {
+  getAllWorkingShift,
+    createShift,
+  updateShift,
+  setActiveShift,
   getUsers,
   createService,
   setActive,

@@ -72,7 +72,7 @@ function route(app) {
    * API ARV Regimens
    * Prefix: api/v1/arv-regimens
    */
-  app.use("/api/v1/arv-regimens", authMiddleware, arvRegimenRouter);
+  app.use("/api/v1/arv-regimens", authMiddleware , arvRegimenRouter);
   /**
    * API Clinical Exams
    * Prefix: api/v1/clinical-exams
@@ -90,6 +90,8 @@ function route(app) {
    * Prefix: api/v1/manager
    */
   app.use("/api/v1/managers", authMiddleware, managerRouter);
+
+
 }
 
 module.exports = route;
