@@ -216,8 +216,7 @@ CREATE TABLE BlogPosts (
     post_id INT PRIMARY KEY IDENTITY(1,1),
     title NVARCHAR(255) NOT NULL,
     content NVARCHAR(500),
-    author_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(acco unt_id),
-    is_educational BIT NOT NULL DEFAULT 0,
+    author_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
     published BIT NOT NULL DEFAULT 0
 );
