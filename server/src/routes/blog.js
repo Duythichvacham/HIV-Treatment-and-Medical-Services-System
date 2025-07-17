@@ -3,9 +3,9 @@ const router = express.Router();
 const blogController = require('../controllers/blogController');
 const authenticateToken = require('../middlewares/authMiddleware');
 
-router.post('/create', authenticateToken, blogController.createBlog);
+router.post('/', authenticateToken, blogController.createBlog);
 router.put('/:id', authenticateToken, blogController.updateBlog);
-router.delete('/:id', authenticateToken, blogController.deleteBlog);
+router.patch('/:id', authenticateToken, blogController.deleteBlog);
 router.get('/:id', blogController.getBlogById);
 router.get('/', blogController.getAllBlogs);
 
