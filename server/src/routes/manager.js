@@ -12,7 +12,7 @@ router.patch("/service/:id/status", managerController.setActive);
 //POST: api/v1/managers/slot
 router.post("/slot", managerController.createSlot);
 //GET : api/v1/managers/working-shift
-router.get("/working-shift" , managerController.getAllWorkingShift);
+router.get("/working-shift", managerController.getAllWorkingShift);
 //POST : api/v1/managers/working-shift
 router.post("/working-shift", managerController.createShift);
 
@@ -21,4 +21,6 @@ router.patch("/working-shift/update/:id", managerController.updateShift);
 
 //PATCH: api/v1/managers/working-shift/active/:id
 router.patch("/working-shift/active/:id", managerController.setActiveShift);
+// GET: api/v1/managers/working-shift/rooms
+router.get("/working-shift/room", managerController.getAvailableRooms);
 module.exports = router;

@@ -1,8 +1,8 @@
 const userService = require("../services/userService");
 const serviceService = require("../services/serviceService");
 const slotService = require("../services/slots/slotService");
+const roomService = require("../services/roomService");
 const workingShiftService = require("../services/workingShiftService");
-
 
 const getUsers = async (req, res) => {
   try {
@@ -143,21 +143,17 @@ const createSlot = async (req, res) => {
 
 const getAllWorkingShift = async (req, res) => {
   try {
-
     const listWork = await workingShiftService.getAllWorkingShiftDB();
-   
 
     return res.status(200).json({
       message: "list working !",
-      data: listWork|| [],
+      data: listWork || [],
     });
   } catch (error) {
     console.error("Error fetching users:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 const createShift = async (req, res) => {
   try {
@@ -169,7 +165,7 @@ const createShift = async (req, res) => {
       room_id,
       is_active,
     } = req.body;
-  const account_id = req.user.userId; 
+    const account_id = req.user.userId;
     // Ép kiểu is_active
     if (typeof is_active === "string") {
       if (is_active.toLowerCase() === "true") is_active = true;
@@ -191,7 +187,7 @@ const createShift = async (req, res) => {
       shift_date,
       room_id,
       is_active,
-    }); 
+    });
 
     res.status(201).json({
       success: true,
@@ -207,7 +203,6 @@ const createShift = async (req, res) => {
   }
 };
 
-
 const updateShift = async (req, res) => {
   try {
     const id = req.params.id;
@@ -219,7 +214,6 @@ const updateShift = async (req, res) => {
       room_id,
       status,
     } = req.body;
-
 
     const updated = await workingShiftService.updateShift(id, {
       doctor_id,
@@ -276,14 +270,34 @@ const setActiveShift = async (req, res) => {
     });
   }
 };
+// lấy ds room cho working shift
+const getAvailableRooms = async (req, res) => {
+  try {
+    const rooms = await roomService.getAvailableRooms();
+    if (!rooms || rooms.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy phòng nào",
+      });
+    }
 
-
-
-
+    res.status(200).json({
+      success: true,
+      rooms,
+      message: "Lấy danh sách phòng thành công",
+    });
+  } catch (error) {
+    console.error("[API] getAvailableRooms error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi lấy danh sách phòng",
+    });
+  }
+};
 
 module.exports = {
   getAllWorkingShift,
-    createShift,
+  createShift,
   updateShift,
   setActiveShift,
   getUsers,
@@ -291,4 +305,5 @@ module.exports = {
   setActive,
   createSlot,
   getAllServices,
+  getAvailableRooms,
 };

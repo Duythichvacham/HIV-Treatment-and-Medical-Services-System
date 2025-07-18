@@ -4,17 +4,17 @@ const { poolPromise } = require("../config/db");
 const getAllWorkingShiftDB = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`
-    SELECT [shift_id]
-          ,[account_id]
-          ,[doctor_id]
-          ,[lab_staff_id]
-          ,[registration_staff_id]
-          ,[shift_date]
-          ,[room_id]
-          ,[status]
-          ,[created_at]
-          ,[is_active]
-    FROM [HIV_HEALTH_CARE].[dbo].[WorkingShifts]
+    SELECT ws.shift_id
+          ,ws.account_id
+          ,ws.doctor_id
+          ,ws.shift_date
+          ,ws.room_id
+          ,ws.status
+          ,ws.created_at
+          ,ws.is_active
+          ,r.room_name
+    FROM WorkingShifts as ws 
+    LEFT JOIN Rooms as r ON ws.room_id = r.room_id
   `);
   return result.recordset;
 };
@@ -23,8 +23,6 @@ const getAllWorkingShiftDB = async () => {
 const createShift = async ({
   account_id,
   doctor_id,
-  lab_staff_id,
-  registration_staff_id,
   shift_date,
   room_id,
   is_active,
@@ -35,17 +33,12 @@ const createShift = async ({
     .request()
     .input("account_id", account_id ?? null)
     .input("doctor_id", doctor_id ?? null)
-    .input("lab_staff_id", lab_staff_id ?? null)
-    .input("registration_staff_id", registration_staff_id ?? null)
     .input("shift_date", shift_date)
     .input("room_id", room_id)
-    .input("is_active", is_active)
-    .query(`
+    .input("is_active", is_active).query(`
       INSERT INTO WorkingShifts (
         account_id,
         doctor_id,
-        lab_staff_id,
-        registration_staff_id,
         shift_date,
         room_id,
         is_active
@@ -54,8 +47,6 @@ const createShift = async ({
       VALUES (
         @account_id,
         @doctor_id,
-        @lab_staff_id,
-        @registration_staff_id,
         @shift_date,
         @room_id,
         @is_active
@@ -68,35 +59,19 @@ const createShift = async ({
 };
 
 // Cập nhật ca làm việc (không update is_active)
-const updateShift = async (
-  id,
-  {
-    
-    doctor_id,
-    lab_staff_id,
-    registration_staff_id,
-    shift_date,
-    room_id,
-    status,
-  }
-) => {
+const updateShift = async (id, { doctor_id, shift_date, room_id, status }) => {
   const pool = await poolPromise;
 
   const result = await pool
     .request()
     .input("id", id)
     .input("doctor_id", doctor_id ?? null)
-    .input("lab_staff_id", lab_staff_id ?? null)
-    .input("registration_staff_id", registration_staff_id ?? null)
     .input("shift_date", shift_date ?? null)
     .input("room_id", room_id ?? null)
-    .input("status", status ?? null)
-    .query(`
+    .input("status", status ?? null).query(`
       UPDATE WorkingShifts
       SET 
         doctor_id = COALESCE(@doctor_id, doctor_id),
-        lab_staff_id = COALESCE(@lab_staff_id, lab_staff_id),
-        registration_staff_id = COALESCE(@registration_staff_id, registration_staff_id),
         shift_date = COALESCE(@shift_date, shift_date),
         room_id = COALESCE(@room_id, room_id),
         status = COALESCE(@status, status)
@@ -115,8 +90,7 @@ const setActiveShift = async (id, is_active) => {
   const result = await pool
     .request()
     .input("id", id)
-    .input("is_active", is_active)
-    .query(`
+    .input("is_active", is_active).query(`
       UPDATE WorkingShifts
       SET is_active = @is_active
       WHERE shift_id = @id;
