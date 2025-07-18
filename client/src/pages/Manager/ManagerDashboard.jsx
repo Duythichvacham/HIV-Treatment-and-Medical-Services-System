@@ -6,12 +6,14 @@ import {
   Activity,
   Plus,
   FileText,
+  Pill,
 } from "lucide-react";
 import StatsCard from "../../components/common/StatsCard";
 import UserManagement from "./components/users/UserManagement";
 import ServiceManagement from "./components/services/ServiceManagement";
 import BlogManagement from "./components/blogs/BlogManagement";
 import WorkingShiftManagement from "./components/workingShifts/WorkingShiftManagement";
+import ARVRegimenManagement from "./components/arvRegimens/ARVRegimenManagement";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TabNavigation from "../../components/common/TabNavigation";
 import ErrorAlert from "../../components/common/ErrorAlert";
@@ -28,6 +30,7 @@ const ManagerDashboard = () => {
     { id: "users", label: "Người dùng", icon: Users },
     { id: "services", label: "Dịch vụ", icon: Activity },
     { id: "blogs", label: "Blog", icon: FileText },
+    { id: "arv-regimens", label: "ARV Regimens", icon: Pill },
     { id: "schedule", label: "Lịch làm việc", icon: Calendar },
     { id: "revenue", label: "Doanh thu", icon: DollarSign },
     { id: "system", label: "Hệ thống", icon: Activity },
@@ -99,6 +102,8 @@ const ManagerDashboard = () => {
         return <ServiceManagement />;
       case "blogs":
         return <BlogManagement />;
+      case "arv-regimens":
+        return <ARVRegimenManagement />;
       case "schedule":
         return <WorkingShiftManagement />;
       case "revenue":
