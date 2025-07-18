@@ -143,8 +143,7 @@ CREATE TABLE WorkingShifts (
 	registration_staff_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     shift_date DATE NOT NULL,-- phân ca cho bs theo ngày (các slots được cố định cho đặt lịch vì vậy làm cả ngày là full slots)
     room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id),-- nếu là regis thì không cần room
-    status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'canceled')) DEFAULT 'approved',
-    is_active BIT NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'cancelled')) DEFAULT 'approved',
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 

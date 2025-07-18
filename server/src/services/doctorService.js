@@ -47,6 +47,19 @@ const updateDoctorProfile = async (doctorId, updateData) => {
     console.error("[doctorService.updateDoctorProfile] Error:", error);
   }
 };
+// Get danh sách bác sĩ cho dropdown
+const getDoctorsForDropdown = async () => {
+  const pool = await poolPromise;
+  const result = await pool.request().query(`
+    SELECT 
+      d.doctor_id,
+      d.full_name as doctor_name
+    FROM Doctors d
+    INNER JOIN Accounts a ON d.account_id = a.account_id
+    WHERE a.status = 'active'
+   `);
+  return result.recordset;
+};
 // (GET, lấy danh sách bác sĩ)
 const getDoctors = async () => {
   const pool = await poolPromise;
@@ -345,4 +358,5 @@ module.exports = {
   getPrescriptionDetail,
   getDoctorProfile,
   updateDoctorProfile,
+  getDoctorsForDropdown,
 };

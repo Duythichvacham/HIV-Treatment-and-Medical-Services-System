@@ -8,7 +8,7 @@ router.get("/service", managerController.getAllServices);
 //POST: api/v1/managers/service
 router.post("/service", managerController.createService);
 //PATCH: api/v1/managers/service/{id}/status
-router.patch("/service/:id/status", managerController.setActive);
+// router.patch("/service/:id/status", managerController.setActive);
 //POST: api/v1/managers/slot
 router.post("/slot", managerController.createSlot);
 //GET : api/v1/managers/working-shift
@@ -20,7 +20,8 @@ router.post("/working-shift", managerController.createShift);
 router.patch("/working-shift/update/:id", managerController.updateShift);
 
 //PATCH: api/v1/managers/working-shift/active/:id
-router.patch("/working-shift/active/:id", managerController.setActiveShift);
+// router.patch("/working-shift/active/:id", managerController.setActiveShift);
 // GET: api/v1/managers/working-shift/rooms
-router.get("/working-shift/room", managerController.getAvailableRooms);
+router.get("/working-shift/rooms", managerController.getAvailableRooms);
+router.get("/working-shift/doctors", managerController.getDoctorsForDropdown);
 module.exports = router;

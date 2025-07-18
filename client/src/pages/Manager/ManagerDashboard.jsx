@@ -11,6 +11,7 @@ import StatsCard from "../../components/common/StatsCard";
 import UserManagement from "./components/users/UserManagement";
 import ServiceManagement from "./components/services/ServiceManagement";
 import BlogManagement from "./components/blogs/BlogManagement";
+import WorkingShiftManagement from "./components/workingShifts/WorkingShiftManagement";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TabNavigation from "../../components/common/TabNavigation";
 import ErrorAlert from "../../components/common/ErrorAlert";
@@ -25,7 +26,6 @@ const ManagerDashboard = () => {
   // Tabs configuration
   const tabs = [
     { id: "users", label: "Người dùng", icon: Users },
-    { id: "appointments", label: "Lịch hẹn", icon: Calendar },
     { id: "services", label: "Dịch vụ", icon: Activity },
     { id: "blogs", label: "Blog", icon: FileText },
     { id: "schedule", label: "Lịch làm việc", icon: Calendar },
@@ -95,28 +95,12 @@ const ManagerDashboard = () => {
     switch (activeTab) {
       case "users":
         return <UserManagement />;
-      case "appointments":
-        return (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Quản lý Lịch hẹn
-            </h3>
-            <p className="text-gray-600">Chức năng đang được phát triển...</p>
-          </div>
-        );
       case "services":
         return <ServiceManagement />;
       case "blogs":
         return <BlogManagement />;
       case "schedule":
-        return (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Quản lý Lịch làm việc
-            </h3>
-            <p className="text-gray-600">Chức năng đang được phát triển...</p>
-          </div>
-        );
+        return <WorkingShiftManagement />;
       case "revenue":
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6">

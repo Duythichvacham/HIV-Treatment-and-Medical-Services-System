@@ -2,6 +2,7 @@ const userService = require("../services/userService");
 const serviceService = require("../services/serviceService");
 const slotService = require("../services/slots/slotService");
 const roomService = require("../services/roomService");
+const doctorService = require("../services/doctorService");
 const workingShiftService = require("../services/workingShiftService");
 
 const getUsers = async (req, res) => {
@@ -163,21 +164,20 @@ const createShift = async (req, res) => {
       registration_staff_id,
       shift_date,
       room_id,
-      is_active,
     } = req.body;
     const account_id = req.user.userId;
     // Ép kiểu is_active
-    if (typeof is_active === "string") {
-      if (is_active.toLowerCase() === "true") is_active = true;
-      else if (is_active.toLowerCase() === "false") is_active = false;
-    }
+    // if (typeof is_active === "string") {
+    //   if (is_active.toLowerCase() === "true") is_active = true;
+    //   else if (is_active.toLowerCase() === "false") is_active = false;
+    // }
 
-    if (typeof is_active !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "`is_active` phải là true hoặc false",
-      });
-    }
+    // if (typeof is_active !== "boolean") {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "`is_active` phải là true hoặc false",
+    //   });
+    // }
 
     const result = await workingShiftService.createShift({
       account_id,
@@ -186,7 +186,7 @@ const createShift = async (req, res) => {
       registration_staff_id,
       shift_date,
       room_id,
-      is_active,
+      status: "approved", // Default status instead of is_active
     });
 
     res.status(201).json({
@@ -238,38 +238,38 @@ const updateShift = async (req, res) => {
   }
 };
 
-const setActiveShift = async (req, res) => {
-  try {
-    const id = req.params.id;
-    let { is_active } = req.body;
+// const setActiveShift = async (req, res) => {
+//   try {
+//     const id = req.params.id;
+//     let { is_active } = req.body;
 
-    if (typeof is_active === "string") {
-      if (is_active.toLowerCase() === "true") is_active = true;
-      else if (is_active.toLowerCase() === "false") is_active = false;
-    }
+//     if (typeof is_active === "string") {
+//       if (is_active.toLowerCase() === "true") is_active = true;
+//       else if (is_active.toLowerCase() === "false") is_active = false;
+//     }
 
-    if (typeof is_active !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "`is_active` phải là true hoặc false",
-      });
-    }
+//     if (typeof is_active !== "boolean") {
+//       return res.status(400).json({
+//         success: false,
+//         message: "`is_active` phải là true hoặc false",
+//       });
+//     }
 
-    const updated = await workingShiftService.setActiveShift(id, is_active);
+//     const updated = await workingShiftService.setActiveShift(id, is_active);
 
-    res.status(200).json({
-      success: true,
-      data: updated,
-      message: "Cập nhật trạng thái ca làm việc thành công!",
-    });
-  } catch (error) {
-    console.error("[API] setActiveShift error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Có lỗi xảy ra khi cập nhật trạng thái ca làm việc",
-    });
-  }
-};
+//     res.status(200).json({
+//       success: true,
+//       data: updated,
+//       message: "Cập nhật trạng thái ca làm việc thành công!",
+//     });
+//   } catch (error) {
+//     console.error("[API] setActiveShift error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Có lỗi xảy ra khi cập nhật trạng thái ca làm việc",
+//     });
+//   }
+// };
 // lấy ds room cho working shift
 const getAvailableRooms = async (req, res) => {
   try {
@@ -294,16 +294,38 @@ const getAvailableRooms = async (req, res) => {
     });
   }
 };
+const getDoctorsForDropdown = async (req, res) => {
+  try {
+    const doctors = await doctorService.getDoctorsForDropdown();
+    if (!doctors || doctors.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy bác sĩ nào",
+      });
+    }
 
+    res.status(200).json({
+      success: true,
+      data: doctors,
+      message: "Lấy danh sách bác sĩ thành công",
+    });
+  } catch (error) {
+    console.error("[API] getDoctorsForDropdown error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi lấy danh sách bác sĩ",
+    });
+  }
+};
 module.exports = {
   getAllWorkingShift,
   createShift,
   updateShift,
-  setActiveShift,
   getUsers,
   createService,
   setActive,
   createSlot,
   getAllServices,
   getAvailableRooms,
+  getDoctorsForDropdown,
 };

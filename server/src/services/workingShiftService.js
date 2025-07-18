@@ -11,10 +11,13 @@ const getAllWorkingShiftDB = async () => {
           ,ws.room_id
           ,ws.status
           ,ws.created_at
-          ,ws.is_active
-          ,r.room_name
+          ,r.room_name,
+          d.full_name as doctor_name
     FROM WorkingShifts as ws 
     LEFT JOIN Rooms as r ON ws.room_id = r.room_id
+    RIGHT JOIN Doctors as d ON ws.doctor_id = d.doctor_id
+    WHERE CAST(shift_date AS DATE) >= CAST(GETDATE() AS DATE)
+    ORDER BY ws.shift_date DESC, ws.created_at DESC;
   `);
   return result.recordset;
 };
@@ -25,7 +28,7 @@ const createShift = async ({
   doctor_id,
   shift_date,
   room_id,
-  is_active,
+  status = "approved", // Default status instead of is_active
 }) => {
   const pool = await poolPromise;
 
@@ -35,13 +38,13 @@ const createShift = async ({
     .input("doctor_id", doctor_id ?? null)
     .input("shift_date", shift_date)
     .input("room_id", room_id)
-    .input("is_active", is_active).query(`
+    .input("status", status).query(`
       INSERT INTO WorkingShifts (
         account_id,
         doctor_id,
         shift_date,
         room_id,
-        is_active
+        status
       )
       OUTPUT INSERTED.shift_id
       VALUES (
@@ -49,7 +52,7 @@ const createShift = async ({
         @doctor_id,
         @shift_date,
         @room_id,
-        @is_active
+        @status
       );
     `);
 
@@ -84,26 +87,25 @@ const updateShift = async (id, { doctor_id, shift_date, room_id, status }) => {
 };
 
 // Cập nhật trạng thái is_active
-const setActiveShift = async (id, is_active) => {
-  const pool = await poolPromise;
+// const setActiveShift = async (id, is_active) => {
+//   const pool = await poolPromise;
 
-  const result = await pool
-    .request()
-    .input("id", id)
-    .input("is_active", is_active).query(`
-      UPDATE WorkingShifts
-      SET is_active = @is_active
-      WHERE shift_id = @id;
+//   const result = await pool
+//     .request()
+//     .input("id", id)
+//     .input("is_active", is_active).query(`
+//       UPDATE WorkingShifts
+//       SET is_active = @is_active
+//       WHERE shift_id = @id;
 
-      SELECT * FROM WorkingShifts WHERE shift_id = @id;
-    `);
+//       SELECT * FROM WorkingShifts WHERE shift_id = @id;
+//     `);
 
-  return result.recordset[0];
-};
+//   return result.recordset[0];
+// };
 
 module.exports = {
   getAllWorkingShiftDB,
   createShift,
   updateShift,
-  setActiveShift,
 };
