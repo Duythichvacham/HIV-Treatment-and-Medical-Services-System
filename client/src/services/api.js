@@ -724,7 +724,7 @@ export const cancelTransaction = async (invoiceId) => {
 
 export const createBlog = async (blogData) => {
   try {
-    const response = await api.post('/api/v1/blogs', blogData);
+    const response = await api.post("/api/v1/blogs", blogData);
     return response.data;
   } catch (error) {
     console.error("❌ createBlog error:", error);
@@ -734,7 +734,7 @@ export const createBlog = async (blogData) => {
 
 export const getAllBlogs = async () => {
   try {
-    const response = await api.get('/api/v1/blogs');
+    const response = await api.get("/api/v1/blogs");
     return response.data;
   } catch (error) {
     console.error("❌ getAllBlogs error:", error);
