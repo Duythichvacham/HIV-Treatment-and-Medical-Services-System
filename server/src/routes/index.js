@@ -3,7 +3,7 @@ const authRouter = require("./auth");
 const patientRouter = require("./patient");
 const userRouter = require("./user");
 const authMiddleware = require("../middlewares/authMiddleware");
-
+const blogRouter = require("./blog");
 const appointmentRouter = require("./appointment");
 const labStaffRouter = require("./lab-staff");
 const doctorRouter = require("./doctor");
@@ -91,6 +91,7 @@ function route(app) {
    */
   app.use("/api/v1/managers", authMiddleware, managerRouter);
 
+  app.use("/api/v1/blogs", authMiddleware, blogRouter);
 
 }
 
