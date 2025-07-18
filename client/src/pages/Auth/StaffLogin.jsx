@@ -17,14 +17,13 @@ const StaffLogin = () => {
     setError("");
 
     try {
-      const result = await login(username, password, 'staff');
-      
+      const result = await login(username, password, "staff");
+
       // Redirect back to original location or staff dashboard
       const from = location.state?.from || getDefaultPath(result.user.role);
       navigate(from, { replace: true });
-      
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -62,17 +61,19 @@ const StaffLogin = () => {
             required
           />
         </div>
-        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}        <button
+        {error && <div className="text-red-600 mb-3 text-sm">{error}</div>}{" "}
+        <button
           type="submit"
           disabled={loading}
           className={`w-full py-2 rounded-md font-semibold transition ${
-            loading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-green-600 hover:bg-green-700'
+            loading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
           } text-white`}
         >
-          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-        </button>        <div className="mt-4 text-xs text-gray-500">
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+        </button>{" "}
+        <div className="mt-4 text-xs text-gray-500">
           <div>
             <b>Lab-Staff</b>: labstaff01 / hash_lab1_password
           </div>

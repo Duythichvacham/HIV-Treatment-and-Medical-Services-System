@@ -2,10 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { useDoctorProfile } from "../../hooks/doctor/useDoctorProfile";
-import doctorImage from "../../assets/doctors/doc1.png"; // Placeholder image
+import { getDoctorImage } from "../../utils/doctorImageUtils";
 
 const DoctorProfile = () => {
   const { user } = useAuth();
+
+  // const doctorImageModule =
+  //   images[`/src/assets/doctors/doc${user?.doctor_id}.png`];
+  // const doctorImage = doctorImageModule ? doctorImageModule.default : null;
 
   const doctorId = user?.doctor_id; // Lấy `doctor_id` từ thông tin người dùng
   const { doctor, loading, error, updateDoctorProfile } =
@@ -19,7 +23,6 @@ const DoctorProfile = () => {
     degrees: "",
     experience_years: "",
   });
-
   useEffect(() => {
     if (doctor) {
       setFormData({
@@ -110,8 +113,10 @@ const DoctorProfile = () => {
             <div className="flex-shrink-0">
               <img
                 // src={`../../assets/doctors/doc1.png`}
-                src={doctorImage} // Placeholder image
+
+                //src={doctorImage} // Placeholder image
                 // src="../../assets/doctors/doc1.png"
+                src={getDoctorImage(doctor.image_url)}
                 alt={doctor.full_name}
                 className="w-32 h-32 rounded-full object-cover border-2 border-blue-100"
               />

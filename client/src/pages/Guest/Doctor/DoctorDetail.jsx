@@ -3,9 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import AppointmentForm from "../../../components/appointment/AppointmentForm";
 import { getDoctorById, getServices } from "../../../services/api";
 import { AuthContext } from "../../../contexts/AuthContext";
+import { getDoctorImage } from "../../../utils/doctorImageUtils";
 
 const DoctorDetail = () => {
-  const { doctorId } = useParams();
+  const { id } = useParams();
   const { user } = useContext(AuthContext);
   console.log("User in DoctorDetail:", user);
   const [doctor, setDoctor] = useState(null);
@@ -17,7 +18,7 @@ const DoctorDetail = () => {
   useEffect(() => {
     const fetchDoctor = async () => {
       try {
-        const data = await getDoctorById(doctorId);
+        const data = await getDoctorById(id);
         if (!data) throw new Error("Not found");
         setDoctor(data);
       } catch (err) {
@@ -27,7 +28,7 @@ const DoctorDetail = () => {
       }
     };
     fetchDoctor();
-  }, [doctorId]);
+  }, [id]);
 
   // Đảm bảo chỉ set serviceExamination 1 lần, ưu tiên lấy từ fetchServices (dữ liệu chuẩn)
   useEffect(() => {
@@ -73,7 +74,7 @@ const DoctorDetail = () => {
         {/* Header Card */}
         <section className="bg-white p-10 rounded-3xl shadow-2xl mb-10 flex flex-col md:flex-row items-center gap-10 animate-slide-up duration-700">
           <img
-            src={doctor.avatar}
+            src={getDoctorImage(doctor.avatar)}
             alt={doctor.name}
             className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-green-100"
           />
@@ -130,7 +131,7 @@ const DoctorDetail = () => {
                 Đặt lịch khám với bác sĩ
               </h2>
               <AppointmentForm
-                serviceType_id={`examination_${doctorId}`}
+                serviceType_id={`examination_${id}`}
                 serviceName={`Khám bác sĩ ${doctor.name}`}
                 price={serviceExamination ? serviceExamination.price : ""}
                 user={user}

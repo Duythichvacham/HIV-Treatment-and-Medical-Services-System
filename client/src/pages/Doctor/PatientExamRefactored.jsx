@@ -270,7 +270,6 @@ const PatientExamRefactored = ({
               <span className="font-medium">
                 Chưa có thông tin phác đồ ARV.
               </span>
-              Vui lòng cập nhật trong quá trình khám.
             </p>
           </div>
         )}

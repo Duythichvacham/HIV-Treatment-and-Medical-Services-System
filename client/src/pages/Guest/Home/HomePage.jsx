@@ -6,6 +6,7 @@ import { getDoctors, getServices } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
 import NewsSection from "./NewsSection";
 import { AnimatePresence, motion, useInView } from "framer-motion";
+import { getDoctorImage } from "../../../utils/doctorImageUtils";
 
 const HomePage = () => {
   const { user, isAuthenticated, isStaff, getDefaultPath } = useAuth();
@@ -129,8 +130,8 @@ const HomePage = () => {
                     Sứ mệnh
                   </h3>
                   <p className="text-gray-600">
-                    Chăm sóc toàn diện và tận tâm cho mọi bệnh nhân, góp phần xây
-                    dựng cộng đồng khỏe mạnh và không kỳ thị.
+                    Chăm sóc toàn diện và tận tâm cho mọi bệnh nhân, góp phần
+                    xây dựng cộng đồng khỏe mạnh và không kỳ thị.
                   </p>
                 </div>
                 <div className="bg-green-50 rounded-xl p-6 shadow text-center">
@@ -171,7 +172,9 @@ const HomePage = () => {
                   Đang tải danh sách bác sĩ...
                 </div>
               ) : doctorsError ? (
-                <div className="text-center p-6 text-red-500">{doctorsError}</div>
+                <div className="text-center p-6 text-red-500">
+                  {doctorsError}
+                </div>
               ) : (
                 <DoctorSlider doctors={doctors} />
               )}
@@ -257,7 +260,9 @@ const HomePage = () => {
                   <div className="font-bold text-lg text-green-700 mb-2">
                     Giấy phép hoạt động
                   </div>
-                  <div className="text-gray-600">Được cấp bởi Sở Y tế TP.HCM</div>
+                  <div className="text-gray-600">
+                    Được cấp bởi Sở Y tế TP.HCM
+                  </div>
                 </div>
                 <div className="bg-white rounded-xl p-6 shadow text-center border border-green-100">
                   <div className="font-bold text-lg text-green-700 mb-2">
@@ -313,7 +318,7 @@ function DoctorSlider({ doctors }) {
           {visible.map((doc) => (
             <DoctorCard
               key={doc.id}
-              image={doc.avatar}
+              image={getDoctorImage(doc.avatar)}
               name={doc.name}
               link={`/doctors/${doc.id}`}
             />

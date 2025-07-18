@@ -70,15 +70,6 @@ const ExamHistoryList = ({ patientId }) => {
         patientApi.getPrescriptionDetail(appointmentId),
       ]);
 
-      console.log(
-        "[ExamHistoryList] Clinical exam detail response:",
-        clinicalResponse
-      );
-      console.log(
-        "[ExamHistoryList] Prescription detail response:",
-        prescriptionResponse
-      );
-
       setExamDetail(clinicalResponse.data || null);
       setPrescriptionDetail(prescriptionResponse.data || null);
       setSelectedExam(appointmentId);
