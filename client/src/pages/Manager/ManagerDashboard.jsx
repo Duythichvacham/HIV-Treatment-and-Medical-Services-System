@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Users, Calendar, DollarSign, Activity, Plus } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  DollarSign,
+  Activity,
+  Plus,
+  FileText,
+} from "lucide-react";
 import StatsCard from "../../components/common/StatsCard";
 import UserManagement from "./components/users/UserManagement";
 import ServiceManagement from "./components/services/ServiceManagement";
+import BlogManagement from "./components/blogs/BlogManagement";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TabNavigation from "../../components/common/TabNavigation";
 import ErrorAlert from "../../components/common/ErrorAlert";
-import { getUsers, getManagerServices } from "../../services/api";
+import { getUsers, getManagerServices, getAllBlogs } from "../../services/api";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -19,6 +27,7 @@ const ManagerDashboard = () => {
     { id: "users", label: "Người dùng", icon: Users },
     { id: "appointments", label: "Lịch hẹn", icon: Calendar },
     { id: "services", label: "Dịch vụ", icon: Activity },
+    { id: "blogs", label: "Blog", icon: FileText },
     { id: "schedule", label: "Lịch làm việc", icon: Calendar },
     { id: "revenue", label: "Doanh thu", icon: DollarSign },
     { id: "system", label: "Hệ thống", icon: Activity },
@@ -39,6 +48,14 @@ const ManagerDashboard = () => {
         (service) => service.is_active
       ).length;
 
+      // Lấy dữ liệu blogs từ API
+      const blogsData = await getAllBlogs();
+      const blogs = blogsData || [];
+      const totalBlogs = blogs.length;
+      const publishedBlogs = blogs.filter(
+        (blog) => blog.published === 1
+      ).length;
+
       // Tính toán statistics từ dữ liệu users
       const totalUsers = usersData.length;
       const activeUsers = usersData.filter(
@@ -55,6 +72,8 @@ const ManagerDashboard = () => {
         revenueYear: 2025,
         totalServices,
         activeServices,
+        totalBlogs,
+        publishedBlogs,
       };
 
       setStats(mockStats);
@@ -87,6 +106,8 @@ const ManagerDashboard = () => {
         );
       case "services":
         return <ServiceManagement />;
+      case "blogs":
+        return <BlogManagement />;
       case "schedule":
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -138,7 +159,7 @@ const ManagerDashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-8">
             <StatsCard
               title="Tổng người dùng"
               value={stats.totalUsers}
@@ -172,6 +193,14 @@ const ManagerDashboard = () => {
               icon={<Activity className="w-6 h-6" />}
               iconColor="text-orange-500"
               iconBg="bg-orange-50"
+            />
+            <StatsCard
+              title="Tổng bài viết"
+              value={stats.totalBlogs}
+              subtitle={`${stats.publishedBlogs} đã xuất bản`}
+              icon={<FileText className="w-6 h-6" />}
+              iconColor="text-indigo-500"
+              iconBg="bg-indigo-50"
             />
           </div>
         )}
