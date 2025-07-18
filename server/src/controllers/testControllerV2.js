@@ -57,15 +57,15 @@ const saveTestResults = async (req, res) => {
         .json({ message: "Thiếu hoặc sai định dạng dữ liệu đầu vào" });
     }
 
-    if (
-      test_results.some(
-        (result) => !result.test_type_id || !result.result_value
-      )
-    ) {
-      return res.status(400).json({
-        message: "Test results phải chứa test_type_id và result_value",
-      });
-    }
+    // if (
+    //   test_results.some(
+    //     (result) => !result.test_type_id || !result.result_value
+    //   )
+    // ) {
+    //   return res.status(400).json({
+    //     message: "Test results phải chứa test_type_id và result_value",
+    //   });
+    // }
 
     const result = await labstaffService.saveTestResults({
       request_id: request_id || null,

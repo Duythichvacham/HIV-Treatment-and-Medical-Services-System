@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import DoctorCard from "../../../components/common/DoctorCard";
 import { getDoctors } from "../../../services/api";
 import { motion } from "framer-motion";
+import { getDoctorImage } from "../../../utils/doctorImageUtils";
 
 const DoctorPage = () => {
   const [doctors, setDoctors] = useState([]);
@@ -66,21 +67,26 @@ const DoctorPage = () => {
               Không tìm thấy bác sĩ phù hợp.
             </div>
           ) : (
-            filteredDoctors.map((doc, idx) => (
-              <motion.div
-                key={doc.id}
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.12 }}
-              >
-                <DoctorCard
-                  image={doc.avatar}
-                  name={doc.name}
-                  // API returns no gender, schedule or price by default
-                  link={`/doctors/${doc.id}`}
-                />
-              </motion.div>
-            ))
+            filteredDoctors.map(
+              (doc, idx) => (
+                console.log(doc),
+                (
+                  <motion.div
+                    key={doc.id}
+                    initial={{ opacity: 0, y: 40 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: idx * 0.12 }}
+                  >
+                    <DoctorCard
+                      image={getDoctorImage(doc.avatar)}
+                      name={doc.name}
+                      // API returns no gender, schedule or price by default
+                      link={`/doctors/${doc.id}`}
+                    />
+                  </motion.div>
+                )
+              )
+            )
           )}
         </div>
       </section>

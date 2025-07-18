@@ -68,12 +68,12 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/lab-process"
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabProcess />
-                {/* <LabStaffDashboard /> */}
+                
               </ProtectedRoute>
             }
           />
@@ -82,10 +82,10 @@ function AppContent() {
             element={
               <ProtectedRoute staffOnly={true} requiredRole="Lab-Staff">
                 <LabResult />
-                {/* <LabStaffDashboard /> */}
+               
               </ProtectedRoute>
             }
-          />{" "}
+          /> */}
           <Route
             path="/registration-staff"
             element={
