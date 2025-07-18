@@ -48,6 +48,7 @@ CREATE TABLE ARVRegimens (
     name NVARCHAR(100) UNIQUE NOT NULL,-- tên phác đồ
     for_group NVARCHAR(50),-- ex: mẹ bầu, trẻ em
     components NVARCHAR(500),-- thành phần
+    is_active BIT NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 --Rooms
@@ -56,6 +57,7 @@ CREATE TABLE Rooms (
     room_name NVARCHAR(50) NOT NULL,     -- ví dụ: "Phòng 201", "XN Máu"
     room_type NVARCHAR(30) NOT NULL,     -- ví dụ: "Khám", "Xét nghiệm" -- này có thể không cần nhưng giữ lại có thể mở rộng
 -- có thể thêm description để ghi chú phòng
+    is_active BIT NOT NULL DEFAULT 1,
    created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 -- Slots - lưu cố định các slot làm việc trong ngày
@@ -63,6 +65,8 @@ CREATE TABLE Slots (
     slot_id INT PRIMARY KEY IDENTITY(1,1),
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
+    is_active BIT NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
     UNIQUE (start_time, end_time)
 );
 -- Services
@@ -139,7 +143,7 @@ CREATE TABLE WorkingShifts (
 	registration_staff_id INT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     shift_date DATE NOT NULL,-- phân ca cho bs theo ngày (các slots được cố định cho đặt lịch vì vậy làm cả ngày là full slots)
     room_id INT NULL FOREIGN KEY REFERENCES Rooms(room_id),-- nếu là regis thì không cần room
-    status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'canceled')) DEFAULT 'approved',
+    status VARCHAR(20) NOT NULL CHECK (status IN ('approved', 'cancelled')) DEFAULT 'approved',
     created_at DATETIME NOT NULL DEFAULT GETDATE()
 );
 
@@ -151,6 +155,7 @@ CREATE TABLE TestNotes(
    created_by_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id), -- người xn và tạo phiếu này
    test_datetime DATETIME NOT NULL,
    notes NVARCHAR(500) NULL, -- ghi chú của người làm xét nghiệm
+   created_at DATETIME NOT NULL DEFAULT GETDATE(),
    );
 -- TestResults
 CREATE TABLE TestResults (
@@ -215,10 +220,11 @@ CREATE TABLE PrescriptionDetails (
 CREATE TABLE BlogPosts (
     post_id INT PRIMARY KEY IDENTITY(1,1),
     title NVARCHAR(255) NOT NULL,
-    content NVARCHAR(500),
+    content NVARCHAR(MAX),
     author_id INT NOT NULL FOREIGN KEY REFERENCES Accounts(account_id),
     created_at DATETIME NOT NULL DEFAULT GETDATE(),
-    published BIT NOT NULL DEFAULT 0
+    published BIT NOT NULL DEFAULT 0,
+    is_active BIT NOT NULL DEFAULT 1
 );
 
 -- Invoices
