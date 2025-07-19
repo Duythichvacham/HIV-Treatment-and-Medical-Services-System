@@ -4,6 +4,25 @@ const slotService = require("../services/slots/slotService");
 const roomService = require("../services/roomService");
 const doctorService = require("../services/doctorService");
 const workingShiftService = require("../services/workingShiftService");
+const invoiceService = require("../services/invoiceService");
+
+const getRevenue = async (req, res) => {
+  try {
+    const { status, group } = req.query;
+    const revenue = await invoiceService.getRevenue(status, group);
+    res.status(200).json({
+      success: true,
+      data: revenue,
+      message: "Lấy doanh thu thành công",
+    });
+  } catch (error) {
+    console.error("[API] getRevenue error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Có lỗi xảy ra khi lấy doanh thu",
+    });
+  }
+};
 
 const getUsers = async (req, res) => {
   try {
@@ -328,4 +347,5 @@ module.exports = {
   getAllServices,
   getAvailableRooms,
   getDoctorsForDropdown,
+  getRevenue,
 };

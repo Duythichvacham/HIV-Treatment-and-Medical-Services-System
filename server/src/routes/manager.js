@@ -24,4 +24,6 @@ router.patch("/working-shift/update/:id", managerController.updateShift);
 // GET: api/v1/managers/working-shift/rooms
 router.get("/working-shift/rooms", managerController.getAvailableRooms);
 router.get("/working-shift/doctors", managerController.getDoctorsForDropdown);
+
+router.get("/revenue", managerController.getRevenue)
 module.exports = router;

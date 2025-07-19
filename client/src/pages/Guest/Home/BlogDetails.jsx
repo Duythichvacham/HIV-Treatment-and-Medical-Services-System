@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactHtmlParser from "react-html-parser";
 import { SectionAppear } from "./CardBlog"; // Tái sử dụng SectionAppear từ CardBlog
 import useBlogs from "../../../hooks/useBlogs";
 
@@ -61,7 +62,7 @@ const BlogDetails = () => {
           </div>
           <div className="bg-white rounded-xl shadow p-6 border border-green-100">
             <p className="text-gray-700 text-lg leading-relaxed">
-              {selectedBlog.content}
+              {ReactHtmlParser(selectedBlog.content)}
             </p>
           </div>
         </SectionAppear>

@@ -11,6 +11,43 @@ class InvoiceService {
    * @param {number} params.amount - Số tiền
    * @param {string} params.serviceType - Loại dịch vụ
    */
+  async getRevenue(status = "paid", group = "yearly") {
+    const pool = await poolPromise;
+
+    let query = "";
+
+    if (group === "yearly") {
+      query += `SELECT 
+                  YEAR(issued_at) AS period,
+                  SUM(amount) AS total_revenue
+              FROM [HIV_HEALTH_CARE].[dbo].[Invoices]
+              WHERE status = @status
+              GROUP BY YEAR(issued_at)
+              ORDER BY period;`;
+    } else if (group === "monthly") {
+      query += `SELECT 
+                FORMAT(issued_at, 'yyyy-MM') AS period,
+                SUM(amount) AS total_revenue
+              FROM Invoices
+              WHERE status = @status
+              GROUP BY FORMAT(issued_at, 'yyyy-MM')
+              ORDER BY period`;
+    } else if (group === "quarterly") {
+      query += `SELECT 
+                  CONCAT(YEAR(issued_at), '-Q', DATEPART(QUARTER, issued_at)) AS period,
+                  SUM(amount) AS total_revenue
+              FROM [HIV_HEALTH_CARE].[dbo].[Invoices]
+              WHERE status = @status
+              GROUP BY YEAR(issued_at), DATEPART(QUARTER, issued_at)
+              ORDER BY YEAR(issued_at), DATEPART(QUARTER, issued_at);`;
+    } else {
+      throw new Error("Invalid groupBy parameter");
+    }
+    const result = await pool.request().input("status", status).query(query);
+
+    return result.recordset;
+  }
+
   async createInvoice({
     patientId,
     appointmentId = null,

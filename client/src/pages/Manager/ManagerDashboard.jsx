@@ -18,6 +18,7 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import TabNavigation from "../../components/common/TabNavigation";
 import ErrorAlert from "../../components/common/ErrorAlert";
 import { getUsers, getManagerServices, getAllBlogs } from "../../services/api";
+import RevenueChart from "./components/revenue/RevenueChart";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
@@ -107,14 +108,7 @@ const ManagerDashboard = () => {
       case "schedule":
         return <WorkingShiftManagement />;
       case "revenue":
-        return (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Quản lý Doanh thu
-            </h3>
-            <p className="text-gray-600">Chức năng đang được phát triển...</p>
-          </div>
-        );
+        return <RevenueChart />;
       case "system":
         return (
           <div className="bg-white rounded-lg shadow-sm border p-6">

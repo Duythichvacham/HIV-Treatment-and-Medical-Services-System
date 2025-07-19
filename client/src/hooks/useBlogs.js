@@ -1,5 +1,6 @@
 // src/hooks/useBlogs.js
 import { useState, useEffect, useCallback } from "react";
+import { htmlToText } from "html-to-text";
 import {
   fetchAllBlogs as apiFetchAllBlogs,
   fetchBlogById as apiFetchBlogById,
@@ -13,14 +14,19 @@ const useBlogs = () => {
 
   const formatBlog = useCallback((blog) => {
     console.log("🔍 formatBlog - Blog input:", blog); // Debug dữ liệu đầu vào
+    // Chuyển HTML thành văn bản thô để tạo excerpt
+    const plainText = htmlToText(blog.content || "", {
+      wordwrap: false,
+      preserveNewlines: true,
+    });
     return {
-      id: blog.post_id, // Sử dụng post_id từ API
+      id: blog.post_id,
       title: blog.title || "Không có tiêu đề",
-      excerpt: blog.content?.substring(0, 150) + "..." || "Không có nội dung",
-      content: blog.content || "Không có nội dung",
+      excerpt: plainText.substring(0, 150) + "..." || "Không có nội dung",
+      content: blog.content || "Không có nội dung", // Giữ nguyên HTML
       createdAt: blog.created_at || new Date().toISOString(),
       authorId: blog.author_id || 1,
-      authorName: blog.author_name || "Đội ngũ HIV_HEALTH_CARE", // Giữ mặc định
+      authorName: blog.author_name || "Đội ngũ HIV_HEALTH_CARE",
       published: blog.published || false,
       isActive: blog.is_active || false,
     };
