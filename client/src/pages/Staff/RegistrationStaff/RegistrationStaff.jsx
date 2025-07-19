@@ -135,14 +135,11 @@ const RegistrationStaff = () => {
           {/* History Tab */}
           {activeTab === "history" && (
             <div className="space-y-6">
-              {/* Search Bar */}
-              <div className="bg-white rounded-lg shadow-sm border p-4">
-                <SearchAndFilter
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  placeholder="Tìm kiếm trong lịch sử thanh toán..."
-                />
-              </div>
+              <SearchAndFilter
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                placeholder="Tìm kiếm trong lịch sử thanh toán..."
+              />
 
               {/* Payment History List */}
               <div className="bg-white rounded-lg shadow-sm border">

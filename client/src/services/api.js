@@ -717,4 +717,59 @@ export const cancelTransaction = async (invoiceId) => {
     throw error;
   }
 };
+
+// ===========================================
+// BLOG API FUNCTIONS
+// ===========================================
+
+export const createBlog = async (blogData) => {
+  try {
+    const response = await api.post("/api/v1/blogs", blogData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createBlog error:", error);
+    throw error;
+  }
+};
+
+export const getAllBlogs = async () => {
+  try {
+    const response = await api.get("/api/v1/blogs");
+    return response.data;
+  } catch (error) {
+    console.error("❌ getAllBlogs error:", error);
+    throw error;
+  }
+};
+
+export const getBlogById = async (id) => {
+  try {
+    const response = await api.get(`/api/v1/blogs/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getBlogById error:", error);
+    throw error;
+  }
+};
+
+export const updateBlog = async (id, blogData) => {
+  try {
+    const response = await api.put(`/api/v1/blogs/${id}`, blogData);
+    return response.data;
+  } catch (error) {
+    console.error("❌ updateBlog error:", error);
+    throw error;
+  }
+};
+
+export const deleteBlog = async (id) => {
+  try {
+    const response = await api.patch(`/api/v1/blogs/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("❌ deleteBlog error:", error);
+    throw error;
+  }
+};
+
 export default api;

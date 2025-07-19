@@ -46,9 +46,9 @@ INSERT INTO ARVRegimens (name, for_group, components) VALUES
 (N'TDF/3TC/EFV', N'Người lớn', N'Tenofovir 300mg + Lamivudine 300mg + Efavirenz 600mg'),
 (N'ABC/3TC/DTG', N'Người lớn', N'Abacavir 600mg + Lamivudine 300mg + Dolutegravir 50mg'),
 (N'TDF/3TC/DTG', N'Thai phụ', N'Tenofovir 300mg + Lamivudine 300mg + Dolutegravir 50mg'),
-(N'AZT/3TC/LPV/r', N'Trẻ em', N'Zidovudine + Lamivudine + Lopinavir/ritonavir'),
+(N'AZT/3TC/LPV', N'Trẻ em', N'Zidovudine + Lamivudine + Lopinavir/ritonavir'),
 (N'EFV/FTC/TDF', N'Người lớn', N'Efavirenz 600mg + Emtricitabine 200mg + Tenofovir 300mg'),
-(N'ATV/r/3TC/TDF', N'Người lớn', N'Atazanavir/ritonavir + Lamivudine 300mg + Tenofovir 300mg');
+(N'ATV/3TC/TDF', N'Người lớn', N'Atazanavir/ritonavir + Lamivudine 300mg + Tenofovir 300mg');
 
 -- 5. Rooms (giữ nguyên từ data mẫu ban đầu)
 INSERT INTO Rooms (room_name, room_type) VALUES
@@ -464,15 +464,15 @@ INSERT INTO PrescriptionDetails (prescription_id, drug_name, dosage, frequency, 
 (18, N'EFV/FTC/TDF', N'1 viên', N'1 lần/ngày', 90, N'Đánh giá hiệu quả', N'Theo dõi viral load');
 
 -- Thêm BlogPosts mới cho tháng 7/2025
-INSERT INTO BlogPosts (title, content, author_id, is_educational, published) VALUES
-(N'Cập nhật hướng dẫn điều trị HIV năm 2025', N'Các khuyến cáo mới nhất về điều trị HIV từ Tổ chức Y tế Thế giới và Bộ Y tế Việt Nam. Những thay đổi quan trọng trong phác đồ điều trị và theo dõi bệnh nhân...', 2, 1, 1),
-(N'Tác dụng phụ của thuốc ARV: Nhận biết và xử lý', N'Hướng dẫn chi tiết về các tác dụng phụ thường gặp như buồn nôn, rối loạn giấc ngủ, thay đổi cân nặng và cách quản lý hiệu quả...', 3, 1, 1),
-(N'Vai trò của gia đình trong hỗ trợ bệnh nhân HIV', N'Tầm quan trọng của sự hỗ trợ từ gia đình và cộng đồng trong quá trình điều trị HIV. Cách xây dựng môi trường hỗ trợ tích cực...', 4, 1, 1),
-(N'HIV và thai kỳ: Những điều cần biết', N'Hướng dẫn toàn diện về quản lý thai kỳ ở phụ nữ nhiễm HIV, phòng ngừa lây nhiễm từ mẹ sang con và chăm sóc sau sinh...', 5, 1, 1),
-(N'Chế độ ăn uống cho người nhiễm HIV', N'Nguyên tắc dinh dưỡng, thực phẩm nên và không nên ăn, cách bổ sung vitamin và khoáng chất cần thiết cho việc tăng cường sức khỏe...', 2, 1, 1),
-(N'Tin tức: Nghiên cứu vaccine HIV mới có kết quả khả quan', N'Kết quả thử nghiệm giai đoạn 2 của vaccine HIV cho thấy hiệu quả bảo vệ 65% ở nhóm nguy cơ cao. Hy vọng mới trong phòng chống HIV...', 1, 0, 1),
-(N'Sức khỏe tâm thần và HIV: Vượt qua kỳ thị', N'Cách đối phó với căng thẳng, lo lắng và trầm cảm liên quan đến chẩn đoán HIV. Tầm quan trọng của tư vấn tâm lý và hỗ trợ xã hội...', 3, 1, 1),
-(N'Hoạt động thể chất an toàn cho người nhiễm HIV', N'Lợi ích của tập thể dục, các bài tập phù hợp và những lưu ý quan trọng khi luyện tập để tăng cường sức khỏe và chất lượng cuộc sống...', 4, 1, 1);
+INSERT INTO BlogPosts (title, content, author_id, published) VALUES
+(N'Cập nhật hướng dẫn điều trị HIV năm 2025', N'Các khuyến cáo mới nhất về điều trị HIV từ Tổ chức Y tế Thế giới và Bộ Y tế Việt Nam. Những thay đổi quan trọng trong phác đồ điều trị và theo dõi bệnh nhân...', 2, 1),
+(N'Tác dụng phụ của thuốc ARV: Nhận biết và xử lý', N'Hướng dẫn chi tiết về các tác dụng phụ thường gặp như buồn nôn, rối loạn giấc ngủ, thay đổi cân nặng và cách quản lý hiệu quả...', 3,  1),
+(N'Vai trò của gia đình trong hỗ trợ bệnh nhân HIV', N'Tầm quan trọng của sự hỗ trợ từ gia đình và cộng đồng trong quá trình điều trị HIV. Cách xây dựng môi trường hỗ trợ tích cực...', 4, 1),
+(N'HIV và thai kỳ: Những điều cần biết', N'Hướng dẫn toàn diện về quản lý thai kỳ ở phụ nữ nhiễm HIV, phòng ngừa lây nhiễm từ mẹ sang con và chăm sóc sau sinh...', 5, 1),
+(N'Chế độ ăn uống cho người nhiễm HIV', N'Nguyên tắc dinh dưỡng, thực phẩm nên và không nên ăn, cách bổ sung vitamin và khoáng chất cần thiết cho việc tăng cường sức khỏe...', 2, 1),
+(N'Tin tức: Nghiên cứu vaccine HIV mới có kết quả khả quan', N'Kết quả thử nghiệm giai đoạn 2 của vaccine HIV cho thấy hiệu quả bảo vệ 65% ở nhóm nguy cơ cao. Hy vọng mới trong phòng chống HIV...', 1, 1),
+(N'Sức khỏe tâm thần và HIV: Vượt qua kỳ thị', N'Cách đối phó với căng thẳng, lo lắng và trầm cảm liên quan đến chẩn đoán HIV. Tầm quan trọng của tư vấn tâm lý và hỗ trợ xã hội...', 3,  1),
+(N'Hoạt động thể chất an toàn cho người nhiễm HIV', N'Lợi ích của tập thể dục, các bài tập phù hợp và những lưu ý quan trọng khi luyện tập để tăng cường sức khỏe và chất lượng cuộc sống...', 4, 1);
 
 -- Kết thúc việc thêm dữ liệu mẫu - ĐÃ KIỂM TRA VÀ SỬA ĐỂ KHỚP VỚI SCHEMA DATABASE
 -- Tổng cộng đã thêm:
