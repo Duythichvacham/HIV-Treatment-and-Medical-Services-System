@@ -46,9 +46,9 @@ INSERT INTO ARVRegimens (name, for_group, components) VALUES
 (N'TDF/3TC/EFV', N'Người lớn', N'Tenofovir 300mg + Lamivudine 300mg + Efavirenz 600mg'),
 (N'ABC/3TC/DTG', N'Người lớn', N'Abacavir 600mg + Lamivudine 300mg + Dolutegravir 50mg'),
 (N'TDF/3TC/DTG', N'Thai phụ', N'Tenofovir 300mg + Lamivudine 300mg + Dolutegravir 50mg'),
-(N'AZT/3TC/LPV/r', N'Trẻ em', N'Zidovudine + Lamivudine + Lopinavir/ritonavir'),
+(N'AZT/3TC/LPV', N'Trẻ em', N'Zidovudine + Lamivudine + Lopinavir/ritonavir'),
 (N'EFV/FTC/TDF', N'Người lớn', N'Efavirenz 600mg + Emtricitabine 200mg + Tenofovir 300mg'),
-(N'ATV/r/3TC/TDF', N'Người lớn', N'Atazanavir/ritonavir + Lamivudine 300mg + Tenofovir 300mg');
+(N'ATV/3TC/TDF', N'Người lớn', N'Atazanavir/ritonavir + Lamivudine 300mg + Tenofovir 300mg');
 
 -- 5. Rooms (giữ nguyên từ data mẫu ban đầu)
 INSERT INTO Rooms (room_name, room_type) VALUES
