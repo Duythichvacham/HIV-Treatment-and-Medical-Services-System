@@ -76,7 +76,11 @@ const newsData = [
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("vi-VN", { year: "numeric", month: "2-digit", day: "2-digit" });
+  return d.toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
 }
 
 function SectionAppear({ children, effect = "fade-up", delay = 0 }) {
@@ -129,10 +133,15 @@ const NewsPage = () => {
     <div className="min-h-screen bg-green-50 py-12">
       <div className="max-w-6xl mx-auto px-4">
         <SectionAppear effect="fade-down">
-          <h1 className="text-4xl font-extrabold text-green-800 text-center mb-4">Tin tức & Kiến thức về HIV/AIDS</h1>
+          <h1 className="text-4xl font-extrabold text-green-800 text-center mb-4">
+            Tin tức & Kiến thức về HIV/AIDS
+          </h1>
         </SectionAppear>
         <SectionAppear effect="fade-up" delay={0.1}>
-          <p className="text-center text-gray-600 mb-10 text-lg">Tổng hợp các bài viết, tin tức, kiến thức hữu ích về HIV/AIDS, điều trị, phòng tránh và chăm sóc sức khỏe.</p>
+          <p className="text-center text-gray-600 mb-10 text-lg">
+            Tổng hợp các bài viết, tin tức, kiến thức hữu ích về HIV/AIDS, điều
+            trị, phòng tránh và chăm sóc sức khỏe.
+          </p>
         </SectionAppear>
         {featured && (
           <SectionAppear effect="fade-right" delay={0.2}>
@@ -140,16 +149,28 @@ const NewsPage = () => {
               <div className="flex-1 flex flex-col justify-between">
                 <div className="flex items-center gap-2 mb-2">
                   {featured.is_educational ? (
-                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">Kiến thức</span>
+                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                      Kiến thức
+                    </span>
                   ) : (
-                    <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">Tin tức</span>
+                    <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                      Tin tức
+                    </span>
                   )}
-                  <span className="text-gray-400 text-xs ml-auto">{formatDate(featured.created_at)}</span>
+                  <span className="text-gray-400 text-xs ml-auto">
+                    {formatDate(featured.created_at)}
+                  </span>
                 </div>
-                <h2 className="font-extrabold text-2xl md:text-3xl text-green-800 mb-4 line-clamp-2">{featured.title}</h2>
-                <p className="text-gray-700 text-base md:text-lg mb-6 line-clamp-5">{featured.content}</p>
+                <h2 className="font-extrabold text-2xl md:text-3xl text-green-800 mb-4 line-clamp-2">
+                  {featured.title}
+                </h2>
+                <p className="text-gray-700 text-base md:text-lg mb-6 line-clamp-5">
+                  {featured.content}
+                </p>
                 <div className="mt-auto">
-                  <button className="bg-green-600 text-white px-6 py-3 rounded-full font-bold text-base hover:bg-green-700 transition shadow-lg">Xem chi tiết</button>
+                  <button className="bg-green-600 text-white px-6 py-3 rounded-full font-bold text-base hover:bg-green-700 transition shadow-lg">
+                    Xem chi tiết
+                  </button>
                 </div>
               </div>
             </div>
@@ -158,18 +179,33 @@ const NewsPage = () => {
         <SectionAppear effect="fade-up" delay={0.3}>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {rest.map((news) => (
-              <div key={news.post_id} className="bg-white rounded-xl shadow p-6 flex flex-col h-full border border-green-100 hover:shadow-lg transition animate-fade-in-up">
+              <div
+                key={news.post_id}
+                className="bg-white rounded-xl shadow p-6 flex flex-col h-full border border-green-100 hover:shadow-lg transition animate-fade-in-up"
+              >
                 <div className="flex items-center gap-2 mb-2">
                   {news.is_educational ? (
-                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">Kiến thức</span>
+                    <span className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full">
+                      Kiến thức
+                    </span>
                   ) : (
-                    <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">Tin tức</span>
+                    <span className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                      Tin tức
+                    </span>
                   )}
-                  <span className="text-gray-400 text-xs ml-auto">{formatDate(news.created_at)}</span>
+                  <span className="text-gray-400 text-xs ml-auto">
+                    {formatDate(news.created_at)}
+                  </span>
                 </div>
-                <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">{news.title}</h3>
-                <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">{news.content}</p>
-                <button className="mt-auto bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full">Xem chi tiết</button>
+                <h3 className="font-bold text-lg text-green-800 mb-2 line-clamp-2">
+                  {news.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-4 flex-1 line-clamp-3">
+                  {news.content}
+                </p>
+                <button className="mt-auto bg-green-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-green-700 transition w-full">
+                  Xem chi tiết
+                </button>
               </div>
             ))}
           </div>
@@ -179,4 +215,4 @@ const NewsPage = () => {
   );
 };
 
-export default NewsPage; 
+export default NewsPage;

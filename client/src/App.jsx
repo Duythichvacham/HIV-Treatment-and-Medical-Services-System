@@ -34,6 +34,8 @@ import DoctorProfile from "./pages/Doctor/DoctorProfile";
 
 import PaymentResult from "./pages/Payment/PaymentResult";
 import Manager from "./pages/Manager/ManagerDashboard";
+import Blogs from "./pages/Guest/Home/Blogs";
+import BlogDetails from "./pages/Guest/Home/BlogDetails";
 function App() {
   return (
     <AuthProvider>
@@ -128,7 +130,10 @@ function AppContent() {
           <Route path="/doctorpage" element={<DoctorPage />} />
           <Route path="/appointment" element={<Appointment />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/news" element={<NewsPage />} />
+          {/* <Route path="/news" element={<NewsPage />} /> */}
+          <Route path="/news" element={<Blogs />} />
+          <Route path="/news/:id" element={<BlogDetails />} />
+          {/* Protected Patient Routes */}
           <Route
             path="/profile"
             element={
