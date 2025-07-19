@@ -137,7 +137,7 @@ const RegistrationStaff = () => {
             <div className="space-y-6">
               {/* Search Bar */}
               <div className="bg-white rounded-lg shadow-sm border p-4">
-                <SearchBar
+                <SearchAndFilter
                   searchTerm={searchTerm}
                   onSearchChange={setSearchTerm}
                   placeholder="Tìm kiếm trong lịch sử thanh toán..."
