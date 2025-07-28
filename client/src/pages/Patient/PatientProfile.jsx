@@ -202,7 +202,7 @@ const PatientProfile = () => {
       );
       // Xác thực OTP trước khi đổi mật khẩu
       const verifyRes = await fetch(
-        "http://localhost:5000/api/auth/verify-otp",
+        "http://localhost:5000/api/v1/auth/verify-otp",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -223,7 +223,7 @@ const PatientProfile = () => {
       // Chỉ khi xác thực OTP thành công mới gọi đổi mật khẩu
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000/api/auth/change-password",
+        "http://localhost:5000/api/v1/auth/change-password",
         {
           method: "POST",
           headers: {
@@ -264,14 +264,17 @@ const PatientProfile = () => {
     setOtpMessage("");
     try {
       // Gửi OTP về email hoặc số điện thoại
-      const response = await fetch("http://localhost:5000/api/auth/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: personalInfo.email,
-          phone: personalInfo.phone,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:5000/api/v1/auth/send-otp",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: personalInfo.email,
+            phone: personalInfo.phone,
+          }),
+        }
+      );
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Gửi OTP thất bại");
       setOtpMessage("OTP đã được gửi!");
