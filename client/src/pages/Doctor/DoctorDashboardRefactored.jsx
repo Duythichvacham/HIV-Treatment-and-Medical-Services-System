@@ -58,9 +58,9 @@ const DoctorDashboard = () => {
             setViewMode("edit");
             setViewingPatientId(patient.patient_id);
             setViewingAppointmentId(patient.appointment_id);
-            alert(
-              "Bắt đầu khám bệnh nhân: " + (patient.full_name || patient.name)
-            );
+            // alert(
+            //   "Bắt đầu khám bệnh nhân: " + (patient.full_name || patient.name)
+            // );
           } else {
             alert("Có lỗi xảy ra: " + result.error);
           }

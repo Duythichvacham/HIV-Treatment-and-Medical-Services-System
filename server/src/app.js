@@ -1,6 +1,7 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const express = require("express"); // import express
 const cors = require("cors"); // import cors
+
 const app = express(); // khởi tạo ứng dụng express
 // const errorHandler = require("./middleware/errorHandler"); // Import middleware xử lý lỗi
 const { initializeScheduler } = require("./utils/scheduler"); // Import scheduler cho queue management

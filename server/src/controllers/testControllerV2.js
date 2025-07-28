@@ -2,6 +2,28 @@ const appointmentService = require("../services/appointmentService");
 const testRequestService = require("../services/testRequestService");
 const labstaffService = require("../services/labstaffService");
 
+const getTestResults = async (req, res) => {
+  try {
+    const { appointment_id } = req.query;
+    if (!appointment_id) {
+      return res.status(400).json({ message: "Thiếu appointment_id" });
+    }
+    const testResults = await labstaffService.getTestResultsByAppointmentId(
+      appointment_id
+    );
+
+    res.status(200).json(testResults);
+  } catch (error) {
+    console.error("Error fetching test results:", error);
+    res
+      .status(500)
+      .json({
+        message: "Lỗi khi lấy kết quả xét nghiệm",
+        error: error.message,
+      });
+  }
+};
+
 const getTestRequests = async (req, res) => {
   try {
     const { bookingDate } = req.query;
@@ -92,4 +114,5 @@ module.exports = {
   getAppointments,
   getTestRequests,
   saveTestResults,
+  getTestResults,
 };

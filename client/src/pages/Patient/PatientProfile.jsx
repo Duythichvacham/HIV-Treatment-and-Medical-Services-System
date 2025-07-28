@@ -285,6 +285,8 @@ const PatientProfile = () => {
   if (loadingProfile) return <div>Đang tải hồ sơ...</div>;
   if (!personalInfo) return <div>Không tìm thấy thông tin cá nhân.</div>;
 
+  console.log("Patient Detail:", patientDetail);
+
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-2">
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">

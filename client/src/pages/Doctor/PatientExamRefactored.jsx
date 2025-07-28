@@ -133,6 +133,14 @@ const PatientExamRefactored = ({
             "- Kế hoạch tái khám\n" +
             "- Ghi chú của bác sĩ"
         );
+        const firstErrorInput = document.querySelector(".error");
+        if (firstErrorInput) {
+          firstErrorInput.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          firstErrorInput.focus({ preventScroll: true }); // Focus vào input
+        }
         return;
       }
 
@@ -275,7 +283,8 @@ const PatientExamRefactored = ({
         )}
 
         {/* Latest Test Results */}
-        {combinedPatientData?.latestTestResults ? (
+        {combinedPatientData?.latestTestResults &&
+        Object.keys(combinedPatientData.latestTestResults).length > 0 ? (
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-4 border-b pb-2">
               <div>
@@ -303,24 +312,38 @@ const PatientExamRefactored = ({
               </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {Object.entries(combinedPatientData.latestTestResults).map(
-                ([key, test]) => (
+              {(() => {
+                const validTests = Object.entries(
+                  combinedPatientData.latestTestResults
+                ).filter(([, test]) => test && test.test_name);
+
+                if (validTests.length === 0) {
+                  return (
+                    <div className="col-span-2 text-center py-4">
+                      <p className="text-gray-500">
+                        Không có kết quả xét nghiệm hợp lệ
+                      </p>
+                    </div>
+                  );
+                }
+
+                return validTests.map(([key, test]) => (
                   <div key={key}>
                     <span className="text-sm text-gray-600">
                       {test.test_name}:
                     </span>
                     <p className="font-medium">
-                      {test.result_value} {test.unit}
+                      {test.result_value || "Chưa có kết quả"} {test.unit || ""}
                     </p>
                     <span className="text-xs text-gray-500">
-                      {test.test_date}
+                      {test.test_date || "Chưa có ngày"}
                     </span>
                     {test.notes && (
                       <p className="text-xs text-gray-600 mt-1">{test.notes}</p>
                     )}
                   </div>
-                )
-              )}
+                ));
+              })()}
             </div>
           </div>
         ) : (

@@ -13,6 +13,7 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
 
   if (!token) {
+    console.log("token: ", token);
     console.log("[AUTH] No token provided - sending 401");
     return res.status(401).json({ message: "No token provided" });
   }

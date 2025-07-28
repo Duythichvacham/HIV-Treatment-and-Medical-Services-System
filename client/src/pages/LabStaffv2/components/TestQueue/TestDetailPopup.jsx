@@ -45,6 +45,28 @@ const TestDetailPopup = ({ test, onClose, onCompleteTest }) => {
         );
         return false;
       }
+
+      // Validation cho test_type_id = 1 (CD4): 500-1500
+      if (result.tt_id === 1) {
+        const value = parseFloat(result.result_value);
+        if (value < 500 || value > 1500) {
+          setError(
+            `Kết quả cho xét nghiệm "${result.tt_name}" phải nằm trong khoảng 500-1500.`
+          );
+          return false;
+        }
+      }
+
+      // Validation cho test_type_id = 2 (Viral Load): <50
+      if (result.tt_id === 2) {
+        const value = parseFloat(result.result_value);
+        if (value >= 50) {
+          setError(
+            `Kết quả cho xét nghiệm "${result.tt_name}" phải nhỏ hơn 50.`
+          );
+          return false;
+        }
+      }
     }
     setError("");
     return true;

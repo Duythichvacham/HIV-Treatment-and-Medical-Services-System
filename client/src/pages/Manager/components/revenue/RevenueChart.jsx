@@ -22,7 +22,7 @@ ChartJS.register(
 );
 
 const RevenueChart = () => {
-  const { revenue, group, setGroup, status, setStatus, loading, error } =
+  const { revenue, group, setGroup, loading, error } =
     useRevenue();
 
   const chartData = {
@@ -63,9 +63,7 @@ const RevenueChart = () => {
     setGroup(newFilter);
   };
 
-  const handleStatusChange = (newStatus) => {
-    setStatus(newStatus);
-  };
+
 
   if (loading)
     return <div className="text-center py-12 text-gray-600">Đang tải...</div>;
@@ -110,38 +108,7 @@ const RevenueChart = () => {
             Theo tháng
           </button>
         </div>
-        <div className="flex gap-2">
-          <button
-            className={`px-4 py-2 rounded-full font-semibold ${
-              status === "paid"
-                ? "bg-purple-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-            onClick={() => handleStatusChange("paid")}
-          >
-            Đã thanh toán
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full font-semibold ${
-              status === "pending"
-                ? "bg-purple-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-            onClick={() => handleStatusChange("pending")}
-          >
-            Chờ thanh toán
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full font-semibold ${
-              status === "cancelled"
-                ? "bg-purple-500 text-white"
-                : "bg-gray-200 text-gray-700"
-            }`}
-            onClick={() => handleStatusChange("cancelled")}
-          >
-            Đã hủy
-          </button>
-        </div>
+        
       </div>
       <div style={{ height: "400px" }}>
         <Bar data={chartData} options={options} />

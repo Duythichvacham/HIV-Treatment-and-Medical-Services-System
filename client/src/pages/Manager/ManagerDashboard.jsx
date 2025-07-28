@@ -160,16 +160,6 @@ const ManagerDashboard = () => {
               iconBg="bg-green-50"
             />
             <StatsCard
-              title="Tổng doanh thu"
-              value={`${new Intl.NumberFormat("vi-VN").format(
-                stats.totalRevenue
-              )} ₫`}
-              subtitle={`Năm ${stats.revenueYear}`}
-              icon={<DollarSign className="w-6 h-6" />}
-              iconColor="text-purple-500"
-              iconBg="bg-purple-50"
-            />
-            <StatsCard
               title="Tổng dịch vụ"
               value={stats.totalServices}
               subtitle={`${stats.activeServices} đang hoạt động`}

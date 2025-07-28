@@ -82,13 +82,16 @@ export const patientApi = {
   },
 
   // Get patient's latest test results
-  getLatestTests: async (patientId) => {
+  getLatestTests: async (patientId, appointmentId) => {
     try {
       console.log(
         "[patientApi.getLatestTests] Fetching latest tests for patient:",
         patientId
       );
-      const url = `/api/v1/patients/latest-tests/${patientId}`;
+      let url = `/api/v1/patients/latest-tests?patientId=${patientId}`;
+      if (appointmentId) {
+        url += `&appointmentId=${appointmentId}`;
+      }
       const response = await api.get(url);
       return response.data;
     } catch (error) {

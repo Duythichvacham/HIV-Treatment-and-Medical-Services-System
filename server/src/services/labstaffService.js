@@ -56,6 +56,25 @@ const saveTestResults = async ({
   }
 };
 
+const getTestResultsByAppointmentId = async (appointmentId) => {
+  const pool = await poolPromise;
+  const query = `
+    SELECT tr.*, tt.name, tn.notes, tn.test_datetime
+    FROM TestResults tr
+      JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+      JOIN TestTypes tt on tt.test_type_id = tr.test_type_id
+    WHERE tn.appointment_id = @appointmentId
+  `;
+
+  const result = await pool
+    .request()
+    .input("appointmentId", appointmentId)
+    .query(query);
+
+  return result.recordset;
+};
+
 module.exports = {
   saveTestResults,
+  getTestResultsByAppointmentId,
 };

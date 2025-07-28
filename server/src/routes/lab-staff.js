@@ -8,6 +8,7 @@ const testControllerV2 = require("../controllers/testControllerV2");
 router.get("/appointments/test", testControllerV2.getAppointments);
 router.get("/appointments/test-request", testControllerV2.getTestRequests);
 router.post("/test/results", testControllerV2.saveTestResults);
+router.get("/test/results", testControllerV2.getTestResults);
 
 router.get("/", testController.getLabQueue);
 

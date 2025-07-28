@@ -6,6 +6,11 @@ import ErrorAlert from "../../components/common/ErrorAlert";
 import EmptyState from "../../components/common/EmptyState";
 import TableHeader from "../../components/common/TableHeader";
 import AppointmentCard from "./AppointmentCard";
+import ExamHistoryDetailCard from "../Doctor/components/PatientExam/History/ExamHistoryDetailCard";
+import { useExamDetail } from "../../hooks/patientHistory/useExamDetail";
+import { useLabResultDetail } from "../../hooks/labstaff/useLabResultDetail";
+import LabResultDetailCard from "./LabResultDetailCard";
+import { useAuth } from "../../contexts/AuthContext";
 const AppointmentHistory = () => {
   const {
     // State
@@ -24,7 +29,29 @@ const AppointmentHistory = () => {
     formatTime,
   } = useAppointmentHistory();
 
+  // NEW: Use useExamDetail hook to manage the detail modal state
+  const {
+    selectedExam,
+    examDetail,
+    prescriptionDetail,
+    detailLoading,
+    error: examDetailError, // Renamed to avoid conflict
+    handleViewDetail,
+    handleCloseDetail,
+  } = useExamDetail();
+
+  const {
+    selectedLabResult,
+    labResultDetail,
+    labResultLoading,
+    error: labResultError,
+    handleViewLabResult,
+    handleCloseLabResult,
+  } = useLabResultDetail();
+
   const filteredAppointments = getFilteredAppointments();
+  const { user } = useAuth(); // Assuming you have a useAuth hook to get the current user
+  console.log(user);
 
   if (loading) {
     return (
@@ -96,10 +123,31 @@ const AppointmentHistory = () => {
               getStatusBadge={getStatusBadge}
               formatDate={formatDate}
               formatTime={formatTime}
+              //
+              onViewDetails={handleViewDetail}
+              onViewLabResult={handleViewLabResult} // NEW: Pass the lab result handler
             />
           ))}
         </div>
       )}
+      <ExamHistoryDetailCard
+        patientId={user.patient_id}
+        selectedExam={selectedExam}
+        examDetail={examDetail}
+        prescriptionDetail={prescriptionDetail}
+        detailLoading={detailLoading}
+        handleCloseDetail={handleCloseDetail}
+        error={examDetailError} // Pass error state for detail fetching
+      />
+
+      {/* Lab Result Modal */}
+      <LabResultDetailCard
+        selectedLabResult={selectedLabResult}
+        labResultDetail={labResultDetail}
+        labResultLoading={labResultLoading}
+        handleCloseLabResult={handleCloseLabResult}
+        error={labResultError}
+      />
     </div>
   );
 };

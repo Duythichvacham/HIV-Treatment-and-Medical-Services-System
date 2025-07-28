@@ -1,9 +1,9 @@
-const { getTomorrowAppointments } = require('../services/appointmentService');
-const  {sendReminderEmail}  = require('../controllers/emailController');
+const { getTomorrowAppointments } = require("../services/appointmentService");
+const { sendReminderEmail } = require("../controllers/emailController");
 
 async function sendRemindersForTomorrow() {
   const appointments = await getTomorrowAppointments();
-  console.log('Appointments to send reminder:', appointments);
+  console.log("Appointments to send reminder:", appointments);
   for (const appt of appointments) {
     try {
       await sendReminderEmail(appt);
