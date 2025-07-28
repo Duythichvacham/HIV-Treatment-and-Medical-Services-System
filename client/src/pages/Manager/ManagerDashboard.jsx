@@ -12,11 +12,12 @@ import ServiceManagement from "./components/services/ServiceManagement";
 import BlogManagement from "./components/blogs/BlogManagement";
 import WorkingShiftManagement from "./components/workingShifts/WorkingShiftManagement";
 import ARVRegimenManagement from "./components/arvRegimens/ARVRegimenManagement";
-import TabNavigation from "../../components/common/TabNavigation";
+import SidebarNavigation from "../../components/common/SidebarNavigation";
 import RevenueChart from "./components/revenue/RevenueChart";
 
 const ManagerDashboard = () => {
   const [activeTab, setActiveTab] = useState("users");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Tabs configuration
   const tabs = [
@@ -60,26 +61,25 @@ const ManagerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Dashboard Quản lý
-          </h1>
-          <p className="text-gray-600">Quản lý tổng thể hệ thống HIV Care</p>
+      {/* Sidebar Navigation */}
+      <SidebarNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+
+      {/* Main Content */}
+      <div
+        className={`flex flex-col transition-all duration-300 pt-16 ${
+          sidebarCollapsed ? "ml-16" : "ml-64"
+        }`}
+      >
+        {/* Content Area */}
+        <div className="min-h-screen overflow-y-auto">
+          <div className="px-6 py-6">{renderTabContent()}</div>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Tab Navigation */}
-        <TabNavigation
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-
-        {/* Tab Content */}
-        <div className="mt-6">{renderTabContent()}</div>
       </div>
     </div>
   );
