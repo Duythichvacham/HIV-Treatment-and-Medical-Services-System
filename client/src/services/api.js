@@ -438,20 +438,6 @@ export const getPaymentHistory = async (date = null, search = null) => {
 // ===========================================
 
 /**
- * Get all users for manager dashboard
- */
-export const getUsers = async () => {
-  try {
-    const response = await api.get("/api/v1/managers/users");
-    console.log("✅ getUsers response:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ getUsers error:", error);
-    throw error;
-  }
-};
-
-/**
  * Get all services for manager dashboard
  */
 export const getManagerServices = async () => {

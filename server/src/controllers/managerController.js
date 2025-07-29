@@ -1,10 +1,11 @@
 const userService = require("../services/userService");
 const serviceService = require("../services/serviceService");
-const slotService = require("../services/slots/slotService");
+const slotService = require("../services/slotService");
 const roomService = require("../services/roomService");
 const doctorService = require("../services/doctorService");
 const workingShiftService = require("../services/workingShiftService");
 const invoiceService = require("../services/invoiceService");
+const authService = require("../services/authService");
 
 const getRevenue = async (req, res) => {
   try {
@@ -313,6 +314,69 @@ const getAvailableRooms = async (req, res) => {
     });
   }
 };
+
+const createUser = async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+
+    // Validate required fields
+    if (!username || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Vui lòng điền đầy đủ thông tin bắt buộc (username, password, role)",
+      });
+    }
+
+    // Validate role
+    const allowedRoles = [
+      "Doctor",
+      "Lab-Staff",
+      "Registration-staff",
+      "Manager",
+    ];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Role không hợp lệ. Chỉ cho phép: Doctor, Lab-Staff, Registration-staff, Manager",
+      });
+    }
+
+    const result = await userService.createUser({
+      username,
+      password,
+      role,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: `Tạo tài khoản ${role} thành công`,
+    });
+  } catch (err) {
+    // Check for duplicate constraints
+    if (
+      err.message.includes("duplicate") ||
+      err.message.includes("already exists") ||
+      err.message.includes("UNIQUE KEY constraint") ||
+      err.message.includes("Cannot insert duplicate key") ||
+      err.message.includes("Username already exists")
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Tên đăng nhập đã tồn tại",
+      });
+    }
+
+    console.error("Create user error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi tạo tài khoản",
+    });
+  }
+};
+
 const getDoctorsForDropdown = async (req, res) => {
   try {
     const doctors = await doctorService.getDoctorsForDropdown();
@@ -341,6 +405,7 @@ module.exports = {
   createShift,
   updateShift,
   getUsers,
+  createUser,
   createService,
   setActive,
   createSlot,
