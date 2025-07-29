@@ -51,7 +51,7 @@ const PatientLogin = () => {
     setForgotMsg("");
     try {
       // Gửi OTP về email
-      const res = await fetch("http://localhost:5000/api/auth/send-otp", {
+      const res = await fetch("http://localhost:5000/api/v1/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotData.email }),
@@ -87,7 +87,7 @@ const PatientLogin = () => {
     try {
       // Xác thực OTP
       const verifyRes = await fetch(
-        "http://localhost:5000/api/auth/verify-otp",
+        "http://localhost:5000/api/v1/auth/verify-otp",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ const PatientLogin = () => {
         throw new Error(verifyData.message || "Xác thực OTP thất bại");
       // Gọi API reset password
       const resetRes = await fetch(
-        "http://localhost:5000/api/auth/reset-password",
+        "http://localhost:5000/api/v1/auth/reset-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -190,9 +190,15 @@ const PatientLogin = () => {
           </p>
         </div>
         <div className="mt-4 text-xs text-gray-500">
-          <div><b>Bệnh nhân</b>: patient01 / hash_patient1_password</div>
-          <div><b>Bệnh nhân</b>: patient02 / hash_patient2_password</div>
-          <div><b>Bệnh nhân</b>: patient03 / hash_patient3_password</div>
+          <div>
+            <b>Bệnh nhân</b>: patient01 / hash_patient1_password
+          </div>
+          <div>
+            <b>Bệnh nhân</b>: patient02 / hash_patient2_password
+          </div>
+          <div>
+            <b>Bệnh nhân</b>: patient03 / hash_patient3_password
+          </div>
         </div>
         <button
           type="button"

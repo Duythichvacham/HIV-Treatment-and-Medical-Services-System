@@ -22,8 +22,7 @@ ChartJS.register(
 );
 
 const RevenueChart = () => {
-  const { revenue, group, setGroup, loading, error } =
-    useRevenue();
+  const { revenue, group, setGroup, loading, error } = useRevenue();
 
   const chartData = {
     labels: revenue.map((item) => item.period),
@@ -62,8 +61,6 @@ const RevenueChart = () => {
   const handleFilterChange = (newFilter) => {
     setGroup(newFilter);
   };
-
-
 
   if (loading)
     return <div className="text-center py-12 text-gray-600">Đang tải...</div>;
@@ -108,7 +105,6 @@ const RevenueChart = () => {
             Theo tháng
           </button>
         </div>
-        
       </div>
       <div style={{ height: "400px" }}>
         <Bar data={chartData} options={options} />
