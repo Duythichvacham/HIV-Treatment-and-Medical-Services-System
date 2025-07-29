@@ -15,12 +15,10 @@ const getTestResults = async (req, res) => {
     res.status(200).json(testResults);
   } catch (error) {
     console.error("Error fetching test results:", error);
-    res
-      .status(500)
-      .json({
-        message: "Lỗi khi lấy kết quả xét nghiệm",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Lỗi khi lấy kết quả xét nghiệm",
+      error: error.message,
+    });
   }
 };
 
@@ -99,7 +97,7 @@ const saveTestResults = async (req, res) => {
     });
 
     res
-      .status(201)
+      .status(200)
       .json({ message: "Lưu kết quả xét nghiệm thành công", data: result });
   } catch (error) {
     console.error("Error in saveTestResults:", error);

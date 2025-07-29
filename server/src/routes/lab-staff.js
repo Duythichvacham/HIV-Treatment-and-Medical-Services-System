@@ -73,8 +73,6 @@ router.get(
 
 router.post("/send-test-result", emailController.sendTestResult);
 
-router.post("/send-reminder", emailController.sendAllReminders);
-
 router.post("/test-results/bulk", testController.createBulkTestResults);
 
 // Lấy danh sách test requests theo status

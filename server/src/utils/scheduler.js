@@ -3,6 +3,9 @@ const queueService = require("../services/queues/queueService");
 const appointmentService = require("../services/appointmentService");
 const { poolPromise } = require("../config/db");
 
+//gửi mail nhắc lịch hẹn
+const { sendAllReminders } = require("../controllers/emailController");
+
 /**
  * Tự động cancel các appointments chưa hoàn thành vào cuối ngày
  */
@@ -79,6 +82,22 @@ function initializeScheduler() {
     },
     {
       timezone: "Asia/Ho_Chi_Minh",
+    }
+  );
+
+  cron.schedule(
+    "0 8 * * *", // Chạy vào 8:00 sáng mỗi ngày
+    async () => {
+      try {
+        console.log("🔄 Bắt đầu gửi email nhắc lịch hẹn...");
+        await sendAllReminders();
+        console.log("✅ Đã hoàn thành gửi email nhắc lịch hẹn.");
+      } catch (error) {
+        console.error("❌ Lỗi khi gửi email nhắc lịch hẹn:", error);
+      }
+    },
+    {
+      timezone: "Asia/Ho_Chi_Minh", // Đặt múi giờ Việt Nam
     }
   );
 

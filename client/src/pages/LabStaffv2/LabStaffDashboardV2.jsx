@@ -9,6 +9,7 @@ import FilterBar from "./components/FilterBar";
 import { TEST_STATUS } from "../../utils/labStaffConstants";
 import useLabAppointments from "../../hooks/labstaff/useLabAppointments";
 import { useAuth } from "../../contexts/AuthContext";
+import useSendTestResultEmail from "../../hooks/email/useSendTestResultEmail";
 
 const LabStaffDashboard = () => {
   //const navigate = useNavigate();
@@ -33,6 +34,8 @@ const LabStaffDashboard = () => {
     saveTestResults,
     refreshAppointments,
   } = useLabAppointments(selectedDate); // Thay đổi ở đây: truyền selectedDate trực tiếp
+
+  const { sendEmail } = useSendTestResultEmail();
 
   const stats = useMemo(() => {
     const counts = getServiceTypeCounts();
@@ -148,8 +151,10 @@ const LabStaffDashboard = () => {
 
         // 3. Gọi API để LƯU KẾT QUẢ
         const saveResult = await saveTestResults(payload);
-        if (!saveResult.success) {
-          throw new Error(saveResult.error);
+        if (saveResult.success) {
+          const test_note_id = saveResult.data.data.test_note_id;
+          console.log("test note id: ", test_note_id);
+          sendEmail(test_note_id);
         }
 
         // 4. Gọi API để CẬP NHẬT TRẠNG THÁI
@@ -175,6 +180,7 @@ const LabStaffDashboard = () => {
       updateLabAppointmentStatus,
       user,
       refreshAppointments,
+      sendEmail,
     ]
   );
 
