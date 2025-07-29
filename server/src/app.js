@@ -1,6 +1,7 @@
 require("dotenv").config(); // load biến môi trường từ file .env
 const express = require("express"); // import express
 const cors = require("cors"); // import cors
+
 const app = express(); // khởi tạo ứng dụng express
 // const errorHandler = require("./middleware/errorHandler"); // Import middleware xử lý lỗi
 const { initializeScheduler } = require("./utils/scheduler"); // Import scheduler cho queue management
@@ -27,7 +28,7 @@ app.get("/", (req, res) => {
 // Khởi tạo scheduler cho queue management and auto-cancel appointments
 // Chạy các job định kỳ để quản lý queue numbers và tự động cancel appointments
 // sau 17h
-// initializeScheduler();
+initializeScheduler();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

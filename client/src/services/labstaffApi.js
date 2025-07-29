@@ -1,5 +1,19 @@
 import api from "./api";
 
+export const fetchLabResultDetail = async (appointment_id) => {
+  try {
+    console.log("appointment id lab test: ", appointment_id); // Debug
+    const response = await api.get(
+      `/api/v1/lab/test/results?appointment_id=${appointment_id}`
+    );
+    console.log("Lab result detail:", response.data); // Debug
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching lab result detail:", error);
+    throw error;
+  }
+};
+
 export const fetchSelfRegisteredOrders = async ({ date }) => {
   try {
     const response = await api.get(

@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import AvatarDropdown from "./AvatarDropdown";
 import { getServices } from "../../../services/api";
 import { useAuth } from "../../../contexts/AuthContext";
+import Image from "../../../assets/doctors/doc1.png"; // Adjust the path as necessary
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -81,25 +82,25 @@ const Header = () => {
             <nav className="hidden md:flex items-center space-x-8">
               <Link
                 to="/about"
-                className="text-gray-700 hover:text-red-600 font-medium"
+                className="text-gray-700 hover:text-green-600 font-medium"
               >
                 Giới thiệu
               </Link>
               <Link
                 to="/doctorpage"
-                className="text-gray-700 hover:text-red-600 font-medium"
+                className="text-gray-700 hover:text-green-600 font-medium"
               >
                 Chuyên Gia - Bác sĩ
               </Link>
               <Link
                 to="/news"
-                className="text-gray-700 hover:text-red-600 font-medium"
+                className="text-gray-700 hover:text-green-600 font-medium"
               >
                 Tin tức
               </Link>{" "}
               <div className="relative" ref={serviceRef}>
                 <button
-                  className="inline-flex items-center text-gray-700 hover:text-red-600 font-medium focus:outline-none transition-colors duration-200"
+                  className="inline-flex items-center text-gray-700 hover:text-green-600 font-medium focus:outline-none transition-colors duration-200"
                   onClick={() => setIsServiceOpen(!isServiceOpen)}
                 >
                   Dịch vụ HIV
@@ -177,13 +178,13 @@ const Header = () => {
           {/* Auth Buttons or Avatar - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <AvatarDropdown user={user} onLogout={handleLogout} />
+              <AvatarDropdown user={user} onLogout={handleLogout} img={Image} />
             ) : (
               <>
                 <Link
                   to="/login/patient"
                   state={{ from: location.pathname }}
-                  className="text-gray-700 hover:text-red-600 font-medium"
+                  className="text-gray-700 hover:text-green-600 font-medium"
                 >
                   Đăng nhập
                 </Link>
@@ -237,21 +238,21 @@ const Header = () => {
                 <>
                   <Link
                     to="/about"
-                    className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                    className="block px-3 py-2 text-gray-700 hover:text-green-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Giới thiệu
                   </Link>
                   <Link
                     to="/doctorpage"
-                    className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                    className="block px-3 py-2 text-gray-700 hover:text-green-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Chuyên Gia - Bác sĩ
                   </Link>
                   <Link
                     to="/news"
-                    className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                    className="block px-3 py-2 text-gray-700 hover:text-green-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Tin tức
@@ -290,7 +291,7 @@ const Header = () => {
                   </div>{" "}
                   <Link
                     to="/appointment"
-                    className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                    className="block px-3 py-2 text-gray-700 hover:text-green-600 font-medium"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Đặt lịch
@@ -299,14 +300,18 @@ const Header = () => {
               )}
               <div className="border-t border-gray-200 pt-2">
                 {user ? (
-                  <AvatarDropdown user={user} onLogout={handleLogout} />
+                  <AvatarDropdown
+                    user={user}
+                    onLogout={handleLogout}
+                    img={Image}
+                  />
                 ) : (
                   <>
                     {" "}
                     <Link
                       to="/login/patient"
                       state={{ from: location.pathname }}
-                      className="block px-3 py-2 text-gray-700 hover:text-red-600 font-medium"
+                      className="block px-3 py-2 text-gray-700 hover:text-green-600 font-medium"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Đăng nhập

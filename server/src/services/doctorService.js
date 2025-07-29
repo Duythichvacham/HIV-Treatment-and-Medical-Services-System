@@ -22,7 +22,7 @@ const updateDoctorProfile = async (doctorId, updateData) => {
       .input("full_name", updateData.full_name)
       .input("email", updateData.email)
       .input("phone", updateData.phone)
-      .input("image_url", updateData.image_url)
+      //.input("image_url", updateData.image_url)
       .input("degrees", updateData.degrees)
       .input("experience_years", updateData.experience_years).query(`
         UPDATE Doctors
@@ -30,7 +30,7 @@ const updateDoctorProfile = async (doctorId, updateData) => {
           full_name = @full_name,
           email = @email,
           phone = @phone,
-          image_url = @image_url,
+          --image_url = @image_url,
           degrees = @degrees,
           experience_years = @experience_years
         WHERE doctor_id = @doctor_id

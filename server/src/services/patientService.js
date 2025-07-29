@@ -163,38 +163,48 @@ exports.getCurrentARVRegimen = async (patientId) => {
   return result.recordset[0] || null; // Trả về null nếu không tìm thấy regimen
 };
 
-exports.getLatestTestResults = async (patientId) => {
+exports.getLatestTestResults = async (patientId, appointmentId) => {
   const pool = await poolPromise;
+
+  // Build query conditions
+  let whereConditions = [];
+  if (patientId) {
+    whereConditions.push("a.patient_id = @patient_id");
+  }
+  if (appointmentId) {
+    whereConditions.push("a.appointment_id = @appointment_id");
+  }
+
+  const whereClause =
+    whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+
   const query = `
-      SELECT 
-        tt.name as test_name,
-        ISNULL(latest_tr.result_value, '') AS result_value,
-        ISNULL(latest_tr.unit, '') AS unit,
-        ISNULL(CONVERT(VARCHAR, latest_tr.created_at, 120), '') AS test_date,
-        ISNULL(latest_tr.notes, '') AS notes
-      FROM TestTypes tt
-      OUTER APPLY (
-          SELECT TOP 1 
-              tr.result_value, 
-              tr.unit, 
-              tr.created_at, 
-              tn.notes
-          FROM Appointments a
-          JOIN TestNotes tn ON a.appointment_id = tn.appointment_id
-          JOIN TestResults tr ON tr.test_note_id = tn.test_note_id
-          WHERE 
-              a.patient_id = @patient_id AND 
-              tr.test_type_id = tt.test_type_id
-          ORDER BY tr.created_at DESC
-      ) AS latest_tr
-    `;
+    SELECT 
+      tt.name as test_name,
+      tr.result_value,
+      tr.unit,
+      CONVERT(VARCHAR, tr.created_at, 120) AS test_date,
+      tn.notes
+    FROM TestTypes tt
+    LEFT JOIN TestResults tr ON tr.test_type_id = tt.test_type_id
+    LEFT JOIN TestNotes tn ON tr.test_note_id = tn.test_note_id
+    LEFT JOIN Appointments a ON tn.appointment_id = a.appointment_id
+    ${whereClause}
+    ORDER BY tt.test_type_id, tr.created_at DESC
+  `;
 
-  const result = await pool
-    .request()
-    .input("patient_id", patientId)
-    .query(query);
+  // console.log("Executing query:", query);
+  // console.log("With parameters:", { patientId, appointmentId });
 
-  console.log(`Found ${result.recordset.length} test results`);
+  const request = pool.request();
+  if (patientId) {
+    request.input("patient_id", patientId);
+  }
+  if (appointmentId) {
+    request.input("appointment_id", appointmentId);
+  }
+
+  const result = await request.query(query);
 
   const testResults = {
     sang_loc: null,
@@ -203,12 +213,27 @@ exports.getLatestTestResults = async (patientId) => {
     viral_load: null,
   };
 
+  // Group results by test type and get the latest for each
+  const testMap = new Map();
+
   result.recordset.forEach((test) => {
+    if (!test.test_name || !test.result_value) return;
+
+    const key = test.test_name;
+    if (
+      !testMap.has(key) ||
+      new Date(test.test_date) > new Date(testMap.get(key).test_date)
+    ) {
+      testMap.set(key, test);
+    }
+  });
+
+  testMap.forEach((test) => {
     const testData = {
-      result_value: test.result_value,
-      unit: test.unit,
-      notes: test.notes,
-      test_date: test.test_date,
+      result_value: test.result_value || "",
+      unit: test.unit || "",
+      notes: test.notes || "",
+      test_date: test.test_date || "",
     };
 
     switch (test.test_name) {

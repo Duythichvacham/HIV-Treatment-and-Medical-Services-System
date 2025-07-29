@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 
 const AppointmentCard = ({
   appointment,
   getStatusBadge,
   formatDate,
   formatTime,
+  onViewDetails,
+  onViewLabResult,
 }) => {
   const statusInfo = getStatusBadge(appointment.status);
-  const [showDetail, setShowDetail] = useState(false);
+
+  // const showExamDetailsButton = appointment.doctor_name;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -74,12 +77,20 @@ const AppointmentCard = ({
             Đặt lịch lúc: {formatDate(appointment.created_at)}{" "}
             {formatTime(appointment.created_at)}
           </p>
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-4"
-            onClick={() => setShowDetail(true)}
-          >
-            Chi tiết
-          </button>
+          {appointment.status === "completed" && (
+            // appointment.doctor_name && (
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition ml-4"
+              onClick={
+                () =>
+                  appointment.doctor_name
+                    ? onViewDetails(appointment.appointment_id) // Gọi hàm xem chi tiết khám
+                    : onViewLabResult(appointment.appointment_id) // Gọi hàm xem kết quả xét nghiệm
+              } // Gọi hàm truyền từ cha
+            >
+              Chi tiết
+            </button>
+          )}
         </div>
       )}
     </div>
