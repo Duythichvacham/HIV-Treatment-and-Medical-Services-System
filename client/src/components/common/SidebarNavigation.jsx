@@ -22,18 +22,6 @@ const SidebarNavigation = ({
         collapsed ? "w-16" : "w-64"
       }`}
     >
-      {/* Dashboard Header */}
-      {!collapsed && (
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">H+</span>
-            </div>
-            <span className="font-semibold text-gray-900">HIV Care Center</span>
-          </div>
-        </div>
-      )}
-
       {/* Header với toggle button */}
       <div className="p-3 border-b border-gray-200 flex items-center justify-between">
         {!collapsed && (

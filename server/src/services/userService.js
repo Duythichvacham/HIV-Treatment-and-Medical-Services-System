@@ -1,4 +1,5 @@
 const { poolPromise } = require("../config/db");
+const bcrypt = require("bcryptjs");
 
 const getUsers = async () => {
   const pool = await poolPromise;
@@ -29,6 +30,57 @@ const getUsers = async () => {
   return formattedData;
 };
 
+const createUser = async (userData) => {
+  const { username, password, role } = userData;
+  const pool = await poolPromise;
+  const transaction = pool.transaction();
+
+  try {
+    await transaction.begin();
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Check if username already exists
+    const checkUsername = await transaction
+      .request()
+      .input("username", username)
+      .query("SELECT account_id FROM Accounts WHERE username = @username");
+
+    if (checkUsername.recordset.length > 0) {
+      throw new Error("Username already exists");
+    }
+
+    // Create account only
+    const accountResult = await transaction
+      .request()
+      .input("username", username)
+      .input("password", hashedPassword)
+      .input("role", role).query(`
+        INSERT INTO Accounts (username, password_hash, role, status, created_at)
+        OUTPUT INSERTED.account_id
+        VALUES (@username, @password, @role, 'active', GETDATE())
+      `);
+
+    const accountId = accountResult.recordset[0].account_id;
+
+    const resultData = {
+      accountId,
+      username,
+      role,
+      message:
+        "Tài khoản đã được tạo. Người dùng có thể cập nhật thông tin cá nhân sau khi đăng nhập.",
+    };
+
+    await transaction.commit();
+    return resultData;
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
+};
+
 module.exports = {
   getUsers,
+  createUser,
 };

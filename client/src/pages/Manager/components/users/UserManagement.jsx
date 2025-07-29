@@ -1,6 +1,7 @@
 // File: client/src/pages/Manager/components/UserManagement.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import UserTable from "./UserTable";
+import CreateUserModal from "./CreateUserModal";
 import Pagination from "../../../../components/common/Pagination";
 import ErrorAlert from "../../../../components/common/ErrorAlert";
 import TableHeader from "../../../../components/common/TableHeader";
@@ -8,7 +9,8 @@ import SearchAndFilter from "../../../../components/common/SearchAndFilter";
 import EmptyState from "../../../../components/common/EmptyState";
 import LoadingSpinner from "../../../../components/common/LoadingSpinner";
 import usePagination from "../../../../hooks/usePagination";
-import { getUsers } from "../../../../services/api";
+import { getUsers, createUser } from "../../../../services/managerApi";
+import { X } from "lucide-react";
 
 const roleMap = {
   Patient: "Bệnh nhân",
@@ -37,6 +39,9 @@ const UserManagement = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("all");
@@ -106,6 +111,40 @@ const UserManagement = () => {
     fetchUsers();
   }, [fetchUsers]);
 
+  // Handle create user
+  const handleCreateUser = async (userData) => {
+    try {
+      setIsCreating(true);
+      setError(null);
+
+      const response = await createUser(userData);
+
+      if (response.success) {
+        setCreateSuccess(`Tạo tài khoản ${userData.role} thành công!`);
+        setShowCreateModal(false);
+
+        // Refresh user list
+        await fetchUsers();
+
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setCreateSuccess(null);
+        }, 3000);
+      } else {
+        throw new Error(response.message || "Không thể tạo tài khoản");
+      }
+    } catch (err) {
+      console.error("Error creating user:", err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Không thể tạo tài khoản. Vui lòng thử lại.";
+      setError(errorMessage);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleStatusChange = async (userId, newStatus) => {
     try {
       setAllUsers((prev) =>
@@ -122,7 +161,9 @@ const UserManagement = () => {
   };
 
   const handleAddUser = () => {
-    alert("Chức năng thêm người dùng đang được phát triển");
+    setShowCreateModal(true);
+    setError(null);
+    setCreateSuccess(null);
   };
 
   const handleClearFilters = () => {
@@ -164,54 +205,100 @@ const UserManagement = () => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border">
-      <TableHeader
-        title="Quản lý người dùng"
-        subtitle={getSubtitle()}
-        onAdd={handleAddUser}
-        addButtonText="Thêm người dùng"
-      >
-        <SearchAndFilter
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          searchPlaceholder="Tìm kiếm theo username hoặc email..."
-          filterValue={selectedRole}
-          onFilterChange={setSelectedRole}
-          filterOptions={roleOptions}
-          filterLabel="Tất cả vai trò"
-        />
-      </TableHeader>
+    <div>
+      {/* Success Message */}
+      {createSuccess && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">
+                {createSuccess}
+              </p>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  onClick={() => setCreateSuccess(null)}
+                  className="inline-flex bg-green-50 rounded-md p-1.5 text-green-500 hover:bg-green-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <div className="overflow-hidden">
-        {currentUsers.length === 0 ? (
-          <EmptyState
-            message={getEmptyMessage()}
-            showClearFilter={searchTerm || selectedRole !== "all"}
-            onClearFilter={handleClearFilters}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <TableHeader
+          title="Quản lý người dùng"
+          subtitle={getSubtitle()}
+          onAdd={handleAddUser}
+          addButtonText="Thêm người dùng"
+        >
+          <SearchAndFilter
+            searchValue={searchTerm}
+            onSearchChange={setSearchTerm}
+            searchPlaceholder="Tìm kiếm theo username hoặc email..."
+            filterValue={selectedRole}
+            onFilterChange={setSelectedRole}
+            filterOptions={roleOptions}
+            filterLabel="Tất cả vai trò"
           />
-        ) : (
-          <>
-            <UserTable
-              users={currentUsers}
-              onStatusChange={handleStatusChange}
+        </TableHeader>
+
+        <div className="overflow-hidden">
+          {currentUsers.length === 0 ? (
+            <EmptyState
+              message={getEmptyMessage()}
+              showClearFilter={searchTerm || selectedRole !== "all"}
+              onClearFilter={handleClearFilters}
             />
-            {totalPages > 1 ? (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                itemsPerPage={5}
-                onPageChange={goToPage}
+          ) : (
+            <>
+              <UserTable
+                users={currentUsers}
+                onStatusChange={handleStatusChange}
               />
-            ) : (
-              currentUsers.length > 0 && (
-                <div className="px-6 py-3 text-sm text-gray-600">
-                  Hiển thị tất cả {totalItems} kết quả
-                </div>
-              )
-            )}
-          </>
-        )}
+              {totalPages > 1 ? (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={5}
+                  onPageChange={goToPage}
+                />
+              ) : (
+                currentUsers.length > 0 && (
+                  <div className="px-6 py-3 text-sm text-gray-600">
+                    Hiển thị tất cả {totalItems} kết quả
+                  </div>
+                )
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Create User Modal */}
+        <CreateUserModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateUser}
+          isSubmitting={isCreating}
+        />
       </div>
     </div>
   );
