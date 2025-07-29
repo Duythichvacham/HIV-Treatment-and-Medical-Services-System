@@ -157,7 +157,7 @@ const AboutPage = () => {
                     >
                       <div className="relative mb-4">
                         <img
-                          src={getDoctorImage(doctor.avatar)}
+                          src={doctor.avatar}
                           alt={doctor.name}
                           className="w-20 h-20 mx-auto rounded-full shadow-lg border-4 border-green-200 object-cover"
                         />
