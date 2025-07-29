@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePatientDetail } from "../../hooks/doctor/usePatientDetail";
+import { UserCircle } from "lucide-react";
 
 // Helper chuyển đổi ngày về yyyy-MM-dd cho input type='date'
 function formatDateForInput(dateStr) {
@@ -293,8 +294,8 @@ const PatientProfile = () => {
         {/* Thông tin cá nhân */}
         <div className="bg-white rounded-xl shadow p-6 flex flex-col gap-4">
           <div className="flex items-center gap-4 mb-2">
-            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-3xl text-gray-400">
-              <span className="material-icons">person</span>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-gray-500 bg-gray-50 text-gray-600 shadow-md transition-all duration-200 group-hover:shadow-lg group-hover:scale-105">
+              <UserCircle size={24} />
             </div>
             <div>
               <div className="font-bold text-xl text-gray-800">
