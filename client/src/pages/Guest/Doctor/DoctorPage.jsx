@@ -78,7 +78,7 @@ const DoctorPage = () => {
                     transition={{ duration: 0.6, delay: idx * 0.12 }}
                   >
                     <DoctorCard
-                      image={getDoctorImage(doc.avatar)}
+                      image={doc.avatar}
                       name={doc.name}
                       // API returns no gender, schedule or price by default
                       link={`/doctors/${doc.id}`}

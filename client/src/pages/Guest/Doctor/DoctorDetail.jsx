@@ -74,7 +74,7 @@ const DoctorDetail = () => {
         {/* Header Card */}
         <section className="bg-white p-10 rounded-3xl shadow-2xl mb-10 flex flex-col md:flex-row items-center gap-10 animate-slide-up duration-700">
           <img
-            src={getDoctorImage(doctor.avatar)}
+            src={doctor.avatar}
             alt={doctor.name}
             className="w-40 h-40 rounded-full object-cover shadow-lg border-4 border-green-100"
           />

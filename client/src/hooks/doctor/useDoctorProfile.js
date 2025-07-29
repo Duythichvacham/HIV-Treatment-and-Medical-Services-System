@@ -35,6 +35,7 @@ export const useDoctorProfile = (doctorId) => {
 
   useEffect(() => {
     if (doctorId) {
+      console.log("Fetching doctor profile...");
       fetchDoctorProfile();
     }
   }, [doctorId, fetchDoctorProfile]);
@@ -48,7 +49,12 @@ export const useDoctorProfile = (doctorId) => {
       setError(null);
 
       try {
-        await doctorApi.updateDoctorProfile(doctorId, updateData);
+        // await doctorApi.updateDoctorProfile(doctorId, updateData);
+        const response = await doctorApi.updateDoctorProfile(
+          doctorId,
+          updateData
+        );
+        console.log("API Response:", response);
         await fetchDoctorProfile(); // Làm mới dữ liệu sau khi cập nhật
         return { success: true };
       } catch (err) {

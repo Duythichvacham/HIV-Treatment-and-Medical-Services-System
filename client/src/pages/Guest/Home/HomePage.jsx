@@ -318,7 +318,7 @@ function DoctorSlider({ doctors }) {
           {visible.map((doc) => (
             <DoctorCard
               key={doc.id}
-              image={getDoctorImage(doc.avatar)}
+              image={doc.avatar}
               name={doc.name}
               link={`/doctors/${doc.id}`}
             />
