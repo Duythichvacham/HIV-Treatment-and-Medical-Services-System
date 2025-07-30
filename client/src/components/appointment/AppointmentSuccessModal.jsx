@@ -75,10 +75,10 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
             {!hasValidQueueNumber &&
               (isTestAppointment || isExamAppointment) && (
                 <div className="col-span-full">
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p className="text-yellow-800 text-sm">
-                      <strong>Lưu ý:</strong> Số thứ tự sẽ được cấp khi bạn đến
-                      làm thủ tục tại quầy lễ tân.
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-blue-800 text-sm">
+                      <strong>Lưu ý:</strong> Số thứ tự sẽ được cấp sau khi thanh toán thành công. 
+                      Vui lòng hoàn tất thanh toán để nhận số thứ tự.
                     </p>
                   </div>
                 </div>

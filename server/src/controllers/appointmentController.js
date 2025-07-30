@@ -63,25 +63,14 @@ exports.createAppointment = async (req, res, next) => {
       req.body
     );
 
-    // Tự động cấp số thứ tự cho appointment mới tạo
-    let queueInfo = null;
-    try {
-      queueInfo = await queueService.createQueueForAppointment(
-        appointment.appointment_id,
-        appointment.doctor_id,
-        appointment.slot_id,
-        new Date(appointment.bookingDate)
-      );
-    } catch (queueError) {
-      // Log lỗi nhưng không fail toàn bộ request
-      // Có thể thông báo cho frontend biết để xử lý sau
-    }
+    // KHÔNG cấp số thứ tự ngay - sẽ cấp sau khi thanh toán thành công
+    // TODO: Queue number sẽ được cấp trong paymentController sau khi thanh toán
 
     return res.status(201).json({
       message: "Đặt lịch thành công",
       appointment,
-      invoice_id: appointment.invoice_id, // ✅ Thêm invoice_id cho thanh toán
-      queue_info: queueInfo, // Trả về thông tin số thứ tự nếu có
+      invoice_id: appointment.invoice_id, // Thêm invoice_id cho thanh toán
+      queue_info: null, // Queue number sẽ được cấp sau khi thanh toán thành công
     });
   } catch (error) {
     // Handle specific errors
