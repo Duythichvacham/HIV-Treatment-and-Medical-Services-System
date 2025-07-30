@@ -48,6 +48,7 @@ const AvatarDropdown = ({ user, onLogout }) => {
     };
     return styles[role] || styles.default;
   };
+  console.log("AvatarDropdown user:", user);
 
   return (
     <div className="relative ml-4">
@@ -64,7 +65,7 @@ const AvatarDropdown = ({ user, onLogout }) => {
           {getRoleIcon(user?.role)}
         </div>
         <span className="ml-2 font-medium text-gray-700 hidden sm:inline">
-          {user?.name}
+          {user?.patient_name || user?.username}
         </span>
       </button>
 

@@ -119,7 +119,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Decode token to get user info
-      const tokenPayload = JSON.parse(atob(response.token.split(".")[1]));
+      const tokenPayload = JSON.parse(
+        decodeURIComponent(escape(atob(response.token.split(".")[1])))
+      );
       console.log("AuthContext: Decoded tokenPayload:", tokenPayload);
 
       // Validate user type if specified
@@ -160,6 +162,7 @@ export const AuthProvider = ({ children }) => {
       // Thêm patient_id nếu user là Patient
       if (tokenPayload.role === "Patient" && tokenPayload.patient_id) {
         userData.patient_id = tokenPayload.patient_id;
+        userData.patient_name = tokenPayload.patient_name;
       }
 
       console.log("AuthContext: Saving userData:", userData);
