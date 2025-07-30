@@ -1,5 +1,5 @@
 import { FileText, Clock, DollarSign, Receipt } from "lucide-react";
-import { useRegistrationStaff } from "../../../hooks/appointments/useAppointment";
+import { useRegistrationStaff } from "../../../hooks/registrationStaff/useRegistrationStaff";
 import { getCurrentDate, formatDateVietnamese } from "../../../utils/dateUtil";
 import {
   TabNavigation,
