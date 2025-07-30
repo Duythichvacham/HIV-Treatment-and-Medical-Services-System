@@ -2,10 +2,6 @@ import { createPortal } from "react-dom";
 
 const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
   if (!isOpen || !appointmentData) return null;
-
-  // Debug: Log để kiểm tra dữ liệu
-  console.log("🔍 AppointmentSuccessModal - appointmentData:", appointmentData);
-
   // Destructure appointment data with unique local names to avoid redeclaration
   const {
     queueNumber: _queueNumber,
@@ -17,13 +13,6 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
     fee: _fee,
     isDoctor: _isDoctor,
   } = appointmentData;
-
-  // Debug: Log queue number cụ thể
-  console.log(
-    "🔍 AppointmentSuccessModal - queueNumber:",
-    _queueNumber,
-    typeof _queueNumber
-  );
 
   // Xác định loại đặt lịch dựa trên dữ liệu
   const isTestAppointment =
@@ -77,8 +66,9 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
                 <div className="col-span-full">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <p className="text-blue-800 text-sm">
-                      <strong>Lưu ý:</strong> Số thứ tự sẽ được cấp sau khi thanh toán thành công. 
-                      Vui lòng hoàn tất thanh toán để nhận số thứ tự.
+                      <strong>Lưu ý:</strong> Số thứ tự sẽ được cấp sau khi
+                      thanh toán thành công. Vui lòng hoàn tất thanh toán để
+                      nhận số thứ tự.
                     </p>
                   </div>
                 </div>
@@ -90,13 +80,8 @@ const AppointmentSuccessModal = ({ isOpen, onClose, appointmentData }) => {
               <strong className="font-medium">Phòng:</strong> {_room}
             </div>
             <div>
-              <strong className="font-medium">
-                {_isDoctor ? "Bác sĩ" : "Nhân viên"}:
-              </strong>{" "}
-              {_doctorOrStaff}
-            </div>
-            <div>
-              <strong className="font-medium">Ngày:</strong> {_date}
+              <strong className="font-medium">Ngày:</strong>{" "}
+              {_date.split("T")[0]}
             </div>
             <div>
               <strong className="font-medium">Giờ:</strong>{" "}

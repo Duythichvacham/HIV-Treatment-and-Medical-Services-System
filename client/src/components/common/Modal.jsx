@@ -1,4 +1,3 @@
-// File: client/src/components/common/Modal.jsx
 const Modal = ({ isOpen, title, children, size = "md", className = "" }) => {
   if (!isOpen) return null;
 

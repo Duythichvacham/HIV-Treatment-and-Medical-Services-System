@@ -104,11 +104,6 @@ const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
       // Lấy appointment_id từ response
       const appointment_id =
         res?.appointment?.appointment_id || res?.appointment_id;
-
-      console.log("🔍 DEBUG API Response:", JSON.stringify(res, null, 2));
-      console.log("🔍 DEBUG appointment:", res?.appointment);
-      console.log("🔍 DEBUG doctor_name:", res?.appointment?.doctor_name);
-
       // Tạo dữ liệu đầy đủ với appointmentId (giống như trang /appointment)
       const mappedData = {
         appointmentId: appointment_id,
@@ -129,9 +124,6 @@ const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
             : price,
         isDoctor: isDoctor,
       };
-
-      console.log("🔍 DEBUG mappedData:", mappedData);
-
       setAppointmentData(mappedData);
       setIsConfirmOpen(true); // Show payment confirmation modal
 
