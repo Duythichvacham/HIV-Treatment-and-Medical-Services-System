@@ -71,22 +71,26 @@ const AvatarDropdown = ({ user, onLogout }) => {
 
       {open && (
         <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-100">
-          <Link
-            to="/profile"
-            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors duration-150"
-            onClick={() => setOpen(false)}
-          >
-            <UserCircle size={16} className="mr-2" />
-            Hồ Sơ
-          </Link>
-          <Link
-            to="/appointment-history"
-            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors duration-150"
-            onClick={() => setOpen(false)}
-          >
-            <Calendar size={16} className="mr-2" />
-            Lịch hẹn
-          </Link>
+          {["Doctor", "Patient"].includes(user?.role) && (
+            <>
+              <Link
+                to="/profile"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors duration-150"
+                onClick={() => setOpen(false)}
+              >
+                <UserCircle size={16} className="mr-2" />
+                Hồ Sơ
+              </Link>
+              <Link
+                to="/appointment-history"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-green-600 transition-colors duration-150"
+                onClick={() => setOpen(false)}
+              >
+                <Calendar size={16} className="mr-2" />
+                Lịch hẹn
+              </Link>
+            </>
+          )}
           <button
             className="w-full flex items-center text-left px-4 py-2 text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
             onClick={handleLogout}
