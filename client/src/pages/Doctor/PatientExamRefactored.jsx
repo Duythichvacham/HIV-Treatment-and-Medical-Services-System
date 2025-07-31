@@ -128,6 +128,7 @@ const PatientExamRefactored = ({
           "Vui lòng nhập đầy đủ thông tin bắt buộc trước khi hoàn thành khám:\n" +
             "- Sinh hiệu (nhịp tim, huyết áp, nhiệt độ, cân nặng, chiều cao)\n" +
             "- Dấu hiệu lâm sàng\n" +
+            "- Phác đồ điều trị\n" +
             "- Chẩn đoán chính\n" +
             "- Lời khuyên và tư vấn\n" +
             "- Kế hoạch tái khám\n" +
@@ -297,19 +298,6 @@ const PatientExamRefactored = ({
                   </p>
                 )}
               </div>
-              <button
-                onClick={refreshPatientDetail}
-                disabled={patientLoading}
-                className="flex items-center px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                title="Cập nhật kết quả xét nghiệm"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 mr-1 ${
-                    patientLoading ? "animate-spin" : ""
-                  }`}
-                />
-                Cập nhật
-              </button>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {(() => {
@@ -321,7 +309,7 @@ const PatientExamRefactored = ({
                   return (
                     <div className="col-span-2 text-center py-4">
                       <p className="text-gray-500">
-                        Không có kết quả xét nghiệm hợp lệ
+                        Không có kết quả xét nghiệm
                       </p>
                     </div>
                   );

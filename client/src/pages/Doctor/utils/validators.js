@@ -120,6 +120,7 @@ export const validatePrescription = (prescription) => {
 export const validateExamCompletion = (examData) => {
   const errors = {};
 
+  console.log("Exam data for validation:", examData);
   // Required fields for completion
   if (
     !examData.diagnosis_primary ||
