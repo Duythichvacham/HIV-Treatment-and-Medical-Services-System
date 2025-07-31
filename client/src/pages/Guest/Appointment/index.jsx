@@ -10,7 +10,7 @@ const Appointment = () => {
   const tabs = [
     { id: "exam", label: "Đặt lịch khám bác sĩ", icon: User },
     { id: "test", label: "Đặt lịch xét nghiệm", icon: FileText },
-    { id: "consult", label: "Đặt lịch tư vấn", icon: MessageCircle },
+    // { id: "consult", label: "Đặt lịch tư vấn", icon: MessageCircle },
   ];
 
   // Render tab content based on activeTab
@@ -20,8 +20,8 @@ const Appointment = () => {
         return <ExamAppointment />;
       case "test":
         return <TestAppointment />;
-      case "consult":
-        return <ConsultAppointment />;
+      // case "consult":
+      //   return <ConsultAppointment />;
       default:
         return <ExamAppointment />;
     }
