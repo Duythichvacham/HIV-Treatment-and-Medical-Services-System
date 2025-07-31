@@ -45,32 +45,8 @@ exports.createAppointment = async (data) => {
 
   const appointment = result.recordset[0];
 
-  // 2. Lấy queue number từ queueService
-  let queueNumber = 1;
-
-  try {
-    // Lấy thông tin service để xác định loại
-    const serviceInfo = await this.getServiceInfo(service_id);
-
-    if (
-      serviceInfo.service_type === "examination" ||
-      serviceInfo.service_type === "consultation"
-    ) {
-      // Cho khám bệnh/tư vấn: cần doctor_id và slot_id
-      queueNumber = await queueService.getNextQueueNumber(
-        serviceInfo.service_type,
-        doctor_id,
-        slot_id
-      );
-    } else if (serviceInfo.service_type === "test") {
-      // Cho xét nghiệm: queue chung (không cần doctor_id, slot_id)
-      queueNumber = await queueService.getNextQueueNumber("test");
-    }
-  } catch (error) {
-    console.error("Error getting queue number:", error);
-    // Fallback to 1 if queueService fails
-    queueNumber = 1;
-  }
+  // 2. KHÔNG cấp queue number ngay - sẽ cấp sau khi thanh toán thành công
+  // TODO: Queue number sẽ được cấp trong paymentController sau khi thanh toán
 
   // 3. Lấy thông tin room_name để trả về cho frontend
   const pool2 = await poolPromise;
@@ -81,10 +57,10 @@ exports.createAppointment = async (data) => {
 
   const room_name = roomResult.recordset[0]?.room_name || "Chưa xác định";
 
-  // 4. Trả về appointment với queue number và room_name
+  // 4. Trả về appointment KHÔNG có queue number (sẽ cấp sau khi thanh toán)
   return {
     ...appointment,
-    queue_number: queueNumber,
+    queue_number: null, // Sẽ được cấp sau khi thanh toán thành công
     room_name: room_name,
   };
 };
@@ -279,43 +255,25 @@ SELECT  a.appointment_id
       ,a.created_at
       ,r.room_name
       ,d.full_name as doctor_name
+      ,q.current_number as queue_number
   FROM Appointments as a 
   LEFT JOIN Slots as s ON a.slot_id = s.slot_id
   LEFT JOIN Services as sv ON a.service_id = sv.service_id
   LEFT JOIN Rooms as r ON a.room_id = r.room_id
   LEFT JOIN Doctors as d ON a.doctor_id = d.doctor_id
+  LEFT JOIN QueueNumbers as q ON a.appointment_id = q.appointment_id
   WHERE a.patient_id =@patientId
+  ORDER BY a.created_at ASC, a.appointment_id ASC
    `);
 
   // Sử dụng QueueService để tính queue_number thống nhất
   const appointmentsWithQueue = await Promise.all(
     result.recordset.map(async (appointment) => {
-      let queueNumber = 1; // default fallback
-
-      try {
-        if (
-          appointment.service_type === "examination" &&
-          appointment.doctor_id &&
-          appointment.slot_id
-        ) {
-          queueNumber = await queueService.getCurrentQueueNumber(
-            "examination",
-            appointment.doctor_id,
-            appointment.slot_id
-          );
-        } else if (appointment.service_type === "test") {
-          queueNumber = await queueService.getCurrentQueueNumber("test");
-        }
-      } catch (error) {
-        // Fallback to ROW_NUMBER logic if QueueService fails
-        queueNumber = 1;
-      }
-
       return {
         appointment_id: appointment.appointment_id,
         patient_id: appointment.patient_id,
         status: appointment.status,
-        queue_number: queueNumber,
+        queue_number: appointment.queue_number,
         service_name: appointment.service_name,
         service_type: appointment.service_type,
         room: appointment.room_name,
@@ -344,6 +302,7 @@ SELECT  a.appointment_id
   return appointmentsWithQueue;
 };
 // chưa check - thằng này cho manager để quản lý lịch hẹn của tất cả bệnh nhân
+// Hiện không cần xài
 exports.getAllAppointments = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`
@@ -771,47 +730,6 @@ exports.cancelBooking = async (invoiceId) => {
   return await invoiceService.cancelBooking(invoiceId);
 };
 
-// Validation rules cho đặt lịch (được gộp từ bookingServices)
-exports.validateAppointmentRules = async (
-  patient_id,
-  service_id
-  // bookingDate,
-  // doctor_id = null
-) => {
-  const pool = await poolPromise;
-
-  // Chỉ kiểm tra duplicate xét nghiệm
-  const serviceResult = await pool
-    .request()
-    .input("serviceId", service_id)
-    .query("SELECT service_type FROM Services WHERE service_id = @serviceId");
-
-  if (serviceResult.recordset.length === 0) {
-    throw new Error("Không tìm thấy dịch vụ");
-  }
-
-  // Chỉ check duplicate cho xét nghiệm
-  if (serviceResult.recordset[0].service_type === "test") {
-    const pendingCount = await pool
-      .request()
-      .input("patient_id", patient_id)
-      .input("service_id", service_id).query(`
-        SELECT COUNT(*) AS count
-        FROM Appointments a
-        WHERE a.patient_id = @patient_id
-          AND a.service_id = @service_id
-          AND a.status IN ('requested', 'in_progress')
-      `);
-
-    if (pendingCount.recordset[0].count > 0) {
-      throw new Error(
-        "Không thể đặt xét nghiệm mới khi còn xét nghiệm cùng loại chưa hoàn thành"
-      );
-    }
-  }
-  return true;
-};
-
 // Function tạo booking với logic từ bookingServices (refactored)
 exports.createBooking = async ({
   patientId,
@@ -821,38 +739,6 @@ exports.createBooking = async ({
   serviceId,
 }) => {
   const pool = await poolPromise;
-
-  // Bước 0: Áp dụng validation rules mới
-  await this.validateAppointmentRules(
-    patientId,
-    serviceId,
-    bookingDate,
-    doctorId
-  );
-
-  // Bước 0.5: Kiểm tra duplicate booking (thêm validation cuối cùng)
-  const duplicateCheck = await pool
-    .request()
-    .input("patientId", patientId)
-    .input("serviceId", serviceId)
-    .input("bookingDate", bookingDate)
-    .input("doctorId", doctorId || null)
-    .input("slotId", slotId || null).query(`
-      SELECT COUNT(*) AS count
-      FROM Appointments
-      WHERE patient_id = @patientId
-        AND service_id = @serviceId
-        AND bookingDate = @bookingDate
-        AND doctor_id = @doctorId
-        AND (slot_id = @slotId OR (slot_id IS NULL AND @slotId IS NULL))
-        AND status IN ('requested', 'in_progress')
-    `);
-
-  if (duplicateCheck.recordset[0].count > 0) {
-    throw new Error(
-      "Bạn đã có lịch hẹn tương tự trong ngày này. Vui lòng kiểm tra lại."
-    );
-  }
 
   // Bước 1: Xác định room_id
   let roomId;
@@ -920,22 +806,8 @@ exports.createBooking = async ({
 
   const appointmentId = appointmentInsert.recordset[0].appointment_id;
 
-  // Bước 4: Tạo queue number cho appointment
-  let queueInfo = null;
-  try {
-    const queueType = doctorId ? "examination" : "test";
-    queueInfo = await queueService.createQueueNumber({
-      queue_type: queueType,
-      appointment_id: appointmentId,
-      request_id: null,
-      doctor_id: doctorId || null,
-      slot_id: slotId || null,
-      queue_date: new Date(bookingDate),
-    });
-  } catch (queueError) {
-    console.error("Error creating queue number:", queueError);
-    // Không throw error vì appointment đã được tạo thành công
-  }
+  // Bước 4: KHÔNG cấp queue number ngay - sẽ cấp sau khi thanh toán thành công
+  // ccccccccccccccccccccccv                                                                                                                                                                                                                                                      Queue number sẽ được cấp trong paymentController khi thanh toán thành công
 
   // Bước 5: Tạo hóa đơn bằng invoiceService
   await invoiceService.createInvoice({
@@ -957,7 +829,7 @@ exports.createBooking = async ({
     message: "Tạo lịch hẹn và hóa đơn thành công",
     appointmentId,
     room_name, // Thêm room_name để frontend có thể sử dụng
-    queue_info: queueInfo, // Trả về thông tin queue number cho frontend
+    queue_info: null, // Queue number sẽ được cấp sau khi thanh toán thành công
   };
 };
 // Hủy lịch hẹn theo invoice_id nếu thanh toán thất bại
@@ -970,4 +842,64 @@ exports.cancelAppointmentByInvoiceId = async (invoiceId) => {
       SELECT appointment_id FROM Invoices WHERE invoice_id = @invoice_id
     )
   `);
+};
+
+// Cấp số thứ tự cho appointment sau khi thanh toán thành công
+exports.assignQueueNumberAfterPayment = async (appointmentId) => {
+  const pool = await poolPromise;
+
+  try {
+    // Lấy thông tin appointment
+    const appointmentResult = await pool
+      .request()
+      .input("appointmentId", appointmentId).query(`
+        SELECT a.*, s.service_type 
+        FROM Appointments a 
+        JOIN Services s ON a.service_id = s.service_id 
+        WHERE a.appointment_id = @appointmentId
+      `);
+
+    if (appointmentResult.recordset.length === 0) {
+      throw new Error("Appointment not found");
+    }
+
+    const appointment = appointmentResult.recordset[0];
+
+    // Xác định queue_type dựa trên service_type
+    let queueType;
+    let doctorId = appointment.doctor_id;
+    let slotId = appointment.slot_id;
+
+    if (appointment.service_type === "examination") {
+      queueType = "examination";
+    } else if (appointment.service_type === "test") {
+      queueType = "test";
+      // Với test thì doctor_id và slot_id = null
+      doctorId = null;
+      slotId = null;
+    } else if (appointment.service_type === "consultation") {
+      queueType = "consultation";
+    } else {
+      queueType = "examination"; // default
+    }
+
+    // Tạo queue number
+    const queueInfo = await queueService.createQueueNumber({
+      queue_type: queueType,
+      appointment_id: appointmentId,
+      request_id: null,
+      doctor_id: doctorId,
+      slot_id: slotId,
+      queue_date: new Date(appointment.bookingDate),
+    });
+
+    console.log(
+      `✅ Queue number ${queueInfo.queue_number} assigned to appointment ${appointmentId}`
+    );
+
+    return queueInfo;
+  } catch (error) {
+    console.error("❌ Error assigning queue number after payment:", error);
+    throw error;
+  }
 };

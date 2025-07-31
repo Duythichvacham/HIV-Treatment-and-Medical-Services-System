@@ -4,7 +4,10 @@
  */
 export const getCurrentDate = () => {
   const today = new Date();
-  return today.toISOString().split("T")[0];
+  const vietnamTime = new Date(
+    today.toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" })
+  );
+  return vietnamTime.toISOString().split("T")[0];
 };
 //
 /**

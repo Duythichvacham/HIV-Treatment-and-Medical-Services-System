@@ -88,12 +88,40 @@ module.exports = {
 
       if (!isNaN(invoiceId)) {
         if (responseCode === "00") {
+          // 1. Cập nhật trạng thái invoice thành 'paid'
           await invoiceService.updateInvoiceStatus(invoiceId, "paid");
+
+          // 2. Lấy thông tin invoice để tìm appointment_id
           const invoice = await invoiceService.getInvoice({ invoiceId });
           const appointment_id = invoice.appointment_id;
+          // 3. Lấy thông tin appointment detail để trả về
           var appointmentData = await appointmentService.getAppointmentDetail(
             appointment_id
           );
+          // 4. Cấp số thứ tự cho appointment sau khi thanh toán thành công
+          let queueInfo = null;
+          if (appointment_id && appointmentData.queue_number != null) {
+            try {
+              queueInfo =
+                await appointmentService.assignQueueNumberAfterPayment(
+                  appointment_id
+                );
+              console.log(
+                `Queue number assigned after payment: ${queueInfo.queue_number}`
+              );
+            } catch (queueError) {
+              console.error(
+                "Error assigning queue number after payment:",
+                queueError
+              );
+              // Không throw error vì thanh toán đã thành công
+            }
+          }
+
+          // 5. Gắn queue_number vào appointmentData nếu có
+          if (queueInfo && appointmentData) {
+            appointmentData.queue_number = queueInfo.queue_number;
+          }
         } else {
           await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
           await appointmentService.cancelAppointmentByInvoiceId(invoiceId);

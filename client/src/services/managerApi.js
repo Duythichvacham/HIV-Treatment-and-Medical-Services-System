@@ -1,6 +1,36 @@
 import api from "./api";
 
 // ===========================================
+// USER API
+// ===========================================
+/**
+ * Get all users for manager dashboard
+ */
+export const getUsers = async () => {
+  try {
+    const response = await api.get("/api/v1/managers/users");
+    console.log("✅ getUsers response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ getUsers error:", error);
+    throw error;
+  }
+};
+/**
+ * Create new user account
+ * @param {Object} userData - User data {username, password, role}
+ */
+export const createUser = async (userData) => {
+  try {
+    const response = await api.post("/api/v1/managers/users", userData);
+    console.log("✅ createUser response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ createUser error:", error);
+    throw error;
+  }
+};
+// ===========================================
 // WORKING SHIFT API
 // ===========================================
 

@@ -1,5 +1,5 @@
-const { poolPromise } = require("../../config/db");
-const { normalizeTime } = require("../../utils/timeUtil");
+const { poolPromise } = require("../config/db");
+const { normalizeTime } = require("../utils/timeUtil");
 const getFullTimeSlots = async () => {
   try {
     const pool = await poolPromise;
