@@ -73,20 +73,6 @@ const StaffLogin = () => {
         >
           {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>{" "}
-        <div className="mt-4 text-xs text-gray-500">
-          <div>
-            <b>Lab-Staff</b>: labstaff01 / hash_lab1_password
-          </div>
-          <div>
-            <b>Registration-staff</b>: regstaff01 / hash_reg1_password
-          </div>
-          <div>
-            <b>Manager</b>: admin01 / hash_admin_password
-          </div>
-          <div>
-            <b>Doctor</b>: doctor01 / hash_doctor1_password
-          </div>
-        </div>
       </form>
     </div>
   );

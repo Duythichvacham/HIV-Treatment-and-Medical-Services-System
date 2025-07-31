@@ -189,17 +189,6 @@ const PatientLogin = () => {
             </Link>
           </p>
         </div>
-        <div className="mt-4 text-xs text-gray-500">
-          <div>
-            <b>Bệnh nhân</b>: patient01 / hash_patient1_password
-          </div>
-          <div>
-            <b>Bệnh nhân</b>: patient02 / hash_patient2_password
-          </div>
-          <div>
-            <b>Bệnh nhân</b>: patient03 / hash_patient3_password
-          </div>
-        </div>
         <button
           type="button"
           className="text-blue-600 underline mt-2"
