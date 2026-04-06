@@ -1,2 +1,10 @@
 node_modules
 *.md
+.env
+.env.*
+*.sql
+SQL/
+logs/
+target/
+.idea/
+.vscode/
