@@ -135,3 +135,11 @@ dist
 .svelte-kit
 node_modules/
 # End of https://www.toptal.com/developers/gitignore/api/node
+.env
+.env.*
+*.sql
+logs/
+node_modules/
+target/
+.idea/
+.vscode/
