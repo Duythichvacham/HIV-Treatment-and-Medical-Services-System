@@ -4,7 +4,7 @@ import api from "./api";
 // Lấy danh sách tất cả blog
 export const fetchAllBlogs = async () => {
   try {
-    const response = await api.get("/api/v1/blogs");
+    const response = await api.get("VITE_API_API_PREFIX/blogs");
     console.log("Danh sách blog:", response.data); // Debug
     return response.data;
   } catch (error) {
@@ -16,7 +16,7 @@ export const fetchAllBlogs = async () => {
 // Lấy chi tiết một blog theo ID
 export const fetchBlogById = async (blogId) => {
   try {
-    const response = await api.get(`/api/v1/blogs/${blogId}`);
+    const response = await api.get(`VITE_API_API_PREFIX/blogs/${blogId}`);
     console.log("Chi tiết blog:", response.data); // Debug
     return response.data;
   } catch (error) {

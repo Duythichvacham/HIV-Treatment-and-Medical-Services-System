@@ -1,4 +1,4 @@
-require("dotenv").config(); // load biến môi trường từ file .env
+require("dotenv").config({path: process.env.ENV_FILE || ".env"});
 const express = require("express"); // import express
 const cors = require("cors"); // import cors
 
@@ -30,7 +30,7 @@ app.get("/", (req, res) => {
 // sau 17h
 initializeScheduler();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

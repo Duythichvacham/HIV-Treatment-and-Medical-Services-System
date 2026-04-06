@@ -18,7 +18,7 @@ export const patientApi = {
         "[patientApi.getExamHistory] Fetching completed exam history for patient:",
         patientId
       );
-      const response = await api.get(`/api/v1/doctors/appointments`, {
+      const response = await api.get(`VITE_API_API_PREFIX/doctors/appointments`, {
         params: {
           patient_id: patientId,
           status: "completed",
@@ -41,7 +41,7 @@ export const patientApi = {
         appointmentId
       );
       const response = await api.get(
-        `/api/v1/clinical/clinical-exams/${appointmentId}`
+        `VITE_API_API_PREFIX/clinical/clinical-exams/${appointmentId}`
       );
       return response.data;
     } catch (error) {
@@ -57,7 +57,7 @@ export const patientApi = {
         "[patientApi.getPrescriptionDetail] Fetching prescription detail for appointment:",
         appointmentId
       );
-      const response = await api.get(`/api/v1/prescriptions/${appointmentId}`);
+      const response = await api.get(`VITE_API_API_PREFIX/prescriptions/${appointmentId}`);
       return response.data;
     } catch (error) {
       console.error("[patientApi.getPrescriptionDetail] Error:", error);
@@ -72,7 +72,7 @@ export const patientApi = {
         "[patientApi.getCurrentTreatment] Fetching current ARV regimen for patient:",
         patientId
       );
-      const url = `/api/v1/patients/current-arv-regimen/${patientId}`;
+      const url = `VITE_API_API_PREFIX/patients/current-arv-regimen/${patientId}`;
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -88,7 +88,7 @@ export const patientApi = {
         "[patientApi.getLatestTests] Fetching latest tests for patient:",
         patientId
       );
-      let url = `/api/v1/patients/latest-tests?patientId=${patientId}`;
+      let url = `VITE_API_API_PREFIX/patients/latest-tests?patientId=${patientId}`;
       if (appointmentId) {
         url += `&appointmentId=${appointmentId}`;
       }
@@ -102,7 +102,7 @@ export const patientApi = {
 
   // // Search patients
   // search: async (query) => {
-  //   const url = "/api/v1/patients/search";
+  //   const url = "VITE_API_API_PREFIX/patients/search";
   //   const params = { q: query };
   //   const response = await api.get(url, { params });
   //   return response.data;

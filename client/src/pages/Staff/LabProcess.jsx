@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/v1';
+const API_BASE = 'http://localhost:5000VITE_API_API_PREFIX';
 
 const LabProcess = () => {
   const location = useLocation();

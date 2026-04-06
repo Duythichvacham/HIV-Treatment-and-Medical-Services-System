@@ -4,7 +4,7 @@ export const arvRegimenApi = {
   // Get all ARV regimens
   getAll: async () => {
     try {
-      const response = await api.get("/api/v1/arv-regimens/");
+      const response = await api.get("VITE_API_API_PREFIX/arv-regimens/");
       return response.data;
     } catch (error) {
       console.error("Error fetching ARV regimens:", error);
@@ -15,7 +15,7 @@ export const arvRegimenApi = {
   // Get ARV drugs for a selected regimen
   getById: async (regimenId) => {
     try {
-      const response = await api.get(`/api/v1/arv-regimens/${regimenId}`);
+      const response = await api.get(`VITE_API_API_PREFIX/arv-regimens/${regimenId}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching ARV regimen by ID:", error);

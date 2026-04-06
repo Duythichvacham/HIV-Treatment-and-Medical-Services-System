@@ -1,4 +1,4 @@
-require("dotenv").config(); // load biến môi trường từ file .env
+require("dotenv").config({path: process.env.ENV_FILE || ".env"});
 const authRouter = require("./auth");
 const patientRouter = require("./patient");
 const userRouter = require("./user");
@@ -19,79 +19,83 @@ const managerRouter = require("./manager");
 // thằng nào fix mà xóa cái gì nữa t đấm vô mỏ nhé :v
 
 // mấy thằng này sẽ đẩy qua app.js để gọi sau - tiền tố thì sẽ lấy trong file .env
-
+// Thông tin api example:
+/**
+ * API name
+ * Prefix: prefix/resource
+ */
 function route(app) {
   /**
    * API public
    * Prefix: api/public/
    */
-  app.use("/api/public", publicRouter);
+  app.use(`${process.env.API_PREFIX}/public`, publicRouter);
   /**
    * API users
-   * Prefix: api/v1/users
+   * Prefix: api/users
    */
   //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register
-  app.use("/api/v1/auth", authRouter);
+  app.use(`${process.env.API_PREFIX}/auth`, authRouter);
 
-  //API vnpay  Prefix : api/v1/payment
-  app.use("/api/v1/payment", paymentRoutes);
+  //API vnpay  Prefix : api/payment
+  app.use(`${process.env.API_PREFIX}/payment`, paymentRoutes);
   /**
    * API doctor
-   * Prefix: api/v1/doctors
+   * Prefix: api/doctors
    */
-  app.use("/api/v1/doctors", authMiddleware, doctorRouter);
+  app.use(`${process.env.API_PREFIX}/doctors`, authMiddleware, doctorRouter);
   /**
    * API patient
-   * Prefix: api/v1/patient
+   * Prefix: api/patient
    */
-  app.use("/api/v1/patients", authMiddleware, patientRouter);
+  app.use(`${process.env.API_PREFIX}/patients`, authMiddleware, patientRouter);
   /**
    * API appointment -- tạm chưa xóa nhưng sẽ lấy theo role
-   * Prefix: api/v1/appointment
+   * Prefix: api/appointment
    */
   //các thao tác liên quan đến appointments
-  app.use("/api/v1/appointments", authMiddleware, appointmentRouter);
+  app.use(`${process.env.API_PREFIX}/appointments`, authMiddleware, appointmentRouter);
   /**
    * API lab staff
-   * Prefix: api/v1/lab
+   * Prefix: api/lab
    */
-  app.use("/api/v1/lab", authMiddleware, labStaffRouter);
+  app.use(`${process.env.API_PREFIX}/lab`, authMiddleware, labStaffRouter);
   /**
    * API Registration staff
-   * Prefix: api/v1/registrations
+   * Prefix: api/registrations
    */
   // Registration Staff routes - temporarily bypass auth for testing
-  app.use("/api/v1/registrations", authMiddleware, registrationRouter);
+  app.use(`${process.env.API_PREFIX}/registrations`, authMiddleware, registrationRouter);
 
   /**
    * API public
    * Prefix: api/public/
    */
-  app.use("/api/v1/slots", slotRouter);
+  app.use(`${process.env.API_PREFIX}/slots`, slotRouter);
   /**
    * API ARV Regimens
-   * Prefix: api/v1/arv-regimens
+   * Prefix: api/arv-regimens
    */
-  app.use("/api/v1/arv-regimens", authMiddleware, arvRegimenRouter);
+  app.use(`${process.env.API_PREFIX}/arv-regimens`, authMiddleware, arvRegimenRouter);
   /**
    * API Clinical Exams
-   * Prefix: api/v1/clinical-exams
+   * Prefix: api/clinical-exams
    */
-  app.use("/api/v1/clinical", authMiddleware, clinicalRouter);
+  app.use(`${process.env.API_PREFIX}/clinical`, authMiddleware, clinicalRouter);
   /**
    * API Prescriptions
    * Prefix: api/prescriptions
    */
-  app.use("/api/v1/prescriptions", authMiddleware, prescriptionRouter);
+  app.use(`${process.env.API_PREFIX}/prescriptions`, authMiddleware, prescriptionRouter);
 
-  app.use("/api/v1/test-request", authMiddleware, testRequestRouter);
+  app.use(`${process.env.API_PREFIX}/test-request`, authMiddleware, testRequestRouter);
   /**
    * API manager
-   * Prefix: api/v1/manager
+   * Prefix: api/manager
    */
-  app.use("/api/v1/managers", authMiddleware, managerRouter);
+  app.use(`${process.env.API_PREFIX}/managers`, authMiddleware, managerRouter);
 
-  app.use("/api/v1/blogs", blogRouter);
+  app.use(`${process.env.API_PREFIX}/blogs`, blogRouter);
 }
 
 module.exports = route;

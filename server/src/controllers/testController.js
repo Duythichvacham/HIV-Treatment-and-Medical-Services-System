@@ -1,7 +1,7 @@
 const testService = require("../services/testService");
 const { getVietnamTime, formatVietnamTime, formatDateTimeWithoutTimezone } = require("../utils/dateUtil");
 
-///api/v1/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "exam")
+//VITE_API_API_PREFIX/test-requests/{id}/status (PATCH, cập nhật status của TestRequests nếu service_type là "exam")
 exports.updateTestRequestExamStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -37,7 +37,7 @@ exports.updateTestRequestExamStatus = async (req, res, next) => {
   }
 };
 
-/// GET /api/v1/lab/test-notes/:test_note_id
+/// GET VITE_API_API_PREFIX/lab/test-notes/:test_note_id
 exports.getTestNoteDetail = async (req, res, next) => {
   try {
     const { test_note_id } = req.params;
@@ -63,7 +63,7 @@ exports.getTestNoteDetail = async (req, res, next) => {
   }
 };
 
-/// POST /api/v1/lab/test-results
+/// POST VITE_API_API_PREFIX/lab/test-results
 exports.createTestResultAndComplete = async (req, res, next) => {
   try {
     const {
@@ -109,7 +109,7 @@ exports.createTestResultAndComplete = async (req, res, next) => {
   }
 };
 
-/// GET /api/v1/lab/queue
+/// GET VITE_API_API_PREFIX/lab/queue
 exports.getLabQueue = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
@@ -124,7 +124,7 @@ exports.getLabQueue = async (req, res, next) => {
   }
 };
 
-/// GET /api/v1/lab/in-progress
+/// GET VITE_API_API_PREFIX/lab/in-progress
 exports.getLabInProgress = async (req, res, next) => {
   try {
     const { date, lab_staff_id, room_id } = req.query;
@@ -146,7 +146,7 @@ exports.getLabInProgress = async (req, res, next) => {
   }
 };
 
-/// GET /api/v1/lab/finished
+/// GET VITE_API_API_PREFIX/lab/finished
 // exports.getLabFinished = async (req, res, next) => {
 //   try {
 //     const { date, lab_staff_id, room_id } = req.query;
@@ -172,7 +172,7 @@ exports.getLabInProgress = async (req, res, next) => {
 //   }
 // };
 
-// GET /api/v1/lab/lab-tests
+// GET VITE_API_API_PREFIX/lab/lab-tests
 exports.getAllLabTests = async (req, res, next) => {
   try {
     const { status, date, lab_staff_id, room_id } = req.query;
@@ -215,7 +215,7 @@ exports.getAllLabTests = async (req, res, next) => {
   }
 };
 
-// GET /api/v1/lab/rooms
+// GET VITE_API_API_PREFIX/lab/rooms
 exports.getLabRooms = async (req, res, next) => {
   try {
     const rooms = await testService.getLabRooms();
@@ -228,7 +228,7 @@ exports.getLabRooms = async (req, res, next) => {
   }
 };
 
-// GET /api/v1/lab/shifts
+// GET VITE_API_API_PREFIX/lab/shifts
 exports.getLabStaffShifts = async (req, res, next) => {
   try {
     const { date, lab_staff_id } = req.query;
@@ -249,7 +249,7 @@ exports.getLabStaffShifts = async (req, res, next) => {
   }
 };
 
-// GET /api/v1/lab/current-shift
+// GET VITE_API_API_PREFIX/lab/current-shift
 exports.getCurrentLabStaffShift = async (req, res, next) => {
   try {
     const { lab_staff_id, date } = req.query;

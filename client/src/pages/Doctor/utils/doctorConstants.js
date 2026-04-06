@@ -44,32 +44,32 @@ export const PAGINATION_DEFAULTS = {
 export const API_ENDPOINTS = {
   APPOINTMENTS: {
     // New unified endpoint for all appointment queries
-    BASE: "/api/v1/doctor/appointments",
+    BASE: "VITE_API_API_PREFIX/doctor/appointments",
     // Legacy endpoints (for backward compatibility)
-    QUEUE: (doctorId) => `/api/v1/doctor/appointments/queue/${doctorId}`,
+    QUEUE: (doctorId) => `VITE_API_API_PREFIX/doctor/appointments/queue/${doctorId}`,
     IN_PROGRESS: (doctorId) =>
-      `/api/v1/doctor/appointments/in_progress/${doctorId}`,
+      `VITE_API_API_PREFIX/doctor/appointments/in_progress/${doctorId}`,
     COMPLETED: (doctorId) =>
-      `/api/v1/doctor/appointments/completed/${doctorId}`,
+      `VITE_API_API_PREFIX/doctor/appointments/completed/${doctorId}`,
     UPDATE_STATUS: (appointmentId) =>
-      `/api/v1/appointments/${appointmentId}/status`,
+      `VITE_API_API_PREFIX/appointments/${appointmentId}/status`,
   },
 
   EXAMS: {
-    CURRENT: (patientId) => `/api/v1/exams/current/${patientId}`,
-    SAVE: (appointmentId) => `/api/v1/exams/${appointmentId}`,
+    CURRENT: (patientId) => `VITE_API_API_PREFIX/exams/current/${patientId}`,
+    SAVE: (appointmentId) => `VITE_API_API_PREFIX/exams/${appointmentId}`,
   },
   TESTS: {
-    AVAILABLE: "/api/v1/services/tests/available",
-    ONGOING: (patientId) => `/api/v1/patients/${patientId}/ongoing-tests`,
-    CREATE_REQUEST: "/api/v1/test-requests",
+    AVAILABLE: "VITE_API_API_PREFIX/services/tests/available",
+    ONGOING: (patientId) => `VITE_API_API_PREFIX/patients/${patientId}/ongoing-tests`,
+    CREATE_REQUEST: "VITE_API_API_PREFIX/test-requests",
   },
   PRESCRIPTIONS: {
-    ARV_REGIMENS: "/api/v1/arv-regimens",
-    CREATE: "/api/v1/prescriptions",
+    ARV_REGIMENS: "VITE_API_API_PREFIX/arv-regimens",
+    CREATE: "VITE_API_API_PREFIX/prescriptions",
   },
   SLOTS: {
-    LIST: "/api/v1/slots",
-    STATS: (doctorId) => `/api/v1/doctor/${doctorId}/slots-stats`,
+    LIST: "VITE_API_API_PREFIX/slots",
+    STATS: (doctorId) => `VITE_API_API_PREFIX/doctor/${doctorId}/slots-stats`,
   },
 };

@@ -8,3 +8,5 @@ logs/
 target/
 .idea/
 .vscode/
+# Allow example file
+!.env.example
