@@ -3,14 +3,14 @@ const router = express.Router();
 const clinicalController = require("../controllers/clinicalController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
-// POST /api/v1/clinical-exams - Create/Update clinical exam
+// POST VITE_API_API_PREFIX/clinical-exams - Create/Update clinical exam
 router.post(
   "/clinical-exams",
   authMiddleware,
   clinicalController.saveClinicalExam
 );
 
-// GET /api/v1/clinical-exams/:appointmentId - Get clinical exam data by appointment ID
+// GET VITE_API_API_PREFIX/clinical-exams/:appointmentId - Get clinical exam data by appointment ID
 router.get(
   "/clinical-exams/:appointmentId",
   authMiddleware,

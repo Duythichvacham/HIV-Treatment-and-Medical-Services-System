@@ -51,7 +51,7 @@ const PatientLogin = () => {
     setForgotMsg("");
     try {
       // Gửi OTP về email
-      const res = await fetch("http://localhost:5000/api/v1/auth/send-otp", {
+      const res = await fetch("http://localhost:5000VITE_API_API_PREFIX/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotData.email }),
@@ -87,7 +87,7 @@ const PatientLogin = () => {
     try {
       // Xác thực OTP
       const verifyRes = await fetch(
-        "http://localhost:5000/api/v1/auth/verify-otp",
+        "http://localhost:5000VITE_API_API_PREFIX/auth/verify-otp",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ const PatientLogin = () => {
         throw new Error(verifyData.message || "Xác thực OTP thất bại");
       // Gọi API reset password
       const resetRes = await fetch(
-        "http://localhost:5000/api/v1/auth/reset-password",
+        "http://localhost:5000VITE_API_API_PREFIX/auth/reset-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

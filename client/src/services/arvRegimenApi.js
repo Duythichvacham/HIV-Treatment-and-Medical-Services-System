@@ -5,7 +5,7 @@ export const arvRegimenManagerApi = {
   // Get all ARV regimens
   getAll: async () => {
     try {
-      const response = await api.get("/api/v1/arv-regimens/");
+      const response = await api.get("VITE_API_API_PREFIX/arv-regimens/");
       console.log("✅ getAll ARV regimens response:", response.data);
       return response.data;
     } catch (error) {
@@ -17,7 +17,7 @@ export const arvRegimenManagerApi = {
   // Get ARV regimen by ID
   getById: async (regimenId) => {
     try {
-      const response = await api.get(`/api/v1/arv-regimens/${regimenId}`);
+      const response = await api.get(`VITE_API_API_PREFIX/arv-regimens/${regimenId}`);
       console.log("✅ getById ARV regimen response:", response.data);
       return response.data;
     } catch (error) {
@@ -29,7 +29,7 @@ export const arvRegimenManagerApi = {
   // Create new ARV regimen
   create: async (regimenData) => {
     try {
-      const response = await api.post("/api/v1/arv-regimens/", regimenData);
+      const response = await api.post("VITE_API_API_PREFIX/arv-regimens/", regimenData);
       console.log("✅ create ARV regimen response:", response.data);
       return response.data;
     } catch (error) {
@@ -42,7 +42,7 @@ export const arvRegimenManagerApi = {
   update: async (regimenId, regimenData) => {
     try {
       const response = await api.patch(
-        `/api/v1/arv-regimens/update/${regimenId}/`,
+        `VITE_API_API_PREFIX/arv-regimens/update/${regimenId}/`,
         regimenData
       );
       console.log("✅ update ARV regimen response:", response.data);
@@ -57,7 +57,7 @@ export const arvRegimenManagerApi = {
   setActive: async (regimenId, isActive) => {
     try {
       const response = await api.patch(
-        `/api/v1/arv-regimens/active/${regimenId}/`,
+        `VITE_API_API_PREFIX/arv-regimens/active/${regimenId}/`,
         {
           is_active: isActive,
         }

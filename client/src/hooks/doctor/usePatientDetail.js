@@ -47,7 +47,7 @@ export const usePatientDetail = (patientId) => {
         // Try to get ARV regimen - might return 404 for new patients
         try {
           const arvRes = await api.get(
-            `/api/v1/patients/current-arv-regimen/${patientId}`
+            `VITE_API_API_PREFIX/patients/current-arv-regimen/${patientId}`
           );
           arvData = arvRes.data?.data || null;
           console.log("[usePatientDetail] ARV response:", arvRes.data);
@@ -65,7 +65,7 @@ export const usePatientDetail = (patientId) => {
         // Try to get test results - might return 404 for new patients
         try {
           const testRes = await api.get(
-            `/api/v1/patients/latest-tests/${patientId}`
+            `VITE_API_API_PREFIX/patients/latest-tests/${patientId}`
           );
           testData = testRes.data?.data || null;
         } catch (testErr) {
@@ -122,7 +122,7 @@ export const usePatientDetail = (patientId) => {
       try {
         const arvRes = await patientApi.getCurrentTreatment(patientId);
         // const arvRes = await api.get(
-        //   `/api/v1/patients/current-arv-regimen/${patientId}`
+        //   `VITE_API_API_PREFIX/patients/current-arv-regimen/${patientId}`
         // );
         arvData = arvRes.data?.data || null;
         console.log("[usePatientDetail] ARV response:", arvRes.data);
@@ -141,7 +141,7 @@ export const usePatientDetail = (patientId) => {
       try {
         const testRes = patientApi.getLatestTests(patientId);
         // const testRes = await api.get(
-        //   `/api/v1/patients/latest-tests/${patientId}`
+        //   `VITE_API_API_PREFIX/patients/latest-tests/${patientId}`
         // );
         testData = testRes.data?.data || null;
         console.log("[usePatientDetail] Test response:", testRes.data);

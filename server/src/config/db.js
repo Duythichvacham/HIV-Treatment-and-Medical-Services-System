@@ -1,15 +1,16 @@
-require("dotenv").config();
+require("dotenv").config({path: process.env.ENV_FILE || ".env"});
+//load biến môi trường từ file .env, nếu ENV_FILE được set thì load từ đó, nếu không thì load từ .env mặc định
 const sql = require("mssql");
 
 const config = {
-  user: process.env.DB_USER || "sa",
-  password: process.env.DB_PASSWORD || "12345",
-  server: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "HIV_HEALTH_CARE",
-  port: parseInt(process.env.DB_PORT) || 1433,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD ,
+  server: process.env.DB_HOST ,
+  database: process.env.DB_NAME,
+  port: parseInt(process.env.DB_PORT),
   options: {
-    encrypt: false, // Use encryption for data transfer
-    trustServerCertificate: true, // Trust the server certificate
+    encrypt: process.env.DB_ENCRYPT, // Use encryption for data transfer
+    trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE, // Trust the server certificate
     useUTC: false,
     enableArithAbort: true,
     connectTimeout: 60000, // 60 seconds

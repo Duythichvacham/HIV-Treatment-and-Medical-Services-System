@@ -143,3 +143,5 @@ node_modules/
 target/
 .idea/
 .vscode/
+# Allow example file
+!.env.example

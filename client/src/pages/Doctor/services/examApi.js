@@ -14,7 +14,7 @@ export const examApi = {
   // Get exam data by appointment ID (for loading saved temp data)
   // getExamData: async (appointmentId) => {
   //   // Use the clinical exam endpoint to get existing exam data
-  //   const url = `/api/v1/clinical/clinical-exams/${appointmentId}`;
+  //   const url = `VITE_API_API_PREFIX/clinical/clinical-exams/${appointmentId}`;
   //   const response = await api.get(url);
   //   return response.data;
   // },
@@ -23,14 +23,14 @@ export const examApi = {
   getSavedExamData: async (appointmentId) => {
     try {
       console.log("[examApi.getSavedExamData] API URLs:", {
-        clinicalURL: `/api/v1/clinical/clinical-exams/${appointmentId}`,
-        prescriptionURL: `/api/v1/prescriptions/${appointmentId}`,
+        clinicalURL: `VITE_API_API_PREFIX/clinical/clinical-exams/${appointmentId}`,
+        prescriptionURL: `VITE_API_API_PREFIX/prescriptions/${appointmentId}`,
       });
 
       // Load both clinical exam and prescription data
       const [clinicalResponse, prescriptionResponse] = await Promise.all([
-        api.get(`/api/v1/clinical/clinical-exams/${appointmentId}`),
-        api.get(`/api/v1/prescriptions/${appointmentId}`),
+        api.get(`VITE_API_API_PREFIX/clinical/clinical-exams/${appointmentId}`),
+        api.get(`VITE_API_API_PREFIX/prescriptions/${appointmentId}`),
       ]);
 
       // Extract prescription_details and rename to match expected format
@@ -99,7 +99,7 @@ export const examApi = {
 
       console.log("[examApi.save] Saving clinical exam:", clinicalExamData);
       const clinicalResponse = await api.post(
-        `/api/v1/clinical/clinical-exams`,
+        `VITE_API_API_PREFIX/clinical/clinical-exams`,
         clinicalExamData
       );
 
@@ -258,7 +258,7 @@ export const examApi = {
 
         console.log("[examApi.save] Saving prescription:", prescriptionData);
         prescriptionResponse = await api.post(
-          `/api/v1/prescriptions/`,
+          `VITE_API_API_PREFIX/prescriptions/`,
           prescriptionData
         );
       }
@@ -300,7 +300,7 @@ export const examApi = {
         "[examApi.complete] Updating appointment status to completed"
       );
       const statusResponse = await api.patch(
-        `/api/v1/appointments/${appointmentId}/status`,
+        `VITE_API_API_PREFIX/appointments/${appointmentId}/status`,
         { status: "completed" }
       );
 
@@ -323,7 +323,7 @@ export const examApi = {
 
   // Get exam by ID
   getById: async (examId) => {
-    const url = `/api/v1/doctors/exam-detail/${examId}`;
+    const url = `VITE_API_API_PREFIX/doctors/exam-detail/${examId}`;
     const response = await api.get(url);
     return response.data;
   },
