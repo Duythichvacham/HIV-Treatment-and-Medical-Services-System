@@ -25,7 +25,7 @@ const managerRouter = require("./manager");
  * Prefix: prefix/resource
  */
 function route(app) {
-
+  // console.log("BODY:", req.body);
   app.use(`${process.env.API_PREFIX}/public`, publicRouter);
 
   //login -- thằng này sẽ gom qua user route - thêm chức năng refresh token, logout,register

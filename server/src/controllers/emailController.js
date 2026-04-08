@@ -14,11 +14,12 @@ const {
 } = require("../services/appointmentService");
 
 exports.sendOtp = async (req, res) => {
+  console.log("BODY:", req.body);
   const { email } = req.body;
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 };
   console.log("OTP stored:", otpStore[email]); // Log giá trị lưu trữ
-  console.log("email + otp: ", email.expires, otp);
+  console.log("email: ", email);
   await sendOTPEmail(email, otp);
   res.json({ message: "OTP sent" });
 };
@@ -26,7 +27,7 @@ exports.sendOtp = async (req, res) => {
 exports.verifyOtp = (req, res) => {
   const { email, otp } = req.body;
   const record = otpStore[email];
-  console.log("email + otp: ", email, otp);
+  console.log("email: ", email, otp);
   console.log("record email: ", record);
   if (!record || record.otp !== otp || Date.now() > record.expires) {
     return res

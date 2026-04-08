@@ -17,6 +17,12 @@ app.use(
 );
 
 app.use(express.json());
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 const route = require("./routes"); // import index.js trong routes
 route(app);
 

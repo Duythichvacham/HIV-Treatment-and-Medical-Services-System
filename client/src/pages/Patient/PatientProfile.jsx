@@ -48,7 +48,7 @@ const PatientProfile = () => {
     setLoadingProfile(true);
     const token = localStorage.getItem("token");
     Promise.all([
-      fetch(`http://localhost:5000VITE_API_API_PREFIX/patients/${patientId}`, {
+      fetch(`http://localhost:5000${import.meta.env.VITE_API_PREFIX}/patients/${patientId}`, {
         headers: {
           "Content-Type": "application/json",
           ...(token && { Authorization: `Bearer ${token}` }),
@@ -63,7 +63,7 @@ const PatientProfile = () => {
         return res.json();
       }),
       // Medical info API is not available, commented out for now
-      // fetch(`http://localhost:5000VITE_API_API_PREFIX/doctor/current-exam/${patientId}`, {
+      // fetch(`http://localhost:5000${import.meta.env.VITE_API_PREFIX}/doctor/current-exam/${patientId}`, {
       //   headers: {
       //     'Content-Type': 'application/json',
       //     ...(token && { 'Authorization': `Bearer ${token}` })
@@ -97,7 +97,7 @@ const PatientProfile = () => {
     const token = localStorage.getItem("token");
     try {
       const response = await fetch(
-        `http://localhost:5000VITE_API_API_PREFIX/patients/${patientId}`,
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/patients/${patientId}`,
         {
           method: "PUT",
           headers: {
@@ -122,7 +122,7 @@ const PatientProfile = () => {
         );
       // Reload lại thông tin cá nhân
       const personalRes = await fetch(
-        `http://localhost:5000VITE_API_API_PREFIX/patients/${patientId}`,
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/patients/${patientId}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -203,7 +203,7 @@ const PatientProfile = () => {
       );
       // Xác thực OTP trước khi đổi mật khẩu
       const verifyRes = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/verify-otp",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/verify-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -224,7 +224,7 @@ const PatientProfile = () => {
       // Chỉ khi xác thực OTP thành công mới gọi đổi mật khẩu
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/change-password",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/change-password`,
         {
           method: "POST",
           headers: {
@@ -266,7 +266,7 @@ const PatientProfile = () => {
     try {
       // Gửi OTP về email hoặc số điện thoại
       const response = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/send-otp",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/send-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
