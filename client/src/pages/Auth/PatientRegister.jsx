@@ -94,7 +94,7 @@ const PatientRegister = () => {
     try {
       // Xác thực OTP trước khi đăng ký
       const verifyRes = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/verify-otp",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/verify-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -109,7 +109,7 @@ const PatientRegister = () => {
       }
 
       const response = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/register/patient",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/register/patient`,
         {
           method: "POST",
           headers: {
@@ -168,7 +168,7 @@ const PatientRegister = () => {
     try {
       // Kiểm tra email đã tồn tại chưa
       const checkEmailRes = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/check-email",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/check-email`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -183,7 +183,7 @@ const PatientRegister = () => {
       }
       // Gửi OTP về email
       const response = await fetch(
-        "http://localhost:5000VITE_API_API_PREFIX/auth/send-otp",
+        `http://localhost:5000${import.meta.env.VITE_API_PREFIX}/auth/send-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -5,7 +5,7 @@ import { getAllLabTests, getCurrentLabStaffShift, getLatestTestResultsForPatient
 import axios from "axios";
 import '../../styles/animations.css';
 
-const API_BASE = "http://localhost:5000VITE_API_API_PREFIX";
+const API_BASE = `http://localhost:5000${import.meta.env.VITE_API_PREFIX}`;
 
 // Hàm format thời gian đẹp
 function formatDateTime(str) {

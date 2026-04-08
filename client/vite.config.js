@@ -51,7 +51,9 @@ export default defineConfig({
     // Performance warnings
     chunkSizeWarningLimit: 1000,
   },
-
+esbuild: {
+    drop: ['console', 'debugger'],     // xóa console.log, console.debug, debugger
+  },
   // ===========================================
   // PATH ALIASES
   // ===========================================
