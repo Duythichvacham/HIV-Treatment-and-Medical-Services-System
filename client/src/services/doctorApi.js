@@ -4,7 +4,7 @@ export const doctorApi = {
   // Fetch doctor profile by doctorId
   getDoctorProfile: async (doctorId) => {
     try {
-      const response = await api.get(`VITE_API_API_PREFIX/doctors/profile/${doctorId}`);
+      const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/doctors/profile/${doctorId}`);
       console.log("Doctor profile data:", response.data); // Debug
       return response.data;
     } catch (error) {
@@ -15,7 +15,7 @@ export const doctorApi = {
   updateDoctorProfile: async (doctorId, data) => {
     try {
       const response = await api.patch(
-        `VITE_API_API_PREFIX/doctors/profile/${doctorId}`,
+        `${import.meta.env.VITE_API_PREFIX}/doctors/profile/${doctorId}`,
         data
       );
       console.log("Updated doctor profile:", response.data);

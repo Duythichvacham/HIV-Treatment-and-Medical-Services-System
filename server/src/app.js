@@ -30,7 +30,21 @@ app.get("/", (req, res) => {
 // sau 17h
 initializeScheduler();
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+process.on('uncaughtException', (err) => {
+    console.error('=== UNCAUGHT EXCEPTION ===');
+    console.error(err);
+    console.error('================================');
+    // process.exit(1);   // tạm thời comment dòng này để debug
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('=== UNHANDLED REJECTION ===');
+    console.error('Reason:', reason);
+    console.error('Promise:', promise);
+    console.error('================================');
+    // process.exit(1);
 });

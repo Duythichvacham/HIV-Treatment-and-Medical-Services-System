@@ -1,20 +1,21 @@
-require("dotenv").config({path: process.env.ENV_FILE || ".env"});
+require("dotenv").config();
 //load biến môi trường từ file .env, nếu ENV_FILE được set thì load từ đó, nếu không thì load từ .env mặc định
 const sql = require("mssql");
 
 const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD ,
-  server: process.env.DB_HOST ,
+  server: process.env.DB_HOST || "localhost",
   database: process.env.DB_NAME,
-  port: parseInt(process.env.DB_PORT),
+  port: parseInt(process.env.DB_PORT) || 1433,
   options: {
-    encrypt: process.env.DB_ENCRYPT, // Use encryption for data transfer
-    trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE, // Trust the server certificate
+    // instanceName: "SQLEXPRESS",
+    encrypt: false, // Use encryption for data transfer
+    trustServerCertificate: true, // Trust the server certificate
     useUTC: false,
     enableArithAbort: true,
-    connectTimeout: 60000, // 60 seconds
-    requestTimeout: 60000, // 60 seconds
+    connectTimeout: 15000, // 60 seconds
+    requestTimeout: 15000, // 60 seconds
     appName: "HIV-Treatment-System",
   },
   pool: {
@@ -31,7 +32,8 @@ const poolPromise = new sql.ConnectionPool(config)
     return pool;
   })
   .catch((err) => {
-    process.exit(1); // Exit if cannot connect to database
+    // process.exit(1); // Exit if cannot connect to database
+    console.error("Database Connection Failed! Error: ", err);
   });
 module.exports = {
   sql,

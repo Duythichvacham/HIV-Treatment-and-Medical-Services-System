@@ -19,7 +19,7 @@ const useTestRequestResult = (patientId, appointmentId) => {
       setError(null);
 
       try {
-        let url = `VITE_API_API_PREFIX/patients/latest-tests/${patientId}`;
+        let url = `${import.meta.env.VITE_API_PREFIX}/patients/latest-tests/${patientId}`;
         if (appointmentId) {
           url += `?appointmentId=${appointmentId}`;
         }

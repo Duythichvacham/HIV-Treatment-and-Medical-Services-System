@@ -12,54 +12,54 @@ router.get("/test/results", testControllerV2.getTestResults);
 
 router.get("/", testController.getLabQueue);
 
-// POST VITE_API_API_PREFIX/lab/test-results (nhập kết quả xét nghiệm và hoàn thành);
+// POST ${import.meta.env.VITE_API_PREFIX}/lab/test-results (nhập kết quả xét nghiệm và hoàn thành);
 router.post("/test-results", testController.createTestResultAndComplete);
-// GET VITE_API_API_PREFIX/lab/lab-tests(LẤY DANH SÁCH XÉT NGHIỆM)
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/lab-tests(LẤY DANH SÁCH XÉT NGHIỆM)
 router.get("/lab-tests", testController.getAllLabTests);
 // Thêm các route cho lab queue, in-progress, done
 router.get("/queue", testController.getLabQueue);
 router.get("/in-progress", testController.getLabInProgress);
 
-// GET VITE_API_API_PREFIX/lab/test-notes/:test_note_id
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/test-notes/:test_note_id
 router.get("/test-notes/:test_note_id", testController.getTestNoteDetail);
 
-// GET VITE_API_API_PREFIX/lab/rooms
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/rooms
 router.get("/rooms", testController.getLabRooms);
 
-// GET VITE_API_API_PREFIX/lab/shifts
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/shifts
 router.get("/shifts", testController.getLabStaffShifts);
 
-// GET VITE_API_API_PREFIX/lab/current-shift
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/current-shift
 router.get("/current-shift", testController.getCurrentLabStaffShift);
 
-// PATCH VITE_API_API_PREFIX/test-requests/:id/status
+// PATCH ${import.meta.env.VITE_API_PREFIX}/test-requests/:id/status
 router.patch(
   "/test-requests/:id/status",
   testController.updateTestRequestExamStatus
 );
 
-// POST VITE_API_API_PREFIX/lab/test-notes
+// POST ${import.meta.env.VITE_API_PREFIX}/lab/test-notes
 router.post("/test-notes", testController.createTestNote);
 
-// GET VITE_API_API_PREFIX/lab/test-results/:test_note_id
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/test-results/:test_note_id
 router.get(
   "/test-results/:test_note_id",
   testController.getTestResultsByTestNoteId
 );
 
-// GET VITE_API_API_PREFIX/lab/test-notes/appointment/:appointment_id
+// GET ${import.meta.env.VITE_API_PREFIX}/lab/test-notes/appointment/:appointment_id
 router.get(
   "/test-notes/appointment/:appointment_id",
   testController.getTestNotesByAppointment
 );
 
-// PATCH VITE_API_API_PREFIX/lab/test-notes/:test_note_id/notes
+// PATCH ${import.meta.env.VITE_API_PREFIX}/lab/test-notes/:test_note_id/notes
 router.patch(
   "/test-notes/:test_note_id/notes",
   testController.updateTestNoteNotes
 );
 
-// PATCH VITE_API_API_PREFIX/lab/test-notes/:test_note_id/datetime
+// PATCH ${import.meta.env.VITE_API_PREFIX}/lab/test-notes/:test_note_id/datetime
 router.patch(
   "/test-notes/:test_note_id/datetime",
   testController.updateTestNoteDatetime

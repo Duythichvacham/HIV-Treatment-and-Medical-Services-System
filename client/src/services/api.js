@@ -96,7 +96,7 @@ export const getDoctors = async (date = null) => {
   if (date) params.date = date;
 
   try {
-    const response = await api.get("VITE_API_API_PREFIX/public/doctors/", { params });
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/public/doctors/`, { params });
     console.log("✅ getDoctors response:", response.data);
     return response.data.data || response.data; // Handle both formats
   } catch (error) {
@@ -118,7 +118,7 @@ export const getSlots = async (date = null, doctorId = null) => {
   if (doctorId) params.doctor_id = doctorId;
 
   try {
-    const response = await api.get("/api/public/slots/", { params });
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/public/slots/`, { params });
     console.log("✅ getSlots response:", response.data);
     return response.data.data || response.data; // Handle both formats
   } catch (error) {
@@ -135,7 +135,7 @@ export const getServices = async (type) => {
   console.log("🔄 API Call: getServices with type:", type);
 
   try {
-    const response = await api.get("/api/public/services", {
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/public/services`, {
       params: { type },
     });
     console.log(
@@ -160,7 +160,7 @@ export const getServices = async (type) => {
  */
 export const createAppointment = async (data) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/appointments", data);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/appointments`, data);
     return response.data;
   } catch (error) {
     console.error("❌ createAppointment error:", error);
@@ -180,7 +180,7 @@ export const login = async (username, password) => {
   console.log("🔄 API Call: login with username:", username);
 
   try {
-    const response = await api.post("VITE_API_API_PREFIX/auth/login", {
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/auth/login`, {
       username: username.trim(),
       password: password.trim(),
     });
@@ -241,7 +241,7 @@ export const getAllLabTests = async (
   if (lab_staff_id) params.lab_staff_id = lab_staff_id;
   if (room_id) params.room_id = room_id;
 
-  const response = await api.get("VITE_API_API_PREFIX/lab/lab-tests", { params });
+  const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/lab-tests`, { params });
   return response.data.data;
 };
 
@@ -287,7 +287,7 @@ export const getLabDone = async (date, lab_staff_id = null, room_id = null) => {
  * Get list of lab rooms
  */
 export const getLabRooms = async () => {
-  const response = await api.get("VITE_API_API_PREFIX/lab/rooms");
+  const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/rooms`);
   return response.data.data;
 };
 
@@ -301,7 +301,7 @@ export const getLabStaffShifts = async (date = null, lab_staff_id = null) => {
   if (date) params.date = date;
   if (lab_staff_id) params.lab_staff_id = lab_staff_id;
 
-  const response = await api.get("VITE_API_API_PREFIX/lab/shifts", { params });
+  const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/shifts`, { params });
   return response.data.data;
 };
 
@@ -314,7 +314,7 @@ export const getCurrentLabStaffShift = async (lab_staff_id, date = null) => {
   const params = { lab_staff_id };
   if (date) params.date = date;
 
-  const response = await api.get("VITE_API_API_PREFIX/lab/current-shift", { params });
+  const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/current-shift`, { params });
   return response.data.data;
 };
 
@@ -330,7 +330,7 @@ export const checkExistingAppointment = async (
     const params = { serviceId, bookingDate };
     if (doctorId) params.doctorId = doctorId;
 
-    const response = await api.get("VITE_API_API_PREFIX/appointments/check-existing", {
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/appointments/check-existing`, {
       params,
     });
     return response.data.data;
@@ -346,7 +346,7 @@ export const checkExistingAppointment = async (
 // ===========================================
 export const getUserAppointments = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/patients/appointment-history");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/patients/appointment-history`);
     return response.data;
   } catch (error) {
     console.error("Error fetching user appointments:", error);
@@ -364,7 +364,7 @@ export const getUserAppointments = async () => {
 export const getPendingTestRequests = async () => {
   try {
     const response = await api.get(
-      "VITE_API_API_PREFIX/registrations/test-requests/pending"
+      `${import.meta.env.VITE_API_PREFIX}/registrations/test-requests/pending`
     );
     console.log("API getPendingTestRequests response:", response);
     return response.data;
@@ -382,7 +382,7 @@ export const getPendingTestRequests = async () => {
 export const approveTestRequest = async (requestId, paymentMethod) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/registrations/test-requests/${requestId}/approve`,
+      `${import.meta.env.VITE_API_PREFIX}/registrations/test-requests/${requestId}/approve`,
       {
         payment_method: paymentMethod,
       }
@@ -400,7 +400,7 @@ export const approveTestRequest = async (requestId, paymentMethod) => {
 export const getRegistrationStatistics = async () => {
   try {
     const response = await api.get(
-      "VITE_API_API_PREFIX/registrations/test-requests/statistics"
+      `${import.meta.env.VITE_API_PREFIX}/registrations/test-requests/statistics`
     );
     return response.data;
   } catch (error) {
@@ -421,7 +421,7 @@ export const getPaymentHistory = async (date = null, search = null) => {
     if (search) params.search = search;
 
     const response = await api.get(
-      "VITE_API_API_PREFIX/registrations/test-requests/payment-history",
+      `${import.meta.env.VITE_API_PREFIX}/registrations/test-requests/payment-history`,
       {
         params,
       }
@@ -442,7 +442,7 @@ export const getPaymentHistory = async (date = null, search = null) => {
  */
 export const getManagerServices = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/managers/service");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/managers/service`);
     console.log("✅ getManagerServices response:", response.data);
     return response.data;
   } catch (error) {
@@ -457,7 +457,7 @@ export const getManagerServices = async () => {
  */
 export const createManagerService = async (serviceData) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/managers/service", serviceData);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/managers/service`, serviceData);
     console.log("✅ createManagerService response:", response.data);
     return response.data;
   } catch (error) {
@@ -474,7 +474,7 @@ export const createManagerService = async (serviceData) => {
 export const toggleManagerService = async (serviceId, isActive) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/managers/service/${serviceId}/status`,
+      `${import.meta.env.VITE_API_PREFIX}/managers/service/${serviceId}/status`,
       {
         is_active: isActive,
       }
@@ -492,7 +492,7 @@ export const toggleManagerService = async (serviceId, isActive) => {
  */
 export const cancelPendingAppointments = async () => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/appointments/cancel-pending");
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/appointments/cancel-pending`);
     return response.data;
   } catch (error) {
     console.error("❌ cancelPendingAppointments error:", error);
@@ -511,7 +511,7 @@ export const getLabStatistics = async (date = null, lab_staff_id = null) => {
     if (date) params.date = date;
     if (lab_staff_id) params.lab_staff_id = lab_staff_id;
 
-    const response = await api.get("VITE_API_API_PREFIX/lab/statistics", { params });
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/statistics`, { params });
     return response.data;
   } catch (error) {
     console.error("❌ getLabStatistics error:", error);
@@ -526,7 +526,7 @@ export const getLabStatistics = async (date = null, lab_staff_id = null) => {
  */
 export const updateTestStatus = async (test_id, status) => {
   try {
-    const response = await api.patch(`VITE_API_API_PREFIX/lab/tests/${test_id}/status`, {
+    const response = await api.patch(`${import.meta.env.VITE_API_PREFIX}/lab/tests/${test_id}/status`, {
       status,
     });
     return response.data;
@@ -542,7 +542,7 @@ export const updateTestStatus = async (test_id, status) => {
  */
 export const getTestNoteDetails = async (test_note_id) => {
   try {
-    const response = await api.get(`VITE_API_API_PREFIX/lab/test-notes/${test_note_id}`);
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/test-notes/${test_note_id}`);
     return response.data;
   } catch (error) {
     console.error("❌ getTestNoteDetails error:", error);
@@ -556,7 +556,7 @@ export const getTestNoteDetails = async (test_note_id) => {
  */
 export const getTestResults = async (test_note_id) => {
   try {
-    const response = await api.get(`VITE_API_API_PREFIX/lab/test-results/${test_note_id}`);
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/lab/test-results/${test_note_id}`);
     return response.data;
   } catch (error) {
     console.error("❌ getTestResults error:", error);
@@ -571,7 +571,7 @@ export const getTestResults = async (test_note_id) => {
 export const getLatestTestResultsForPatient = async (patient_id) => {
   try {
     const response = await api.get(
-      `VITE_API_API_PREFIX/lab/test-latest-results/${patient_id}`
+      `${import.meta.env.VITE_API_PREFIX}/lab/test-latest-results/${patient_id}`
     );
     return response.data;
   } catch (error) {
@@ -586,7 +586,7 @@ export const getLatestTestResultsForPatient = async (patient_id) => {
  */
 export const createTestNote = async (noteData) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/lab/test-notes", noteData);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/lab/test-notes`, noteData);
     return response.data;
   } catch (error) {
     console.error("❌ createTestNote error:", error);
@@ -602,7 +602,7 @@ export const createTestNote = async (noteData) => {
 export const updateTestNote = async (test_note_id, updateData) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/lab/test-notes/${test_note_id}`,
+      `${import.meta.env.VITE_API_PREFIX}/lab/test-notes/${test_note_id}`,
       updateData
     );
     return response.data;
@@ -618,7 +618,7 @@ export const updateTestNote = async (test_note_id, updateData) => {
  */
 export const createTestResult = async (resultData) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/lab/test-results", resultData);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/lab/test-results`, resultData);
     return response.data;
   } catch (error) {
     console.error("❌ createTestResult error:", error);
@@ -628,7 +628,7 @@ export const createTestResult = async (resultData) => {
 export const getInvoiceInfo = async (appointmentId) => {
   try {
     const response = await api.get(
-      `VITE_API_API_PREFIX/appointments/${appointmentId}/invoice`
+      `${import.meta.env.VITE_API_PREFIX}/appointments/${appointmentId}/invoice`
     );
     return response.data;
   } catch (error) {
@@ -646,7 +646,7 @@ export const createVNPayURL = async (invoiceId, amount, bankCode = "NCB") => {
   console.log("🔄 API Call: createVNPayURL", { invoiceId, amount, bankCode });
 
   try {
-    const response = await api.post("VITE_API_API_PREFIX/payment/create_payment_url", {
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/payment/create_payment_url`, {
       invoiceId: invoiceId,
       amount: amount,
       bankCode: bankCode,
@@ -677,7 +677,7 @@ export const verifyVnpayReturn = async (queryString, invoiceId) => {
 
     // Endpoint này cần khớp với backend của bạn
     const response = await api.get(
-      `VITE_API_API_PREFIX/payment/vnpay_return?${queryString}`
+      `${import.meta.env.VITE_API_PREFIX}/payment/vnpay_return?${queryString}`
     );
 
     console.log("✅ verifyVnpayReturn response:", response.data);
@@ -693,7 +693,7 @@ export const verifyVnpayReturn = async (queryString, invoiceId) => {
 };
 export const cancelTransaction = async (invoiceId) => {
   try {
-    const response = await api.patch(`VITE_API_API_PREFIX/payment/cancel_transaction`, {
+    const response = await api.patch(`${import.meta.env.VITE_API_PREFIX}/payment/cancel_transaction`, {
       invoiceId,
     });
     console.log("✅ cancelTransaction response:", response.data);
@@ -710,7 +710,7 @@ export const cancelTransaction = async (invoiceId) => {
 
 export const createBlog = async (blogData) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/blogs", blogData);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/blogs`, blogData);
     return response.data;
   } catch (error) {
     console.error("❌ createBlog error:", error);
@@ -720,7 +720,7 @@ export const createBlog = async (blogData) => {
 
 export const getAllBlogs = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/blogs");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/blogs`);
     return response.data;
   } catch (error) {
     console.error("❌ getAllBlogs error:", error);
@@ -730,7 +730,7 @@ export const getAllBlogs = async () => {
 
 export const getBlogById = async (id) => {
   try {
-    const response = await api.get(`VITE_API_API_PREFIX/blogs/${id}`);
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/blogs/${id}`);
     return response.data;
   } catch (error) {
     console.error("❌ getBlogById error:", error);
@@ -740,7 +740,7 @@ export const getBlogById = async (id) => {
 
 export const updateBlog = async (id, blogData) => {
   try {
-    const response = await api.put(`VITE_API_API_PREFIX/blogs/${id}`, blogData);
+    const response = await api.put(`${import.meta.env.VITE_API_PREFIX}/blogs/${id}`, blogData);
     return response.data;
   } catch (error) {
     console.error("❌ updateBlog error:", error);
@@ -750,7 +750,7 @@ export const updateBlog = async (id, blogData) => {
 
 export const deleteBlog = async (id) => {
   try {
-    const response = await api.patch(`VITE_API_API_PREFIX/blogs/${id}`);
+    const response = await api.patch(`${import.meta.env.VITE_API_PREFIX}/blogs/${id}`);
     return response.data;
   } catch (error) {
     console.error("❌ deleteBlog error:", error);

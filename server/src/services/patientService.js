@@ -56,7 +56,7 @@ exports.searchPatientsByPartialNameAndPhone = async (name, phone) => {
 //   return result.recordset[0];
 // };
 
-//GET, lấy bệnh nhân chờ xét nghiệm với service_type='test' VITE_API_API_PREFIX/lab/appointments/queue
+//GET, lấy bệnh nhân chờ xét nghiệm với service_type='test' ${import.meta.env.VITE_API_PREFIX}/lab/appointments/queue
 exports.getLabTestQueue = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`
@@ -110,7 +110,7 @@ exports.getLabTestInProgress = async () => {
   return result.recordset;
 };
 
-//VITE_API_API_PREFIX/lab/appointments/finished (GET, lấy bệnh nhân hoàn thành XN)
+//${import.meta.env.VITE_API_PREFIX}/lab/appointments/finished (GET, lấy bệnh nhân hoàn thành XN)
 exports.getLabTestFinished = async () => {
   const pool = await poolPromise;
   const result = await pool.request().query(`

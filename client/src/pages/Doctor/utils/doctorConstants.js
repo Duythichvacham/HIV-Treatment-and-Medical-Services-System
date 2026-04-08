@@ -44,32 +44,32 @@ export const PAGINATION_DEFAULTS = {
 export const API_ENDPOINTS = {
   APPOINTMENTS: {
     // New unified endpoint for all appointment queries
-    BASE: "VITE_API_API_PREFIX/doctor/appointments",
+    BASE: `${import.meta.env.VITE_API_PREFIX}/doctor/appointments`,
     // Legacy endpoints (for backward compatibility)
-    QUEUE: (doctorId) => `VITE_API_API_PREFIX/doctor/appointments/queue/${doctorId}`,
+    QUEUE: (doctorId) => `${import.meta.env.VITE_API_PREFIX}/doctor/appointments/queue/${doctorId}`,
     IN_PROGRESS: (doctorId) =>
-      `VITE_API_API_PREFIX/doctor/appointments/in_progress/${doctorId}`,
+      `${import.meta.env.VITE_API_PREFIX}/doctor/appointments/in_progress/${doctorId}`,
     COMPLETED: (doctorId) =>
-      `VITE_API_API_PREFIX/doctor/appointments/completed/${doctorId}`,
+      `${import.meta.env.VITE_API_PREFIX}/doctor/appointments/completed/${doctorId}`,
     UPDATE_STATUS: (appointmentId) =>
-      `VITE_API_API_PREFIX/appointments/${appointmentId}/status`,
+      `${import.meta.env.VITE_API_PREFIX}/appointments/${appointmentId}/status`,
   },
 
   EXAMS: {
-    CURRENT: (patientId) => `VITE_API_API_PREFIX/exams/current/${patientId}`,
-    SAVE: (appointmentId) => `VITE_API_API_PREFIX/exams/${appointmentId}`,
+    CURRENT: (patientId) => `${import.meta.env.VITE_API_PREFIX}/exams/current/${patientId}`,
+    SAVE: (appointmentId) => `${import.meta.env.VITE_API_PREFIX}/exams/${appointmentId}`,
   },
   TESTS: {
-    AVAILABLE: "VITE_API_API_PREFIX/services/tests/available",
-    ONGOING: (patientId) => `VITE_API_API_PREFIX/patients/${patientId}/ongoing-tests`,
-    CREATE_REQUEST: "VITE_API_API_PREFIX/test-requests",
+    AVAILABLE: `${import.meta.env.VITE_API_PREFIX}/services/tests/available`,
+    ONGOING: (patientId) => `${import.meta.env.VITE_API_PREFIX}/patients/${patientId}/ongoing-tests`,
+    CREATE_REQUEST: `${import.meta.env.VITE_API_PREFIX}/test-requests`,
   },
   PRESCRIPTIONS: {
-    ARV_REGIMENS: "VITE_API_API_PREFIX/arv-regimens",
-    CREATE: "VITE_API_API_PREFIX/prescriptions",
+    ARV_REGIMENS: `${import.meta.env.VITE_API_PREFIX}/arv-regimens`,
+    CREATE: `${import.meta.env.VITE_API_PREFIX}/prescriptions`,
   },
   SLOTS: {
-    LIST: "VITE_API_API_PREFIX/slots",
-    STATS: (doctorId) => `VITE_API_API_PREFIX/doctor/${doctorId}/slots-stats`,
+    LIST: `${import.meta.env.VITE_API_PREFIX}/slots`,
+    STATS: (doctorId) => `${import.meta.env.VITE_API_PREFIX}/doctor/${doctorId}/slots-stats`,
   },
 };

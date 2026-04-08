@@ -1,11 +1,11 @@
 const router = require("express").Router();
 const managerController = require("../controllers/managerController");
 
-// GET VITE_API_API_PREFIX/managers/users - Lấy danh sách người dùng
+// GET ${import.meta.env.VITE_API_PREFIX}/managers/users - Lấy danh sách người dùng
 router.get("/users", managerController.getUsers);
-// POST VITE_API_API_PREFIX/managers/users - Tạo người dùng mới
+// POST ${import.meta.env.VITE_API_PREFIX}/managers/users - Tạo người dùng mới
 router.post("/users", managerController.createUser);
-// GET VITE_API_API_PREFIX/managers/services - Lấy danh sách dịch vụ
+// GET ${import.meta.env.VITE_API_PREFIX}/managers/services - Lấy danh sách dịch vụ
 router.get("/service", managerController.getAllServices);
 //POST: api/v1/managers/service
 router.post("/service", managerController.createService);
