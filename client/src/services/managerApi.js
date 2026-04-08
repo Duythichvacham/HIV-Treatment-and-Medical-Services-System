@@ -8,7 +8,7 @@ import api from "./api";
  */
 export const getUsers = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/managers/users");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/managers/users`);
     console.log("✅ getUsers response:", response.data);
     return response.data;
   } catch (error) {
@@ -22,7 +22,7 @@ export const getUsers = async () => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/managers/users", userData);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/managers/users`, userData);
     console.log("✅ createUser response:", response.data);
     return response.data;
   } catch (error) {
@@ -39,7 +39,7 @@ export const createUser = async (userData) => {
  */
 export const getAllWorkingShifts = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/managers/working-shift");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/managers/working-shift`);
     console.log("✅ getAllWorkingShifts response:", response.data);
     return response.data;
   } catch (error) {
@@ -55,7 +55,7 @@ export const getAllWorkingShifts = async () => {
 export const createWorkingShift = async (shiftData) => {
   try {
     const response = await api.post(
-      "VITE_API_API_PREFIX/managers/working-shift",
+      `${import.meta.env.VITE_API_PREFIX}/managers/working-shift`,
       shiftData
     );
     console.log("✅ createWorkingShift response:", response.data);
@@ -74,7 +74,7 @@ export const createWorkingShift = async (shiftData) => {
 export const updateWorkingShift = async (shiftId, updateData) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/managers/working-shift/update/${shiftId}`,
+      `${import.meta.env.VITE_API_PREFIX}/managers/working-shift/update/${shiftId}`,
       updateData
     );
     console.log("✅ updateWorkingShift response:", response.data);
@@ -90,7 +90,7 @@ export const updateWorkingShift = async (shiftId, updateData) => {
  */
 export const getAvailableRooms = async () => {
   try {
-    const response = await api.get("VITE_API_API_PREFIX/managers/working-shift/rooms");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/managers/working-shift/rooms`);
     console.log("✅ getAvailableRooms response:", response.data);
     return response.data;
   } catch (error) {
@@ -110,7 +110,7 @@ export const getDoctorsForDropdown = async () => {
   try {
     // TODO: Need API endpoint to get all doctors for manager
     // For now, we'll use the public doctors endpoint
-    const response = await api.get("VITE_API_API_PREFIX/managers/working-shift/doctors");
+    const response = await api.get(`${import.meta.env.VITE_API_PREFIX}/managers/working-shift/doctors`);
     console.log("✅ getAllDoctors response:", response.data);
     return response.data;
   } catch (error) {

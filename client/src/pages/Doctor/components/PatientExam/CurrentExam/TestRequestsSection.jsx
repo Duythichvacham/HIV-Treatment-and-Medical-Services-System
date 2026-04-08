@@ -19,7 +19,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
         setLoading(true);
 
         // Load available test types
-        const testTypesRes = await api.get("VITE_API_API_PREFIX/doctors/test-types");
+        const testTypesRes = await api.get(`${import.meta.env.VITE_API_PREFIX}/doctors/test-types`);
         if (testTypesRes.data.success) {
           setTestTypes(testTypesRes.data.data);
         }
@@ -28,7 +28,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
         if (appointmentId) {
           try {
             const currentRequestRes = await api.get(
-              `VITE_API_API_PREFIX/doctors/current-test-request/${appointmentId}`
+              `${import.meta.env.VITE_API_PREFIX}/doctors/current-test-request/${appointmentId}`
             );
             if (currentRequestRes.data.success) {
               setCurrentRequest(currentRequestRes.data.data);
@@ -81,7 +81,7 @@ const TestRequestsSection = ({ appointmentId, readOnly = false }) => {
       };
 
       const response = await api.post(
-        "VITE_API_API_PREFIX/doctors/test-requests",
+        `${import.meta.env.VITE_API_PREFIX}/doctors/test-requests`,
         requestData
       );
 

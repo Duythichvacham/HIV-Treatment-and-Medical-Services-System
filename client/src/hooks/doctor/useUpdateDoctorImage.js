@@ -32,7 +32,7 @@ const useUpdateDoctorImage = () => {
 
       // Gửi URL ảnh lên server để cập nhật thông tin bác sĩ
       // const updateResponse = await axios.put(
-      //   `VITE_API_API_PREFIX/doctors/${doctorId}/image`,
+      //   `${import.meta.env.VITE_API_PREFIX}/doctors/${doctorId}/image`,
       //   {
       //     image_url: imageUrl,
       //   }

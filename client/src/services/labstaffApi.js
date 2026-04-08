@@ -4,7 +4,7 @@ export const fetchLabResultDetail = async (appointment_id) => {
   try {
     console.log("appointment id lab test: ", appointment_id); // Debug
     const response = await api.get(
-      `VITE_API_API_PREFIX/lab/test/results?appointment_id=${appointment_id}`
+      `${import.meta.env.VITE_API_PREFIX}/lab/test/results?appointment_id=${appointment_id}`
     );
     console.log("Lab result detail:", response.data); // Debug
     return response.data;
@@ -17,7 +17,7 @@ export const fetchLabResultDetail = async (appointment_id) => {
 export const fetchSelfRegisteredOrders = async ({ date }) => {
   try {
     const response = await api.get(
-      `VITE_API_API_PREFIX/lab/appointments/test?bookingDate=${date}`
+      `${import.meta.env.VITE_API_PREFIX}/lab/appointments/test?bookingDate=${date}`
     );
     console.log("Self-registered orders:", response.data); // Debug
     return response.data;
@@ -30,7 +30,7 @@ export const fetchSelfRegisteredOrders = async ({ date }) => {
 export const fetchDoctorOrders = async ({ date }) => {
   try {
     const response = await api.get(
-      `VITE_API_API_PREFIX/lab/appointments/test-request?bookingDate=${date}`
+      `${import.meta.env.VITE_API_PREFIX}/lab/appointments/test-request?bookingDate=${date}`
     );
     console.log("Doctor orders:", response.data); // Debug
     return response.data;
@@ -43,7 +43,7 @@ export const fetchDoctorOrders = async ({ date }) => {
 export const updateLabAppointmentStatus = async (appointmentId, status) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/appointments/${appointmentId}/status`,
+      `${import.meta.env.VITE_API_PREFIX}/appointments/${appointmentId}/status`,
       { status }
     );
     return response.data;
@@ -56,7 +56,7 @@ export const updateLabAppointmentStatus = async (appointmentId, status) => {
 export const updateTestRequestStatus = async (requestId, status) => {
   try {
     const response = await api.patch(
-      `VITE_API_API_PREFIX/test-request/${requestId}/status`,
+      `${import.meta.env.VITE_API_PREFIX}/test-request/${requestId}/status`,
       { status }
     );
     return response.data;
@@ -68,7 +68,7 @@ export const updateTestRequestStatus = async (requestId, status) => {
 
 export const saveTestResults = async (payload) => {
   try {
-    const response = await api.post("VITE_API_API_PREFIX/lab/test/results", payload);
+    const response = await api.post(`${import.meta.env.VITE_API_PREFIX}/lab/test/results`, payload);
     return response.data;
   } catch (error) {
     console.error("Error saving test results:", error);

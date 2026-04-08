@@ -35,7 +35,7 @@ import api from "../../../services/api";
 export const appointmentApi = {
   // Get appointments by status using the new API endpoint
   getQueue: async (doctorId, date) => {
-    const url = `VITE_API_API_PREFIX/doctors/appointments`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/doctors/appointments`;
     const params = {
       doctor_id: doctorId,
       status: "requested",
@@ -54,7 +54,7 @@ export const appointmentApi = {
   },
 
   getInProgress: async (doctorId, date) => {
-    const url = `VITE_API_API_PREFIX/doctors/appointments`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/doctors/appointments`;
     const params = {
       doctor_id: doctorId,
       status: "in_progress",
@@ -72,7 +72,7 @@ export const appointmentApi = {
   },
 
   getCompleted: async (doctorId, date) => {
-    const url = `VITE_API_API_PREFIX/doctors/appointments`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/doctors/appointments`;
     const params = {
       doctor_id: doctorId,
       status: "completed",
@@ -117,14 +117,14 @@ export const appointmentApi = {
 
   // Update appointment status
   updateStatus: async (appointmentId, status) => {
-    const url = `VITE_API_API_PREFIX/appointments/${appointmentId}/status`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/appointments/${appointmentId}/status`;
     const response = await api.patch(url, { status });
     return response.data;
   },
 
   // Get appointments by slot using the new API
   getBySlot: async (doctorId, date, slotId, status = null) => {
-    const url = `VITE_API_API_PREFIX/doctors/appointments`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/doctors/appointments`;
     const params = {
       doctor_id: doctorId,
       bookingDate: date,
@@ -146,7 +146,7 @@ export const appointmentApi = {
 
   // Get appointments with multiple filters
   getWithFilters: async (doctorId, filters = {}) => {
-    const url = `VITE_API_API_PREFIX/doctors/appointments`;
+    const url = `${import.meta.env.VITE_API_PREFIX}/doctors/appointments`;
     const params = {
       doctor_id: doctorId,
       ...filters, // Can include: status, slot_id, bookingDate
