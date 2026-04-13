@@ -157,7 +157,7 @@ export const useTestAppointment = () => {
       console.error("❌ Cancel transaction error:", err);
       setError("Lỗi khi hủy giao dịch. Vui lòng thử lại.");
       // Vẫn đóng modal ngay cả khi có lỗi
-      setIsConfirmOpen(false);
+      // setIsConfirmOpen(false);
     } finally {
       setLoading(false);
     }
@@ -180,7 +180,7 @@ export const useTestAppointment = () => {
         appointmentData.invoiceId,
         amount
       );
-
+      console.log("✅ VNPAY URL response:", vnpayResponse);
       if (vnpayResponse.url) {
         // Chuyển hướng người dùng đến cổng thanh toán VNPAY
         window.location.href = vnpayResponse.url;

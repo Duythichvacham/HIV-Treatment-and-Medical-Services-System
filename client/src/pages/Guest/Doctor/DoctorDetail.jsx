@@ -90,8 +90,8 @@ const DoctorDetail = () => {
           </div>
         </section>
         {/* Tabs and Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-10">
+          <div>
             <div className="bg-white rounded-2xl shadow-xl p-8 animate-fade-in animate-slide-up duration-700">
               <div className="flex border-b mb-6">
                 <button
@@ -125,7 +125,7 @@ const DoctorDetail = () => {
             </div>
           </div>
           {/* Appointment Form Section */}
-          <div className="animate-fade-in animate-slide-up duration-700 delay-200">
+          {/* <div className="animate-fade-in animate-slide-up duration-700 delay-200">
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-6">
                 Đặt lịch khám với bác sĩ
@@ -137,7 +137,7 @@ const DoctorDetail = () => {
                 user={user}
               />
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

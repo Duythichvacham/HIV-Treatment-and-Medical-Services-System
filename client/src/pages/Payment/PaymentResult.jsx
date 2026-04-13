@@ -12,12 +12,12 @@ const PaymentResult = () => {
   const [appointmentData, setAppointmentData] = useState(null);
   useEffect(() => {
     const queryString = location.search.substring(1); // lấy phần query string từ URL sau dấu ?
-    const params = new URLSearchParams(queryString); // api có sẵn trong js để làm việc với queryString, cho phép duyệt qua từng cặp key-value
+    // const params = new URLSearchParams(queryString); // api có sẵn trong js để làm việc với queryString, cho phép duyệt qua từng cặp key-value
     //Muốn chuyển đổi lại về query String thì toString() là được.
-    const invoiceId = params.get("vnp_TxnRef"); // lấy giá trị của vnp_TxnRef từ query string
+    // const invoiceId = params.get("vnp_TxnRef"); // lấy giá trị của vnp_TxnRef từ query string
 
     if (queryString.toString()) {
-      verifyVnpayReturn(queryString, invoiceId)
+      verifyVnpayReturn(queryString)
         .then((res) => {
           // Giả sử API trả về { code: '00', message: 'Success', data: {...} }
           if (res.code === "00") {

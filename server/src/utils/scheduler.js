@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const queueService = require("../services/queues/queueService");
 const appointmentService = require("../services/appointmentService");
-const { poolPromise } = require("../config/db");
+const { poolPromise, sql } = require("../config/db");
 
 //gửi mail nhắc lịch hẹn
 const { sendAllReminders } = require("../controllers/emailController");
@@ -65,6 +65,51 @@ async function autoCancelPendingAppointments() {
     console.error("❌ Error during auto-cancel pending appointments:", error);
   }
 }
+// Auto check và gán expired cho invoice 
+//nên làm để tránh quá tải: CREATE INDEX idx_invoice_status_expired ON invoices(status, create_at);
+async function invoiceExpiredChecker(){
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+  try {      
+      await transaction.begin();
+
+      const request = new sql.Request(transaction);
+      //Nên: chỉ lấy danh sách ID + vnp_TxnRef của các invoice pending quá hạn rồi mới update, tránh scan toàn bộ bảng
+      // 1. expire invoice
+      if (//delay 1 chút so với vnpay để tránh trường hợp khách vừa thanh toán xong đã bị expired ngay
+        (await request.query(`
+        UPDATE Invoices
+        SET status = 'expired'
+        WHERE status = 'pending'
+        AND created_at < DATEADD(MINUTE, -17, GETDATE())
+      `)).rowsAffected[0] > 0) {
+        // Nên tối ưu bằng cách scan những thằng mới expired thôi, tránh scan toàn bộ bảng
+        // 2. cancel order theo invoice đã expired
+        await request.query(`
+          UPDATE Appointments
+          SET status = 'cancelled'
+          WHERE status = 'requested'
+          AND appointment_id IN (
+            SELECT appointment_id FROM Invoices WHERE status = 'expired'
+          )
+        `);
+      }
+
+      await transaction.commit();
+
+      console.log("Cron: expired + cancelled done");
+
+    } catch (err) {
+      console.error("Cron error:", err);
+      if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackErr) {
+        console.error("Rollback failed:", rollbackErr);
+      }
+      }
+  }
+}
 
 /**
  * Khởi tạo tất cả scheduled jobs
@@ -100,6 +145,14 @@ function initializeScheduler() {
       timezone: "Asia/Ho_Chi_Minh", // Đặt múi giờ Việt Nam
     }
   );
+// chạy mỗi 1 phút
+cron.schedule("*/1 * * * *", async () => {
+  try {
+    await invoiceExpiredChecker();
+  } catch (error) {
+    console.error("❌ Lỗi khi chạy cron job:", error);
+  }
+});
 
   console.log("📅 Queue scheduler initialized successfully");
   console.log("   - Daily reset: 00:00 (Vietnam time)");

@@ -4,6 +4,7 @@
 
 import axios from "axios";
 import { ENV } from "@/utils/env";
+import { useNavigate } from "react-router-dom";
 
 // ===========================================
 // AXIOS INSTANCE CONFIGURATION
@@ -665,16 +666,17 @@ export const createVNPayURL = async (invoiceId, amount, bankCode = "NCB") => {
  * @param {string} queryString - Chuỗi query từ URL VNPAY trả về
  * @returns {Promise<object>} - Kết quả xác thực từ backend
  */
-export const verifyVnpayReturn = async (queryString, invoiceId) => {
-  let timeoutId;
+export const verifyVnpayReturn = async (queryString,) => {
+  // let timeoutId;
 
   try {
     // Thiết lập timeout để hủy giao dịch sau 3 phút
-    timeoutId = setTimeout(async () => {
-      console.warn("⏳ Timeout reached, cancelling transaction...");
-      await cancelTransaction(invoiceId);
-    }, 3 * 60 * 1000); // 3 phút
-
+    // timeoutId = setTimeout(async () => {
+    //   console.warn("⏳ Timeout reached, cancelling transaction...");
+    //   await api.patch(`${import.meta.env.VITE_API_PREFIX}/payment/cancel_transaction`, { invoiceId });
+    //   window.location.href = "/payment-result"; // Điều hướng về trang kết quả với trạng thái timeout 
+    // }, 1 * 60 * 1000); // 5 phút
+    // khi điều hướng qua trang của vnpay thì timeout đã bị kill
     // Endpoint này cần khớp với backend của bạn
     const response = await api.get(
       `${import.meta.env.VITE_API_PREFIX}/payment/vnpay_return?${queryString}`
@@ -683,7 +685,7 @@ export const verifyVnpayReturn = async (queryString, invoiceId) => {
     console.log("✅ verifyVnpayReturn response:", response.data);
 
     // Hủy timeout nếu nhận được phản hồi
-    clearTimeout(timeoutId);
+    // clearTimeout(timeoutId);
 
     return response.data;
   } catch (error) {
