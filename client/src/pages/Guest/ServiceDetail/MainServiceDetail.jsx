@@ -237,9 +237,9 @@ const MainServiceDetail = () => {
             </div>
           </div>
         </section>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 gap-10">
           {/* Service Details */}
-          <div className="lg:col-span-2">
+          <div>
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 animate-fade-in animate-slide-up duration-700">
               <h2 className="text-2xl font-bold text-green-800 mb-6">
                 Đặc điểm nổi bật
@@ -270,7 +270,7 @@ const MainServiceDetail = () => {
             </div>
           </div>
           {/* Appointment Form Section */}
-          <div className="animate-fade-in animate-slide-up duration-700 delay-200">
+          {/* <div className="animate-fade-in animate-slide-up duration-700 delay-200">
             <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-6">
                 Đặt lịch dịch vụ
@@ -282,7 +282,7 @@ const MainServiceDetail = () => {
                 user={user}
               />
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

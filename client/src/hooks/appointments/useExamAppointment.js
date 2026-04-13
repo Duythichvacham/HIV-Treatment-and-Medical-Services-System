@@ -229,7 +229,7 @@ export const useExamAppointment = () => {
         appointmentData.invoiceId,
         amount
       );
-
+      console.log("✅ VNPAY URL response:", vnpayResponse);
       if (vnpayResponse.url) {
         // Chuyển hướng người dùng đến cổng thanh toán VNPAY
         window.location.href = vnpayResponse.url;

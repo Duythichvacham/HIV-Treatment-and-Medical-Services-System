@@ -21,16 +21,16 @@ const AppointmentConfirmModal = ({
   if (!time && typeof data.time === "string" && isNaN(Number(data.time)))
     time = data.time;
   const fee = data.fee || data.price || "";
-  const isDoctor =
-    typeof data.isDoctor !== "undefined"
-      ? data.isDoctor
-      : data.doctorOrStaff
-      ? true
-      : false;
-  let doctorOrStaff =
-    data.doctorOrStaff || data.doctor_name || data.staff_name || "";
-  if (isDoctor && doctorOrStaff && doctorOrStaff.startsWith("patient"))
-    doctorOrStaff = "";
+  // const isDoctor =
+  //   typeof data.isDoctor !== "undefined"
+  //     ? data.isDoctor
+  //     : data.doctorOrStaff
+  //     ? true
+  //     : false;
+  // let doctorOrStaff =
+  //   data.doctorOrStaff || data.doctor_name || data.staff_name || "";
+  // if (isDoctor && doctorOrStaff)
+  //   doctorOrStaff = "";
   return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white w-11/12 md:w-1/2 rounded-xl shadow-xl overflow-hidden">
@@ -78,7 +78,8 @@ const AppointmentConfirmModal = ({
             <button
               // onclick={onConfirm} // dùng khi bypass
               onClick={onVnpayPayment}
-              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              disabled={!data?.invoiceId}
+              className="px-5 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               Xác nhận
             </button>

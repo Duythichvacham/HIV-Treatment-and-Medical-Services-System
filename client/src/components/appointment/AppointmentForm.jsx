@@ -47,7 +47,7 @@ const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
           doctorId = serviceType_id.replace("examinaton_", "");
           serviceId = 1; // Khám bệnh
         } else if (serviceType_id && serviceType_id.startsWith("test_")) {
-          serviceId = serviceType_id.replace("test_", "");
+          serviceId = parseInt(serviceType_id.replace("test_", ""));
         }
 
         if (serviceId) {
@@ -90,7 +90,7 @@ const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
         doctor_id = serviceType_id.replace("examinaton_", "");
         service_id = 1;
       } else if (serviceType_id && serviceType_id.startsWith("test_")) {
-        service_id = serviceType_id.replace("test_", "");
+        service_id = parseInt(serviceType_id.replace("test_", ""));
       }
       const res = await createAppointment({
         doctor_id,
@@ -227,15 +227,15 @@ const AppointmentForm = ({ serviceType_id, serviceName, price, user }) => {
   }
 
   // Hàm format an toàn cho giờ slot
-  function formatTimeStr(t) {
-    if (!t) return "";
-    if (/^\d{2}:\d{2}/.test(t)) return t.slice(0, 5);
-    if (typeof t === "string" && t.includes("T")) {
-      const match = t.match(/T(\d{2}:\d{2})/);
-      if (match) return match[1];
-    }
-    return "";
-  }
+  // function formatTimeStr(t) {
+  //   if (!t) return "";
+  //   if (/^\d{2}:\d{2}/.test(t)) return t.slice(0, 5);
+  //   if (typeof t === "string" && t.includes("T")) {
+  //     const match = t.match(/T(\d{2}:\d{2})/);
+  //     if (match) return match[1];
+  //   }
+  //   return "";
+  // }
 
   useEffect(() => {
     if (!date || !isDoctor) {

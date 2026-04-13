@@ -81,6 +81,44 @@ module.exports = {
       .createHmac("sha512", secretKey)
       .update(Buffer.from(signData, "utf-8"))
       .digest("hex");
+    const responseCode = vnp_Params["vnp_ResponseCode"];
+    var invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
+    if (secureHash === signed) {      
+        // 1. Lấy thông tin invoice để tìm appointment_id
+        const invoice = await invoiceService.getInvoice({ invoiceId });
+        const appointment_id = invoice.appointment_id;
+        // 2. Lấy thông tin appointment detail để trả về
+        var appointmentData = await appointmentService.getAppointmentDetail(
+          appointment_id
+        );
+      res.json({
+        code: responseCode,
+        appointmentData,
+        message:
+          responseCode === "00"
+            ? "Thanh toán thành công"
+            : "Thanh toán thất bại hoặc bị huỷ",
+      });
+    } else {
+      await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+      await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
+      res.json({ code: "97", message: "Sai checksum" });
+    }
+  },
+
+  handleIPN: async (req, res) => {
+    const vnp_Params = req.query;
+    const secureHash = vnp_Params["vnp_SecureHash"];
+
+    delete vnp_Params["vnp_SecureHash"];
+    delete vnp_Params["vnp_SecureHashType"];
+
+    const secretKey = config.vnp_HashSecret;
+    const signData = qs.stringify(sortObject(vnp_Params), { encode: false });
+    const signed = crypto
+      .createHmac("sha512", secretKey)
+      .update(Buffer.from(signData, "utf-8"))
+      .digest("hex");
 
     if (secureHash === signed) {
       const responseCode = vnp_Params["vnp_ResponseCode"];
@@ -122,48 +160,6 @@ module.exports = {
           if (queueInfo && appointmentData) {
             appointmentData.queue_number = queueInfo.queue_number;
           }
-        } else {
-          await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
-          await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
-        }
-      }
-
-      res.json({
-        code: responseCode,
-        appointmentData,
-        message:
-          responseCode === "00"
-            ? "Thanh toán thành công"
-            : "Thanh toán thất bại hoặc bị huỷ",
-      });
-    } else {
-      await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
-      await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
-      res.json({ code: "97", message: "Sai checksum" });
-    }
-  },
-
-  handleIPN: async (req, res) => {
-    const vnp_Params = req.query;
-    const secureHash = vnp_Params["vnp_SecureHash"];
-
-    delete vnp_Params["vnp_SecureHash"];
-    delete vnp_Params["vnp_SecureHashType"];
-
-    const secretKey = config.vnp_HashSecret;
-    const signData = qs.stringify(sortObject(vnp_Params), { encode: false });
-    const signed = crypto
-      .createHmac("sha512", secretKey)
-      .update(Buffer.from(signData, "utf-8"))
-      .digest("hex");
-
-    if (secureHash === signed) {
-      const responseCode = vnp_Params["vnp_ResponseCode"];
-      var invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
-
-      if (!isNaN(invoiceId)) {
-        if (responseCode === "00") {
-          await invoiceService.updateInvoiceStatus(invoiceId, "paid");
         } else {
           await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
           await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
