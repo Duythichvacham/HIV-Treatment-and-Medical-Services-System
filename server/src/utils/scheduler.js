@@ -81,7 +81,7 @@ async function invoiceExpiredChecker(){
         UPDATE Invoices
         SET status = 'expired'
         WHERE status = 'pending'
-        AND created_at < DATEADD(MINUTE, -17, GETDATE())
+        AND created_at < DATEADD(MINUTE, -18, GETDATE())
       `)).rowsAffected[0] > 0) {
         // Nên tối ưu bằng cách scan những thằng mới expired thôi, tránh scan toàn bộ bảng
         // 2. cancel order theo invoice đã expired
@@ -146,7 +146,7 @@ function initializeScheduler() {
     }
   );
 // chạy mỗi 1 phút
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("*/2 * * * *", async () => {
   try {
     await invoiceExpiredChecker();
   } catch (error) {
