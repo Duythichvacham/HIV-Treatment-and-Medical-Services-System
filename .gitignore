@@ -1,5 +1,4 @@
 node_modules
-*.md
 .env
 .env.*
 *.sql
@@ -8,7 +7,7 @@ logs/
 target/
 .idea/
 .vscode/
-# Allow example file
-!.env.example
 hash-passwords.js 
 system-architecture.md
+# Allow example file
+!.env.example
