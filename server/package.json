@@ -35,5 +35,8 @@
     "axios": "^1.10.0",
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3"
-  }
+  },
+  "overrides": {
+  "jquery": "^3.7.1"
+}
 }
