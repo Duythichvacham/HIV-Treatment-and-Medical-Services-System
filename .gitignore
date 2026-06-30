@@ -10,3 +10,5 @@ target/
 .vscode/
 # Allow example file
 !.env.example
+hash-passwords.js 
+system-architecture.md
