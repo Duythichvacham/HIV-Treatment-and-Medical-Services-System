@@ -84,13 +84,20 @@ module.exports = {
     const responseCode = vnp_Params["vnp_ResponseCode"];
     var invoiceId = parseInt(vnp_Params["vnp_TxnRef"], 10);
     if (secureHash === signed) {      
+        if (responseCode === "00" && !isNaN(invoiceId)) {
+          await invoiceService.updateInvoiceStatus(invoiceId, "paid");
+        } else if (!isNaN(invoiceId)) {
+          await invoiceService.updateInvoiceStatus(invoiceId, "cancelled");
+          await appointmentService.cancelAppointmentByInvoiceId(invoiceId);
+        }
+
         // 1. Lấy thông tin invoice để tìm appointment_id
         const invoice = await invoiceService.getInvoice({ invoiceId });
-        const appointment_id = invoice.appointment_id;
+        const appointment_id = invoice?.appointment_id;
         // 2. Lấy thông tin appointment detail để trả về
-        var appointmentData = await appointmentService.getAppointmentDetail(
-          appointment_id
-        );
+        var appointmentData = appointment_id
+          ? await appointmentService.getAppointmentDetail(appointment_id)
+          : null;
       res.json({
         code: responseCode,
         appointmentData,
@@ -131,14 +138,14 @@ module.exports = {
 
           // 2. Lấy thông tin invoice để tìm appointment_id
           const invoice = await invoiceService.getInvoice({ invoiceId });
-          const appointment_id = invoice.appointment_id;
+          const appointment_id = invoice?.appointment_id;
           // 3. Lấy thông tin appointment detail để trả về
-          var appointmentData = await appointmentService.getAppointmentDetail(
-            appointment_id
-          );
+          var appointmentData = appointment_id
+            ? await appointmentService.getAppointmentDetail(appointment_id)
+            : null;
           // 4. Cấp số thứ tự cho appointment sau khi thanh toán thành công
           let queueInfo = null;
-          if (appointment_id && appointmentData.queue_number != null) {
+          if (appointment_id && appointmentData?.queue_number != null) {
             try {
               queueInfo =
                 await appointmentService.assignQueueNumberAfterPayment(

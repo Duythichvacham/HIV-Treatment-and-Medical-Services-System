@@ -97,7 +97,7 @@ async function invoiceExpiredChecker(){
 
       await transaction.commit();
 
-      console.log("Cron: expired + cancelled done");
+      // console.log("Cron: expired + cancelled done");
 
     } catch (err) {
       console.error("Cron error:", err);
@@ -145,7 +145,7 @@ function initializeScheduler() {
       timezone: "Asia/Ho_Chi_Minh", // Đặt múi giờ Việt Nam
     }
   );
-// chạy mỗi 1 phút
+// chạy mỗi 2 phút
 cron.schedule("*/2 * * * *", async () => {
   try {
     await invoiceExpiredChecker();
